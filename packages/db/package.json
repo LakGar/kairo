@@ -14,15 +14,16 @@
   },
   "scripts": {
     "generate": "prisma generate",
-    "migrate:dev": "prisma migrate dev",
-    "push": "prisma db push",
-    "studio": "prisma studio",
-    "seed": "prisma db seed"
+    "migrate:dev": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma migrate dev",
+    "push": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db push",
+    "studio": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma studio",
+    "seed": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db seed"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0"
   },
   "devDependencies": {
+    "dotenv-cli": "^11.0.0",
     "prisma": "^6.19.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
