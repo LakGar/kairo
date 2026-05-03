@@ -985,6 +985,7 @@ Issues:
 Commit:
 
 - `9a8667a` — `mobile: proof submit, layout cleanup, and sign-in second factor`
+- `ed9e5c7` — `docs: record Phases 11-12 mobile commit hash`
 
 Next:
 
