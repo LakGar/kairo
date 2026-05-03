@@ -19,7 +19,8 @@ import {
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
 
-const Index = () => {
+/** Pre-auth marketing splash — open at `/(auth)/landing`. */
+export default function AuthLandingScreen() {
   const router = useRouter();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
@@ -83,9 +84,7 @@ const Index = () => {
       </View>
     </View>
   );
-};
-
-export default Index;
+}
 
 const styles = StyleSheet.create({
   loading: {
