@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { onboardingColors } from "../onboarding-tokens";
@@ -7,6 +8,8 @@ type Props = {
   onPrimary: () => void;
   primaryDisabled?: boolean;
   secondaryHint?: string;
+  /** Soft gradient pill (welcome step); default is solid light pill from tokens. */
+  primaryVisual?: "default" | "gradientPill";
 };
 
 export function OnboardingNavigation({
@@ -14,23 +17,47 @@ export function OnboardingNavigation({
   onPrimary,
   primaryDisabled,
   secondaryHint,
+  primaryVisual = "default",
 }: Props) {
+  const gradient = primaryVisual === "gradientPill";
+
   return (
     <View style={styles.wrap}>
       {secondaryHint ? (
         <Text style={styles.hint}>{secondaryHint}</Text>
       ) : null}
-      <Pressable
-        onPress={onPrimary}
-        disabled={primaryDisabled}
-        style={({ pressed }) => [
-          styles.primary,
-          pressed && !primaryDisabled && styles.primaryPressed,
-          primaryDisabled && styles.primaryDisabled,
-        ]}
-      >
-        <Text style={styles.primaryText}>{primaryLabel}</Text>
-      </Pressable>
+      {gradient ? (
+        <Pressable
+          onPress={onPrimary}
+          disabled={primaryDisabled}
+          style={({ pressed }) => [
+            styles.gradientOuter,
+            pressed && !primaryDisabled && styles.primaryPressed,
+            primaryDisabled && styles.primaryDisabled,
+          ]}
+        >
+          <LinearGradient
+            colors={["#BAE6FD", "#38BDF8", "#0284C7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientInner}
+          >
+            <Text style={styles.gradientText}>{primaryLabel}</Text>
+          </LinearGradient>
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={onPrimary}
+          disabled={primaryDisabled}
+          style={({ pressed }) => [
+            styles.primary,
+            pressed && !primaryDisabled && styles.primaryPressed,
+            primaryDisabled && styles.primaryDisabled,
+          ]}
+        >
+          <Text style={styles.primaryText}>{primaryLabel}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -63,6 +90,27 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     color: onboardingColors.background,
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+  },
+  gradientOuter: {
+    width: "100%",
+    borderRadius: 999,
+    overflow: "hidden",
+    shadowColor: "#38BDF8",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  gradientInner: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  gradientText: {
+    color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Inter_700Bold",
   },

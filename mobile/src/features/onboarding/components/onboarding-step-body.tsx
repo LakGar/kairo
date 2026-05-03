@@ -52,14 +52,7 @@ export function OnboardingStepBody({ step }: { step: OnboardingStepConfig }) {
   const bannerError = stepErrorMessage(step, fieldErrors);
 
   if (step.kind === "welcome") {
-    return (
-      <View style={styles.block}>
-        <Text style={styles.lead}>
-          Kairo is built for social accountability and event competitions. Create
-          or join events, submit proof, and let your people keep you honest.
-        </Text>
-      </View>
-    );
+    return null;
   }
 
   if (step.kind === "single" && step.field && step.options) {
@@ -236,15 +229,6 @@ export function OnboardingStepBody({ step }: { step: OnboardingStepConfig }) {
 }
 
 const styles = StyleSheet.create({
-  block: {
-    gap: 12,
-  },
-  lead: {
-    color: onboardingColors.textSecondary,
-    fontSize: 16,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 24,
-  },
   options: {
     gap: 12,
   },

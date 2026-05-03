@@ -20,6 +20,8 @@ import { onboardingColors } from "../onboarding-tokens";
 import { OnboardingNavigation } from "./onboarding-navigation";
 import { OnboardingProgress } from "./onboarding-progress";
 import { OnboardingStepBody } from "./onboarding-step-body";
+import { OnboardingWelcomeDots } from "./onboarding-welcome-dots";
+import { OnboardingWelcomeHero } from "./onboarding-welcome-hero";
 
 export function OnboardingShell() {
   const insets = useSafeAreaInsets();
@@ -53,10 +55,49 @@ export function OnboardingShell() {
   }
 
   const isProfile = step.kind === "profile";
+  const isWelcome = step.kind === "welcome";
   const primaryLabel = isLastStep ? "Finish setup" : "Next";
   const onPrimary = isLastStep ? finishOnboarding : goNext;
 
-  const body = (
+  const welcomeBody = (
+    <>
+      <View style={styles.welcomeHeader}>
+        <View style={styles.headerSpacer} />
+        <Text style={styles.welcomeLogo}>Kairo.</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.welcomeScrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={{ opacity }}>
+          <OnboardingWelcomeHero />
+          <Text style={styles.welcomeTitle}>{step.title}</Text>
+          <Text style={styles.welcomeSubtitle}>{step.subtitle}</Text>
+          <OnboardingWelcomeDots currentIndex={currentStepIndex} total={totalSteps} />
+        </Animated.View>
+      </ScrollView>
+
+      <View
+        style={[
+          styles.footer,
+          styles.footerWelcome,
+          { paddingBottom: Math.max(insets.bottom, 20) },
+        ]}
+      >
+        <OnboardingNavigation
+          primaryLabel={primaryLabel}
+          onPrimary={onPrimary}
+          primaryVisual="gradientPill"
+        />
+      </View>
+    </>
+  );
+
+  const defaultBody = (
     <>
       <View style={styles.header}>
         {!isFirstStep ? (
@@ -70,14 +111,18 @@ export function OnboardingShell() {
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <AntDesign name="left" size={20} color={onboardingColors.textPrimary} />
+            <AntDesign
+              name="left"
+              size={20}
+              color={onboardingColors.textPrimary}
+            />
           </Pressable>
         ) : (
           <View style={styles.headerSpacer} />
         )}
         <Text style={styles.logo}>Kairo.</Text>
-        <OnboardingProgress currentIndex={currentStepIndex} total={totalSteps} />
       </View>
+      <OnboardingProgress currentIndex={currentStepIndex} total={totalSteps} />
 
       <ScrollView
         style={styles.scroll}
@@ -96,10 +141,7 @@ export function OnboardingShell() {
       </ScrollView>
 
       <View
-        style={[
-          styles.footer,
-          { paddingBottom: Math.max(insets.bottom, 16) },
-        ]}
+        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}
       >
         <OnboardingNavigation
           primaryLabel={primaryLabel}
@@ -113,6 +155,8 @@ export function OnboardingShell() {
       </View>
     </>
   );
+
+  const body = isWelcome ? welcomeBody : defaultBody;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -140,11 +184,53 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  welcomeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  welcomeLogo: {
+    flex: 1,
+    textAlign: "center",
+    color: onboardingColors.textPrimary,
+    fontSize: 24,
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: -0.7,
+  },
+  welcomeScrollContent: {
+    paddingHorizontal: 22,
+    paddingBottom: 16,
+    flexGrow: 1,
+  },
+  welcomeTitle: {
+    color: onboardingColors.textPrimary,
+    fontSize: 32,
+    lineHeight: 40,
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: -1.4,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  welcomeSubtitle: {
+    color: onboardingColors.textSecondary,
+    fontSize: 16,
+    lineHeight: 25,
+    fontFamily: "Inter_400Regular",
+    marginTop: 14,
+    textAlign: "center",
+  },
+  footerWelcome: {
+    borderTopWidth: 0,
+    paddingTop: 4,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingVertical: 60,
     gap: 8,
   },
   headerSpacer: {
@@ -168,6 +254,9 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: -0.6,
     textAlign: "center",
+    position: "absolute",
+    left: 20,
+    top: 0,
   },
   scroll: {
     flex: 1,
