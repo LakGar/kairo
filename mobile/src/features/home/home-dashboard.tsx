@@ -1,32 +1,27 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "@clerk/expo";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import type { ComponentProps } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { CommitmentsSection } from "@/src/features/home/components/commitments-section";
-import { InvitesCard } from "@/src/features/home/components/invites-card";
+import { CommitmentList } from "@/src/features/home/components/commitment-list";
 import { KairoScoreCard } from "@/src/features/home/components/kairo-score-card";
 import { NextActionCard } from "@/src/features/home/components/next-action-card";
 import { ProofInboxCard } from "@/src/features/home/components/proof-inbox-card";
-import { QuickActions } from "@/src/features/home/components/quick-actions";
 import { RecentActivity } from "@/src/features/home/components/recent-activity";
 import { StreakRankRow } from "@/src/features/home/components/streak-rank-row";
 import {
   MOCK_ACTIVITY,
   MOCK_COMMITMENTS,
   MOCK_HOME_HEADER,
-  MOCK_INVITES,
   MOCK_KAIRO_SCORE,
   MOCK_NEXT_ACTION,
   MOCK_PROOF_INBOX,
   MOCK_STREAK_RANK,
   scoreTierLabel,
 } from "@/src/features/home/home.mock";
+import type { MockCommitment } from "@/src/features/home/home.mock";
 import { HomeColors } from "@/src/features/home/home-tokens";
 
-type Ion = ComponentProps<typeof Ionicons>["name"];
+const H_PAD = 20;
 
 type HomeDashboardProps = {
   contentPaddingTop: number;
@@ -47,47 +42,11 @@ export function HomeDashboard({
 
   const tier = scoreTierLabel(MOCK_KAIRO_SCORE.score);
 
-  const quickActions: {
-    key: string;
-    label: string;
-    icon: Ion;
-    onPress: () => void;
-  }[] = [
-    {
-      key: "create",
-      label: "Create Event",
-      icon: "add-circle-outline",
-      onPress: () => {
-        router.push("/(tabs)/create");
-      },
-    },
-    {
-      key: "join",
-      label: "Join Event",
-      icon: "enter-outline",
-      onPress: () => {
-        router.push("/(tabs)/events");
-      },
-    },
-    {
-      key: "proof",
-      label: "Submit Proof",
-      icon: "camera-outline",
-      onPress: () => {
-        // TODO: deep-link to proof flow when home is wired to real tasks
-        console.log("[home] Submit Proof — TODO wire to proof inbox / event");
-      },
-    },
-    {
-      key: "team",
-      label: "Create Team",
-      icon: "people-outline",
-      onPress: () => {
-        // TODO: open create team on selected event when context exists
-        console.log("[home] Create Team — TODO wire from event detail");
-      },
-    },
-  ];
+  const onCommitmentPress = (item: MockCommitment) => {
+    // TODO: replace `eventIdPlaceholder` with real id from API; detail may 404 for mock ids.
+    console.log("Commitment pressed", item.id);
+    router.push(`/(tabs)/events/${item.eventIdPlaceholder}`);
+  };
 
   return (
     <ScrollView
@@ -95,31 +54,17 @@ export function HomeDashboard({
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.scroll,
-        { paddingTop: contentPaddingTop, paddingBottom: contentPaddingBottom },
+        {
+          paddingTop: contentPaddingTop,
+          paddingBottom: contentPaddingBottom,
+        },
       ]}
     >
       <View style={styles.greetBlock}>
-        <View style={styles.greetTop}>
-          <View style={styles.greetTextCol}>
-            <Text style={styles.greetHi}>Hey {greetingName}</Text>
-            <Text style={styles.greetLine}>
-              You have {MOCK_HOME_HEADER.actionCountToday} actions today
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => router.push("/(tabs)/settings")}
-            style={({ pressed }) => [styles.avatarBtn, pressed && { opacity: 0.85 }]}
-            accessibilityLabel="Open settings"
-          >
-            {user?.imageUrl ? (
-              <Image source={{ uri: user.imageUrl }} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Ionicons name="person" size={18} color={HomeColors.textMuted} />
-              </View>
-            )}
-          </Pressable>
-        </View>
+        <Text style={styles.greetHi}>Hey {greetingName}</Text>
+        <Text style={styles.greetLine}>
+          You have {MOCK_HOME_HEADER.actionCountToday} actions today
+        </Text>
       </View>
 
       <KairoScoreCard
@@ -134,31 +79,25 @@ export function HomeDashboard({
         <NextActionCard
           action={MOCK_NEXT_ACTION}
           onSubmitProof={() => {
-            // TODO: navigate to proof capture when task pipeline exists
-            console.log("[home] Submit proof for", MOCK_NEXT_ACTION.eventTitle);
+            // TODO: navigate to proof flow / camera when route exists
+            console.log("Submit proof pressed");
           }}
           onViewEvent={() => {
-            // TODO: replace placeholder id with real event id from API
+            // TODO: use real event id from API
             router.push(`/(tabs)/events/${MOCK_NEXT_ACTION.eventIdPlaceholder}`);
           }}
         />
       </View>
 
-      <CommitmentsSection
-        commitments={MOCK_COMMITMENTS}
-        onOpenCommitment={(id) => {
-          // TODO: open commitment / event when API-backed
-          console.log("[home] Open commitment", id);
-        }}
-      />
+      <CommitmentList commitments={MOCK_COMMITMENTS} onOpenCommitment={onCommitmentPress} />
 
       <View style={styles.block}>
         <ProofInboxCard
           pendingCount={MOCK_PROOF_INBOX.pendingCount}
           tasks={MOCK_PROOF_INBOX.tasks}
           onReview={() => {
-            // TODO: navigate to proof inbox screen
-            console.log("[home] Review proof inbox");
+            // TODO: navigate to dedicated proof inbox when route exists
+            console.log("Review proof inbox pressed");
           }}
         />
       </View>
@@ -172,22 +111,6 @@ export function HomeDashboard({
         />
       </View>
 
-      <View style={styles.block}>
-        <InvitesCard
-          invites={MOCK_INVITES}
-          onAccept={(id) => {
-            console.log("[home] Accept invite", id);
-          }}
-          onDecline={(id) => {
-            console.log("[home] Decline invite", id);
-          }}
-        />
-      </View>
-
-      <View style={styles.block}>
-        <QuickActions actions={quickActions} />
-      </View>
-
       <RecentActivity items={MOCK_ACTIVITY} />
     </ScrollView>
   );
@@ -195,59 +118,32 @@ export function HomeDashboard({
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: 16,
-    gap: 22,
+    paddingHorizontal: H_PAD,
+    gap: 20,
   },
   greetBlock: {
-    marginBottom: 4,
-  },
-  greetTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  greetTextCol: {
-    flex: 1,
-    minWidth: 0,
+    marginBottom: 2,
+    gap: 6,
   },
   greetHi: {
     color: HomeColors.textPrimary,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
-    letterSpacing: -0.8,
+    letterSpacing: -0.7,
   },
   greetLine: {
-    marginTop: 6,
     color: HomeColors.textSecondary,
     fontSize: 15,
     fontWeight: "600",
   },
-  avatarBtn: {
-    borderRadius: 22,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: HomeColors.surfaceStrong,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-  },
-  avatarFallback: {
-    width: 44,
-    height: 44,
-    backgroundColor: HomeColors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   block: {
-    gap: 12,
+    gap: 10,
   },
   blockTitle: {
     color: HomeColors.textPrimary,
     fontSize: 18,
     fontWeight: "800",
     letterSpacing: -0.4,
-    marginBottom: -4,
+    marginBottom: -2,
   },
 });

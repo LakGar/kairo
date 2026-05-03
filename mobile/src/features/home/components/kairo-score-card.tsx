@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 
 import { HomeColors } from "@/src/features/home/home-tokens";
@@ -12,111 +11,108 @@ type Props = {
 
 export function KairoScoreCard({ score, tierLabel, trend7d, streakDays }: Props) {
   const trendStr = trend7d >= 0 ? `+${trend7d}` : `${trend7d}`;
-  const trendColor = trend7d >= 0 ? HomeColors.success : HomeColors.danger;
+  const trendColor = trend7d >= 0 ? HomeColors.success : HomeColors.textSecondary;
 
   return (
-    <LinearGradient
-      colors={["rgba(255,106,42,0.22)", "rgba(15,23,42,0.95)", HomeColors.bg]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.gradientWrap}
-    >
-      <View style={styles.inner}>
-        <Text style={styles.eyebrow}>Kairo Score</Text>
-        <View style={styles.scoreRow}>
-          <Text style={styles.scoreNum}>{score}</Text>
-          <View style={styles.tierPill}>
-            <Text style={styles.tierText}>{tierLabel}</Text>
-          </View>
+    <View style={styles.card}>
+      <Text style={styles.eyebrow}>Kairo Score</Text>
+      <View style={styles.scoreRow}>
+        <Text style={styles.scoreNum}>{score}</Text>
+        <View style={styles.tierPill}>
+          <Text style={styles.tierText}>{tierLabel}</Text>
         </View>
-        <View style={styles.metrics}>
-          <View style={styles.metric}>
-            <Text style={styles.metricLabel}>7-day</Text>
-            <Text style={[styles.metricValue, { color: trendColor }]}>{trendStr}</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Streak</Text>
-            <Text style={styles.metricValue}>{streakDays} days</Text>
-          </View>
-        </View>
-        <Text style={styles.footnote}>
-          Based on completed commitments, proof, and verifications.
-        </Text>
       </View>
-    </LinearGradient>
+      <View style={styles.metrics}>
+        <View style={styles.metric}>
+          <Text style={styles.metricLabel}>7-day</Text>
+          <Text style={[styles.metricValue, { color: trendColor }]}>{trendStr}</Text>
+        </View>
+        <View style={styles.metricDivider} />
+        <View style={styles.metric}>
+          <Text style={styles.metricLabel}>Streak</Text>
+          <Text style={styles.metricValue}>{streakDays} days</Text>
+        </View>
+      </View>
+      <Text style={styles.footnote}>
+        Based on completed commitments, proof, and verifications.
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradientWrap: {
-    borderRadius: 20,
-    overflow: "hidden",
+  card: {
+    borderRadius: 16,
+    padding: 18,
+    backgroundColor: HomeColors.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
-  },
-  inner: {
-    padding: 20,
-    gap: 10,
+    borderColor: HomeColors.border,
+    gap: 8,
   },
   eyebrow: {
     color: HomeColors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   scoreRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 2,
   },
   scoreNum: {
     color: HomeColors.white,
-    fontSize: 52,
+    fontSize: 44,
     fontWeight: "800",
-    letterSpacing: -2,
+    letterSpacing: -1.5,
   },
   tierPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: HomeColors.surfaceStrong,
+    backgroundColor: HomeColors.pillBackground,
   },
   tierText: {
-    color: HomeColors.textPrimary,
-    fontSize: 13,
+    color: HomeColors.pillText,
+    fontSize: 12,
     fontWeight: "700",
   },
   metrics: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HomeColors.border,
   },
   metric: {
     flex: 1,
   },
   metricLabel: {
     color: HomeColors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   metricValue: {
     color: HomeColors.textPrimary,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
-    marginTop: 2,
+    marginTop: 4,
   },
   metricDivider: {
     width: StyleSheet.hairlineWidth,
-    height: 36,
-    backgroundColor: HomeColors.surfaceStrong,
-    marginHorizontal: 12,
+    height: 32,
+    backgroundColor: HomeColors.border,
+    marginHorizontal: 14,
   },
   footnote: {
-    color: HomeColors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
+    color: HomeColors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: 4,
   },
 });

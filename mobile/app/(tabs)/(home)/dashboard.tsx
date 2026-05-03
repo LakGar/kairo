@@ -3,9 +3,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TabScreenHeader } from "@/components/tab-screen-header";
 import { HomeDashboard } from "@/src/features/home/home-dashboard";
+import { MOCK_NOTIFICATION_BADGE } from "@/src/features/home/home.mock";
 import { HomeColors } from "@/src/features/home/home-tokens";
 
-const TAB_BAR_SPACE = 120;
+const TAB_BAR_SPACE = 128;
 
 /**
  * Home tab — accountability command center (mock data; see `src/features/home/`).
@@ -22,7 +23,11 @@ export default function DashboardScreen() {
         contentPaddingBottom={TAB_BAR_SPACE + insets.bottom}
       />
       <View style={styles.headerLayer} pointerEvents="box-none">
-        <TabScreenHeader variant="home" chrome="feedDark" />
+        <TabScreenHeader
+          variant="home"
+          chrome="feedDark"
+          notificationBadgeCount={MOCK_NOTIFICATION_BADGE}
+        />
       </View>
     </View>
   );

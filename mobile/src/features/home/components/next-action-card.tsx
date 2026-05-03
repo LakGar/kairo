@@ -16,14 +16,13 @@ export function NextActionCard({ action, onSubmitProof, onViewEvent }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.imageWrap}>
-        {/* TODO: replace with event cover from API */}
         <Image
           source={{ uri: action.imageUrl }}
           style={styles.image}
           contentFit="cover"
         />
         <LinearGradient
-          colors={["transparent", "rgba(11,15,20,0.5)", HomeColors.bg]}
+          colors={["rgba(11,15,20,0.15)", "rgba(11,15,20,0.55)", "rgba(11,15,20,0.88)"]}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.imageText}>
@@ -41,7 +40,7 @@ export function NextActionCard({ action, onSubmitProof, onViewEvent }: Props) {
           onPress={onSubmitProof}
           style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
         >
-          <Ionicons name="camera-outline" size={18} color={HomeColors.bg} />
+          <Ionicons name="camera-outline" size={18} color={HomeColors.black} />
           <Text style={styles.btnPrimaryLabel}>Submit Proof</Text>
         </Pressable>
         <Pressable
@@ -58,14 +57,14 @@ export function NextActionCard({ action, onSubmitProof, onViewEvent }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: HomeColors.surface,
+    backgroundColor: HomeColors.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
   },
   imageWrap: {
-    height: 200,
+    height: 188,
     width: "100%",
   },
   image: {
@@ -75,22 +74,22 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    bottom: 16,
+    bottom: 14,
     gap: 6,
   },
   kicker: {
-    color: HomeColors.warning,
+    color: HomeColors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   headline: {
     color: HomeColors.textPrimary,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
-    letterSpacing: -0.5,
-    lineHeight: 28,
+    letterSpacing: -0.4,
+    lineHeight: 26,
   },
   metaRow: {
     flexDirection: "row",
@@ -112,6 +111,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     padding: 14,
+    backgroundColor: HomeColors.cardLight,
   },
   btnPrimary: {
     flex: 1,
@@ -119,12 +119,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: HomeColors.accent,
-    paddingVertical: 14,
-    borderRadius: 14,
+    backgroundColor: HomeColors.white,
+    paddingVertical: 13,
+    borderRadius: 12,
   },
   btnPrimaryLabel: {
-    color: HomeColors.bg,
+    color: HomeColors.black,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -133,11 +133,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
+    backgroundColor: "transparent",
   },
   btnGhostLabel: {
     color: HomeColors.textPrimary,

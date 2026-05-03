@@ -4,13 +4,15 @@
  * TODO: Replace all payloads with API + real `eventId` for navigation.
  */
 
-export type CommitmentRole = "Hosting" | "Player" | "Invited" | "Watching";
+export type CommitmentRole = "Hosting" | "Player" | "Invited" | "Watching" | "Volunteer";
 
 export type CommitmentStatus =
   | "Needs proof"
   | "Upcoming"
   | "Verified"
-  | "Waiting approval";
+  | "Waiting approval"
+  | "RSVP needed"
+  | "Confirmed";
 
 export interface MockCommitment {
   id: string;
@@ -18,9 +20,14 @@ export interface MockCommitment {
   /** TODO: swap for local asset or signed URL from API */
   imageUrl: string;
   role: CommitmentRole;
-  dateTimeLabel: string;
+  /** Small line above title, e.g. organizer or team */
+  organizerLine?: string;
+  timeLabel: string;
+  locationLabel: string;
   status: CommitmentStatus;
   scoreImpact: string;
+  /** TODO: wire real event id from API */
+  eventIdPlaceholder: string;
 }
 
 export interface MockNextAction {
@@ -56,6 +63,9 @@ export function scoreTierLabel(score: number): string {
   return "Ghost Mode";
 }
 
+/** Shown on home header notification bell (mock until API). */
+export const MOCK_NOTIFICATION_BADGE = 3;
+
 export const MOCK_HOME_HEADER = {
   actionCountToday: 3,
 } as const;
@@ -71,7 +81,6 @@ export const MOCK_NEXT_ACTION: MockNextAction = {
   eventTitle: "Pickleball Night",
   dateTimeLabel: "Today, 6:30 PM",
   actionDetail: "Team photo required",
-  // TODO: replace with event cover from API
   imageUrl:
     "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80",
   eventIdPlaceholder: "mock-event-pickleball",
@@ -84,9 +93,12 @@ export const MOCK_COMMITMENTS: MockCommitment[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600&q=80",
     role: "Player",
-    dateTimeLabel: "Today · 6:30 PM",
+    organizerLine: "Hosted by Alex · Team Yellow",
+    timeLabel: "Today, 6:30 PM",
+    locationLabel: "San Francisco, CA",
     status: "Needs proof",
     scoreImpact: "Risk -5",
+    eventIdPlaceholder: "mock-c1",
   },
   {
     id: "c2",
@@ -94,9 +106,12 @@ export const MOCK_COMMITMENTS: MockCommitment[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80",
     role: "Hosting",
-    dateTimeLabel: "Thu · 7:00 AM",
+    organizerLine: "You’re organizing",
+    timeLabel: "Thu, 7:00 AM",
+    locationLabel: "Mission Bay, SF",
     status: "Upcoming",
-    scoreImpact: "+3 if verified",
+    scoreImpact: "+3 if completed",
+    eventIdPlaceholder: "mock-c2",
   },
   {
     id: "c3",
@@ -104,9 +119,12 @@ export const MOCK_COMMITMENTS: MockCommitment[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80",
     role: "Invited",
-    dateTimeLabel: "Sun · 8:00 AM",
-    status: "Waiting approval",
-    scoreImpact: "+2 on join",
+    organizerLine: "Invited by Jordan",
+    timeLabel: "Sun, 8:00 AM",
+    locationLabel: "Golden Gate Park",
+    status: "RSVP needed",
+    scoreImpact: "No impact yet",
+    eventIdPlaceholder: "mock-c3",
   },
   {
     id: "c4",
@@ -114,9 +132,12 @@ export const MOCK_COMMITMENTS: MockCommitment[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=600&q=80",
     role: "Watching",
-    dateTimeLabel: "Sat · 4:00 PM",
-    status: "Verified",
-    scoreImpact: "—",
+    organizerLine: "Spectator pass",
+    timeLabel: "Sat, 4:00 PM",
+    locationLabel: "Oakland, CA",
+    status: "Confirmed",
+    scoreImpact: "+1 for showing up",
+    eventIdPlaceholder: "mock-c4",
   },
 ];
 
@@ -136,6 +157,7 @@ export const MOCK_STREAK_RANK = {
   rankTrendLabel: "Up 4 spots",
 } as const;
 
+/** Reserved for Notifications screen — not shown on Home. */
 export const MOCK_INVITES: MockInvite[] = [
   { id: "i1", title: "Join Team Red for Basketball Run" },
   { id: "i2", title: "Watch Pickleball Night" },

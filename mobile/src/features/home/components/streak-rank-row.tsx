@@ -20,7 +20,7 @@ export function StreakRankRow({
     <View style={styles.row}>
       <View style={[styles.card, styles.flex]}>
         <View style={styles.iconRow}>
-          <Ionicons name="flame" size={20} color={HomeColors.warning} />
+          <Ionicons name="flame" size={18} color={HomeColors.textMuted} />
           <Text style={styles.cardTitle}>Streak</Text>
         </View>
         <Text style={styles.big}>{streakDays}-day</Text>
@@ -28,7 +28,7 @@ export function StreakRankRow({
       </View>
       <View style={[styles.card, styles.flex]}>
         <View style={styles.iconRow}>
-          <Ionicons name="ribbon-outline" size={20} color={HomeColors.success} />
+          <Ionicons name="ribbon-outline" size={18} color={HomeColors.textMuted} />
           <Text style={styles.cardTitle}>Weekly rank</Text>
         </View>
         <Text style={styles.big}>#{weeklyRank}</Text>
@@ -50,29 +50,29 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     padding: 16,
-    backgroundColor: HomeColors.surface,
+    backgroundColor: HomeColors.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
     gap: 6,
   },
   iconRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   cardTitle: {
     color: HomeColors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   big: {
     color: HomeColors.textPrimary,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "800",
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   trend: {
     color: HomeColors.textSecondary,

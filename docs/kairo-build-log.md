@@ -105,6 +105,7 @@ Done:
 - [x] **Phase 10 (2026-05-02):** Organizer tools on event detail — `useEventOrganizerData` (matches, proof prompts, proof submissions), `EventOrganizerSection` when `EXPO_PUBLIC_KAIRO_DEV_USER_ID` matches `event.organizerId`: publish / cancel (confirm), list matches with score + winner actions, create match (`createManualMatchSchema`), proof prompts (`createProofPromptSchema`), pending proof approve/reject; draft join copy points hosts to organizer tools; detail wires section above join/teams.
 - [x] **Phase 11 (2026-05-02):** Participant proof submit — `useEventProofSubmitData` (prompts, matches, submissions), `EventProofSubmitSection` on published/live events: `submitProofSchema` + `POST /api/events/:id/proof` (TEXT / LINK / PHOTO+VIDEO via URL paste); optional match and prompt chips; “Your submissions” for the dev user; wired on event detail after teams.
 - [x] **Phase 12 (2026-05-02):** Log closure + checks — `mobile/app/_layout.tsx` duplicate/unused imports removed (lint clean); `npm run typecheck` + `npm run lint` (mobile), `npm run typecheck -w website`; sign-in second-factor flow committed (Clerk legacy `prepareSecondFactor` / `attemptSecondFactor` paths).
+- [x] **2026-05-03 (Discover):** `(tabs)/(home)/index` — participate-first copy per build log positioning; **Cities** row (Near you + cities from API + curated list); **Categories** row (sports, gaming, fitness, creative, community, skills, tournaments, proof, teams, online + All); `discover-config.ts`, `use-discover-palette.ts` (dark = `HomeColors` + `theme/colors` purple); featured cards take themed shell/border.
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile)
 
@@ -123,6 +124,54 @@ Done:
 - **TODOs left:** Wire mock → API; real `eventId` for View Event; proof inbox / submit flows; invite accept/decline; replace remote images with CDN/event covers.
 - **Commit:** `99d8a60` — `mobile: build premium home dashboard`
 - **Push:** `git push origin main` — succeeded (`466f880..99d8a60`).
+
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Chat tab UI
+
+- **Task:** Build sleek chat tab UI (mock threads, chips, search, priority card; black/white premium style; no backend).
+- **Before:** `git status` (2026-05-03): large dirty tree across mobile/website; this session targets **only** `mobile/src/features/chat/*`, `mobile/app/(tabs)/(home)/chat.tsx`, and this log.
+- **Route note:** Chat tab file is `mobile/app/(tabs)/(home)/chat.tsx` (Native Tabs trigger `name="chat"` under `(home)`). There is **no** separate `mobile/app/(tabs)/chat.tsx` — do not add a duplicate stack/tab route.
+
+In Progress:
+
+- [ ] Sleek Chat tab UI (2026-05-03)
+
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Home UI refinement
+
+- **Task:** Refine home dashboard black-and-white UI and commitment list layout (remove orange-forward chrome; vertical Luma-style commitments; remove quick actions + home invites card).
+- **Before:** `git status` (run at task start); inspect `mobile/src/features/home/*`, `(tabs)/(home)/dashboard.tsx`, `tab-screen-header.tsx`. Note: `mobile/app/(tabs)/index.tsx` is not the home route in this repo — home is `(tabs)/(home)/dashboard.tsx`.
+
+**After (same session):**
+
+- **Palette:** `#0B0F14` bg, `#11161D` / `#171C24` cards, `rgba(255,255,255,0.10)` borders, monochrome text; white/black primary buttons; `#EF4444` notification badge; green/red only for sparse status (score trend up, commitment status lines).
+- **Kairo Score:** Flat charcoal card (no warm gradient); white score, white/black tier pill.
+- **Next action:** Subtle image gradient; primary = white / black text; secondary = outline on dark.
+- **Commitments:** New vertical `CommitmentList` + `CommitmentListItem` (96px thumb, role pill on image, organizer line, title, time/location rows, status, score impact). Removed horizontal `CommitmentsSection` / `CommitmentCard`.
+- **Removed from Home:** `QuickActions` grid (file deleted), `InvitesCard` (still on disk for Notifications — file comment + `MOCK_INVITES` reserved).
+- **Header:** Single greeting column (no duplicate avatar); `TabScreenHeader` gains optional `notificationBadgeCount` (red count pill) wired from `MOCK_NOTIFICATION_BADGE` in `dashboard.tsx`.
+- **Handlers:** `console.log` for Submit proof / Review inbox stubs + `TODO`s; `router.push` for View event + commitment rows with mock ids; notifications → `/(tabs)/notifications`.
+- **Commands:** `npm run typecheck`, `npm run lint` (mobile) — pass (same unrelated onboarding warnings).
+- **Commit:** (filled after commit)
+- **Push:** (filled after push)
+
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
+
+- **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
+- **Before:** Read `docs/kairo-build-log.md` for MVP positioning; `git status` (large dirty tree; scope Discover + small `HomeColors` / commitment card fix).
+
+**After:**
+
+- **Config:** `mobile/src/features/discover/discover-config.ts` — `DISCOVER_COPY`, `DISCOVER_CURATED_CITIES`, `DISCOVER_CATEGORIES` (keyword heuristics on `activityType` / title / description + `allowTeams` / `allowVolunteers` / `format` / `_count.matches`), `buildCityChips`, `matchesCityFilter`, `headlineFromEvents`.
+- **Palette:** `use-discover-palette.ts` — light uses `useUIPalette` + `useColor`; dark uses `HomeColors` surfaces + purple accent from `theme/colors`.
+- **Screen:** `app/(tabs)/(home)/index.tsx` — location headline reacts to city chip; labeled **Cities** / **Categories** rows; search placeholder + list headings use participate language.
+- **Featured card:** accepts `imageShellBg` / `outlineColor` from palette.
+- **Home tokens:** `HomeColors` extended with `surface`, `surfaceStrong`, `accent`, `warning` for dashboard components that still reference them.
+- **Commitment card:** date line uses `timeLabel` + `locationLabel` (matches `MockCommitment` in `home.mock.ts`).
+
+**Files:** `mobile/app/(tabs)/(home)/index.tsx`, `mobile/src/features/discover/discover-config.ts`, `discover-featured-card.tsx`, `use-discover-palette.ts`, `mobile/src/features/home/home-tokens.ts`, `mobile/src/features/home/components/commitment-card.tsx`, `docs/kairo-build-log.md`.
+
+**Checks:** `cd mobile && npx tsc --noEmit --incremental false` — pass (`npm run typecheck` may hit stale incremental refs until cache cleared).
+
+**Commit / push:** Maintainer commits when the wider dirty tree is ready.
 
 In Progress:
 

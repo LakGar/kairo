@@ -1,3 +1,8 @@
+/**
+ * Pending invites UI — belongs in **Notifications**, not on Home.
+ * TODO: Mount this (or a variant) on `/(tabs)/notifications` when the inbox is wired.
+ * Mock rows remain in `home.mock.ts` as `MOCK_INVITES` for that screen.
+ */
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { MockInvite } from "@/src/features/home/home.mock";
@@ -44,9 +49,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
     padding: 16,
-    backgroundColor: HomeColors.surface,
+    backgroundColor: HomeColors.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
     gap: 14,
   },
   title: {
@@ -75,7 +80,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: HomeColors.surfaceStrong,
+    backgroundColor: HomeColors.cardLight,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HomeColors.border,
   },
   acceptLabel: {
     color: HomeColors.success,
@@ -87,7 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
   },
   declineLabel: {
     color: HomeColors.danger,

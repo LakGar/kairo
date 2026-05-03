@@ -14,7 +14,7 @@ export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.top}>
-        <View>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.title}>Proof inbox</Text>
           <Text style={styles.sub}>Team & event verifications</Text>
         </View>
@@ -25,7 +25,7 @@ export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
       <View style={styles.list}>
         {tasks.map((t) => (
           <View key={t.id} style={styles.taskRow}>
-            <Ionicons name="ellipse" size={6} color={HomeColors.accent} />
+            <View style={styles.bullet} />
             <Text style={styles.taskText}>{t.label}</Text>
           </View>
         ))}
@@ -35,7 +35,7 @@ export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
         <Text style={styles.btnLabel}>Review</Text>
-        <Ionicons name="arrow-forward" size={18} color={HomeColors.bg} />
+        <Ionicons name="arrow-forward" size={18} color={HomeColors.textPrimary} />
       </Pressable>
     </View>
   );
@@ -43,11 +43,11 @@ export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 18,
-    backgroundColor: HomeColors.surface,
+    backgroundColor: HomeColors.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HomeColors.surfaceStrong,
+    borderColor: HomeColors.border,
     gap: 14,
   },
   top: {
@@ -69,15 +69,17 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   badge: {
-    backgroundColor: "rgba(255,106,42,0.2)",
+    backgroundColor: HomeColors.cardLight,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HomeColors.border,
   },
   badgeText: {
-    color: HomeColors.accent,
+    color: HomeColors.textPrimary,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   list: {
     gap: 10,
@@ -86,6 +88,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+  bullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.35)",
   },
   taskText: {
     flex: 1,
@@ -99,17 +107,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: HomeColors.accent,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HomeColors.border,
+    backgroundColor: "transparent",
   },
   btnLabel: {
-    color: HomeColors.bg,
+    color: HomeColors.textPrimary,
     fontSize: 15,
     fontWeight: "800",
   },
   pressed: {
-    opacity: 0.9,
+    opacity: 0.88,
     transform: [{ scale: 0.98 }],
   },
 });
