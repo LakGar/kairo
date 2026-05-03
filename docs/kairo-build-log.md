@@ -72,7 +72,8 @@ Done:
 - [x] `website/lib/db.ts` re-exports `prisma` / `PrismaClient` / `Prisma` from `@kairo/db` (use `import { prisma } from "@/lib/db"` in app code).
 - [x] `website/next.config.ts` transpiles `@kairo/db` and `@kairo/shared` (Turbopack root points at monorepo root).
 - [x] **Phase 0 audit:** App Router with `website/app/layout.tsx` and `website/app/page.tsx` only — no `website/app/api/*` yet.
-- [x] **Phase 3 prep:** `website/package.json` includes `@kairo/shared`; `npm run typecheck` runs `tsc --noEmit`; `website/src/lib/current-user.ts` (`x-kairo-user-id`); `website/src/server/activity/activity-actions.ts`; `website/.env.example` documents `DATABASE_URL` + dev header (removed misplaced Clerk key from example).
+- [x] **Phase 3 prep:** `website/package.json` includes `@kairo/shared` + `@prisma/client`; `npm run typecheck` runs `tsc --noEmit`; `website/src/lib/current-user.ts` (`x-kairo-user-id`); `website/src/server/activity/activity-actions.ts`; `website/.env.example` documents `DATABASE_URL` + dev header (removed misplaced Clerk key from example).
+- [x] **Phase 3:** Server layer under `website/src/server/` — `activity` (`logActivity`), `events` (create/update/publish/cancel/join + queries), `teams` (create/join/leave + queries), `matches` (create/score/winner + queries), `proof` (prompts/submit/approve/reject + queries), `stakes` (create/complete/fail + queries); `website/src/lib/result.ts`, `slug.ts`; path aliases `@/server/*`, `@/src/*` in `website/tsconfig.json`.
 
 In Progress:
 
@@ -80,7 +81,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 3:** `website/src/server/*` services + `slug` / `result` helpers per MVP plan.
 - [ ] **Phase 4:** `website/app/api/*` routes for mobile + `getCurrentUserIdFromRequest` until Clerk server auth exists.
 - [ ] Website auth strategy if distinct from mobile.
 
@@ -509,6 +509,60 @@ Issues:
 Commit:
 
 - `fc91216` — `chore: prep website for phase 3 (shared, user stub, gitignore)`
+
+### 2026-05-03 — PHASE 3: Website server services (`@/lib/db`, `@kairo/shared`)
+
+Area:
+
+- Website / Next.js / `website`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; inspected Prisma schema + `@kairo/shared` validators.
+
+Planned Work:
+
+- Implement MVP services per roadmap: events, teams, matches, proof, stakes, activity logging; `result` + `slug` helpers; `currentUserId` passed in (no Clerk on web yet).
+
+Files Changed:
+
+- `website/src/lib/result.ts`, `website/src/lib/slug.ts`
+- `website/src/server/activity/activity.service.ts`
+- `website/src/server/events/*`, `teams/*`, `matches/*`, `proof/*`, `stakes/*`
+- `website/tsconfig.json` — path aliases `@/server/*`, `@/src/*`
+- `website/package.json` — `@prisma/client` for enums in services
+- `docs/kairo-build-log.md`
+- `package-lock.json` (if updated)
+
+Commands Run:
+
+```bash
+npm install
+npm run typecheck -w website
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck -w website` — passed.
+- [x] `npm run lint -w website` — passed.
+- [ ] `npm run db:generate` — not required (schema unchanged).
+
+Result:
+
+- Services return `Result<T>` (`ok` / `err`); mutations append `ActivityLog` via `ActivityAction` constants; joins enforce caps/flags; team flows use transactions; match winner validated against home/away.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `website: add event service layer`
+
+Next:
+
+- **PHASE 4:** Thin API route handlers calling these services + `x-kairo-user-id` dev header.
 
 ---
 
