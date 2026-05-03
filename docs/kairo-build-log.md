@@ -17,16 +17,43 @@ After finishing this task:
 
 # Kairo Build Log
 
+## Kairo MVP build plan (Phases 0–12)
+
+Single roadmap; execute one phase per session unless explicitly combined.
+
+| Phase | Area | Goal (short) |
+|------:|------|----------------|
+| 0 | Shared | Repo audit, build log, git truth |
+| 1 | Database | MVP Prisma schema audit/finalize |
+| 2 | Shared | `packages/shared` or defer validators to website |
+| 3 | Website | Server services (events, teams, matches, proof, stakes, activity) |
+| 4 | Website | REST API routes for mobile + dev `x-kairo-user-id` |
+| 5 | Database | `db:seed` + demo data |
+| 6 | Mobile | API client + types + `EXPO_PUBLIC_API_URL` |
+| 7 | Mobile | Event discovery UI |
+| 8 | Mobile | Create event flow |
+| 9 | Mobile | Join / team flows |
+| 10 | Mobile | Organizer tools MVP on event detail |
+| 11 | Mobile | Proof submit (text/URL only) |
+| 12 | Mobile + Website | E2E polish, checks, log closure |
+
+**Non-goals (MVP):** payments, wagering language, real media upload, AI brackets, push notifications, full admin UI, production mobile↔website auth until wired.
+
+**Positioning:** Luma = register; Kairo = participate. Copy: task, challenge, reward, prize, donation, entry fee — avoid bet/wager/odds/gambling/payout framing.
+
+---
+
 ## Project Areas
 
 ### Database / Prisma / packages/db
 
 Done:
 
-- [x] Prisma schema lives in `packages/db/prisma/schema.prisma`.
+- [x] Prisma schema lives in `packages/db/prisma/schema.prisma` (single schema; no `website/prisma`).
 - [x] `@kairo/db` package exists (`packages/db`).
 - [x] Root scripts include `db:generate`, `db:migrate`, `db:push`, `db:studio`.
 - [x] Prisma client generates from the DB package.
+- [x] **Phase 0 audit (2026-05-02):** On disk, schema includes models `User`, `Profile`, `Event`, `EventParticipant`, `Team`, `TeamMember`, `Bracket`, `Match`, `ProofPrompt`, `ProofSubmission`, `Stake`, `ActivityLog` and enums `UserRole` through `StakeStatus` as required for MVP foundation.
 
 In Progress:
 
@@ -34,16 +61,17 @@ In Progress:
 
 Left:
 
-- [ ] Apply migrations or `db:push` against a real PostgreSQL instance when ready.
-- [ ] Optional: seed scripts or dev fixtures for local testing.
+- [ ] **Phase 1:** Schema audit + any MVP adjustments (indexes, relations, no overbuild).
+- [ ] **Phase 5:** `db:seed` script and demo data (`db:seed` not in root scripts yet).
+- [ ] Apply migrations or `db:push` when `DATABASE_URL` is set and intentional.
 
 ### Website / Next.js / website
 
 Done:
 
-- [x] `website/lib/db.ts` re-exports `prisma` from `@kairo/db`.
+- [x] `website/lib/db.ts` re-exports `prisma` / `PrismaClient` / `Prisma` from `@kairo/db` (use `import { prisma } from "@/lib/db"` in app code).
 - [x] `website/next.config.ts` transpiles `@kairo/db` (and Turbopack root points at monorepo root).
-- [x] App Router present with root `app/layout.tsx` and `app/page.tsx`.
+- [x] **Phase 0 audit:** App Router with `website/app/layout.tsx` and `website/app/page.tsx` only — no `website/app/api/*` yet.
 
 In Progress:
 
@@ -51,18 +79,23 @@ In Progress:
 
 Left:
 
-- [ ] API routes or server actions for events, users, and registrations.
-- [ ] Auth aligned with product (Clerk or other) for the **website** if distinct from mobile.
-- [ ] `npm run typecheck` script at repo or website level (optional; `next build` runs TypeScript today).
+- [ ] **Phase 3:** `website/src/server/*` services + `slug` / `result` helpers per MVP plan.
+- [ ] **Phase 4:** `website/app/api/*` routes for mobile + dev header `x-kairo-user-id` (TODO until Clerk server auth on web).
+- [ ] **Phase 0 git:** Entire `website/` tree is **untracked** locally — must be committed for GitHub to match disk.
+- [ ] Website auth strategy if distinct from mobile.
+- [ ] Optional root/website `typecheck` script (`next build` already runs TypeScript).
 
 ### Mobile / Expo / mobile
 
 Done:
 
-- [x] Auth routes live under `mobile/app/(auth)/` (sign-in, sign-up, index, layout).
-- [x] Main tabs live under `mobile/app/(tabs)/`.
-- [x] Onboarding routes live under `mobile/app/(onboarding)/`.
-- [x] Clerk auth uses `@clerk/expo` and `@clerk/expo/legacy` hooks for sign-in and sign-up flow.
+- [x] **Phase 0 audit:** `mobile/package.json` — `main`: `expo-router/entry`; Expo SDK ~54; `expo-router`, `@clerk/expo`, fonts, etc.
+- [x] Auth screens: `mobile/app/(auth)/` — `_layout.tsx`, `index.tsx`, `sign-in.tsx`, `sign-up.tsx`.
+- [x] Tabs: `mobile/app/(tabs)/` — `_layout.tsx`, `index.tsx`.
+- [x] Onboarding: `mobile/app/(onboarding)/` — `_layout.tsx`, `index.tsx`, `finish.tsx` (plus `mobile/src/features/onboarding/*`).
+- [x] Root `mobile/app/_layout.tsx` — `ClerkProvider`, `tokenCache`, `Slot`, `unstable_settings.anchor` `(tabs)`.
+- [x] Clerk: `@clerk/expo` + `@clerk/expo/legacy` where used in sign-in/sign-up.
+- [x] **Navigation (verified in source):** `sign-in.tsx` → `router.replace("/(tabs)")`; `sign-up.tsx` → `router.replace("/(onboarding)")`; completing onboarding → `router.replace("/(tabs)")` in `use-onboarding-flow.tsx` (`finishOnboarding`). Note: `finish.tsx` is a legacy `Redirect` to `/(onboarding)`; real completion uses the hook above.
 
 In Progress:
 
@@ -70,14 +103,19 @@ In Progress:
 
 Left:
 
-- [ ] Finalize app location in monorepo (`mobile` vs `apps/mobile`) and workspace wiring if moved.
-- [ ] Mobile API consumption against the Next.js / shared backend when APIs exist.
+- [ ] **Phase 0 git:** `mobile/` is **untracked** locally — commit + push when ready.
+- [ ] **Phases 6–11:** API client, events UI, create/join/organizer/proof flows per MVP plan.
+- [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
+- [ ] `EXPO_PUBLIC_API_URL` and server-backed onboarding persistence (later).
 
 ### Shared / Packages / Types
 
 Done:
 
-- [x] Monorepo workspace includes `packages/*` and `website` (root `package.json`).
+- [x] Root `package.json` workspaces: `apps/*`, `packages/*`, `website` (note: **`mobile` is not a workspace package** — lives alongside; use `mobile/package-lock.json` for mobile-only installs unless changed).
+- [x] **Phase 0 audit:** Root `package-lock.json` is the lockfile for workspace installs; `website/` has no nested `package-lock.json` in tree.
+- [x] `origin` → `https://github.com/LakGar/kairo.git` (fetch/push).
+- [x] `docs/kairo-build-log.md` is the **main** build source of truth; `docs/onboarding-build-log.md` exists for onboarding-only notes.
 
 In Progress:
 
@@ -85,8 +123,9 @@ In Progress:
 
 Left:
 
-- [ ] Shared validators/types package after backend services stabilize.
-- [ ] Optional: `packages/shared` for Zod schemas and DTOs consumed by web and mobile.
+- [ ] **Critical git gap (Phase 0):** On this machine, `git status` shows `packages/`, `website/`, `mobile/` as **untracked** and many **deleted** files at repo root (old single Next app). **`origin/main` may not yet contain the monorepo layout seen on disk** — needs a dedicated cleanup + add + commit + push (outside Phase 0 doc-only scope unless expanded).
+- [ ] **Phase 2:** `packages/shared` or defer validators under `website/src/server` (per plan).
+- [ ] Product language guardrails in UI copy (no gambling framing).
 
 ---
 
@@ -226,6 +265,72 @@ Commit:
 Next:
 
 - Commit and push remaining monorepo work when ready (large unstaged/untracked tree locally is not yet on `origin`).
+
+### 2026-05-02 — PHASE 0: Repo audit and MVP build log update
+
+Area:
+
+- Shared / Packages / Types (process, documentation, cross-cutting git/repo truth)
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status` — see Result (untracked `mobile/`, `packages/`, `website/`; deleted legacy root Next files; branch `main` **up to date with `origin/main`** for **committed** history only).
+- [x] Inspected `package.json` (root), `packages/db/package.json`, `packages/db/prisma/schema.prisma` (partial + model list), `website/package.json`, `website/lib/db.ts`, `mobile/package.json`, `mobile/app/_layout.tsx`, glob/file lists for `mobile/app/(auth)`, `(tabs)`, `(onboarding)`; grepped `router.replace` in mobile.
+- [x] Confirmed no duplicate Prisma schema under `website/prisma` (none present).
+- [x] Confirmed `docs/onboarding-build-log.md` exists.
+
+Planned Work:
+
+- Record consolidated MVP Phases 0–12 and Phase 0 audit outcome.
+- No application code changes in Phase 0.
+
+Files Changed:
+
+- `docs/kairo-build-log.md` — MVP phase table, refreshed Project Areas from inspection, this work session.
+
+Commands Run:
+
+```bash
+git status
+git remote -v
+git log -1 --oneline
+# File reads / greps as described in Before Checklist (no npm scripts run for Phase 0).
+git add docs/kairo-build-log.md
+git commit -m "docs: update MVP build log (phase 0 audit)"
+git push
+```
+
+Tests / Checks:
+
+- [ ] Typecheck — not run (documentation-only phase).
+- [ ] Lint — not run.
+- [ ] `npm run db:generate` — not run (schema unchanged).
+
+Result:
+
+- **Disk layout:** `packages/db`, `website`, `mobile` match monorepo expectations; Prisma only in `packages/db/prisma/schema.prisma`.
+- **Git vs disk:** Large divergence — monorepo app folders **untracked**; root still shows removals from prior single-app layout. Plan a follow-up chunk to `git add` + commit `packages/`, `website/`, `mobile/` (and resolve root deletions / `.gitignore`) so GitHub matches local MVP tree.
+- **Routing:** Sign-in → `/(tabs)`; sign-up → `/(onboarding)`; onboarding completion → `/(tabs)` via `finishOnboarding` in `use-onboarding-flow.tsx` (not via `finish.tsx` redirect target).
+
+Issues:
+
+- (none for Phase 0 scope.)
+
+After Checklist:
+
+- [x] Updated Done / Left / MVP plan in `docs/kairo-build-log.md`.
+- [x] Added this work session.
+- [x] Ran `git status` (recorded above).
+
+Commit:
+
+- `docs: update MVP build log (phase 0 audit)`
+
+Next:
+
+- **PHASE 1:** Database schema audit and finalize MVP schema in `packages/db`.
+- **Git hygiene (parallel priority):** Commit untracked monorepo paths so `origin` reflects real code.
 
 ---
 
