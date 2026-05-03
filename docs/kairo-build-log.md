@@ -827,6 +827,7 @@ Issues:
 Commit:
 
 - `52de809` — `mobile: add create event draft flow`
+- `3d792d4` — `docs: record Phase 8 commit hash`
 
 Next:
 
