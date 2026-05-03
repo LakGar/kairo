@@ -669,7 +669,7 @@ Issues:
 
 Commit:
 
-- `6c4be65` — `db: add MVP seed script and db:seed wiring`
+- `6c4be65` — `db: add MVP seed script and db:seed wiring` (build log commit hash corrected in `8294d9e` on `main`).
 
 Next:
 
