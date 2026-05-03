@@ -8,6 +8,7 @@ import {
   EventStatus,
   EventVisibility,
   MatchStatus,
+  Prisma,
   PrismaClient,
   ProofStatus,
   ProofType,
@@ -29,12 +30,29 @@ const SEED_USER_EMAILS = [
 const SEED_EVENT_SLUGS = ["kairo-pickleball-night", "founder-basketball-run"] as const;
 
 async function cleanup() {
-  await prisma.event.deleteMany({
-    where: { slug: { in: [...SEED_EVENT_SLUGS] } },
-  });
-  await prisma.user.deleteMany({
-    where: { email: { in: [...SEED_USER_EMAILS] } },
-  });
+  try {
+    await prisma.event.deleteMany({
+      where: { slug: { in: [...SEED_EVENT_SLUGS] } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { in: [...SEED_USER_EMAILS] } },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2021") {
+      throw new Error(
+        [
+          "Kairo tables are missing or the database was never migrated to the current Prisma schema.",
+          "From the repo root run:",
+          "  npm run db:push",
+          "",
+          "If `db:push` fails on incompatible existing rows (e.g. old User rows without `email`), reset this dev database then seed (wipes all data in that database):",
+          "  npm run db:dev:fresh",
+        ].join("\n"),
+        { cause: e },
+      );
+    }
+    throw e;
+  }
 }
 
 async function main() {
