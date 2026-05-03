@@ -121,6 +121,8 @@ Done:
 - **App run:** Not executed in this agent session (Expo already running locally per user); visually verify Home tab + navigation on device.
 - **Routes used from home (typed):** `/(tabs)/create`, `/(tabs)/events`, `/(tabs)/events/[placeholder]`, `/(tabs)/settings`; Discover remains `(home)/index` via tab switch, not pushed from Join (changed to events list for typed routes).
 - **TODOs left:** Wire mock → API; real `eventId` for View Event; proof inbox / submit flows; invite accept/decline; replace remote images with CDN/event covers.
+- **Commit:** `99d8a60` — `mobile: build premium home dashboard`
+- **Push:** `git push origin main` — succeeded (`466f880..99d8a60`).
 
 In Progress:
 
