@@ -131,9 +131,17 @@ Done:
 - **Before:** `git status` (2026-05-03): large dirty tree across mobile/website; this session targets **only** `mobile/src/features/chat/*`, `mobile/app/(tabs)/(home)/chat.tsx`, and this log.
 - **Route note:** Chat tab file is `mobile/app/(tabs)/(home)/chat.tsx` (Native Tabs trigger `name="chat"` under `(home)`). There is **no** separate `mobile/app/(tabs)/chat.tsx` — do not add a duplicate stack/tab route.
 
-In Progress:
+**After (2026-05-03):**
 
-- [ ] Sleek Chat tab UI (2026-05-03)
+- **Done:** Sleek Chat tab — `HomeColors` palette, `TabScreenHeader` + `chrome="feedDark"`, subtitle + search + horizontal category chips (active = white/black), “Needs attention” proof priority card on **All** + **Proof** filters, mock thread list (avatars, badges, unread pills, optional event label), empty state, `Pressable` rows + Review (`console.log` until routes exist).
+- **Files added:** `mobile/src/features/chat/chat.types.ts`, `chat.mock.ts`, `components/chat-category-chips.tsx`, `chat-priority-card.tsx`, `chat-thread-card.tsx`, `chat-empty-state.tsx`.
+- **Files changed:** `mobile/app/(tabs)/(home)/chat.tsx`, `docs/kairo-build-log.md`.
+- **Commands run:** `npm run typecheck` (mobile) — pass; `npm run lint` (mobile) — pass with 4 pre-existing warnings in `onboarding-welcome-hero.tsx`.
+- **App run:** Not started in this session (Expo may already be running locally); visually verify **Chat** tab.
+- **Route visually checked (source):** `/(tabs)/(home)/chat` (Native Tabs `chat` screen).
+- **TODOs left:** Replace mock Unsplash URLs; add `/(tabs)/(home)/chat/[threadId]` (or stack screen) and wire `router.push` from row + proof review; real-time messaging / API later.
+- **Commit:** `PLACEHOLDER_COMMIT`
+- **Push:** `PLACEHOLDER_PUSH`
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Home UI refinement
 
