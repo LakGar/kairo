@@ -150,8 +150,8 @@ In Progress:
 - **Header:** Single greeting column (no duplicate avatar); `TabScreenHeader` gains optional `notificationBadgeCount` (red count pill) wired from `MOCK_NOTIFICATION_BADGE` in `dashboard.tsx`.
 - **Handlers:** `console.log` for Submit proof / Review inbox stubs + `TODO`s; `router.push` for View event + commitment rows with mock ids; notifications → `/(tabs)/notifications`.
 - **Commands:** `npm run typecheck`, `npm run lint` (mobile) — pass (same unrelated onboarding warnings).
-- **Commit:** (filled after commit)
-- **Push:** (filled after push)
+- **Commit:** `d231cbd` — `mobile: refine home dashboard UI`
+- **Push:** (pending)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
