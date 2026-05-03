@@ -391,6 +391,7 @@ Commit:
 
 - `272635a` — `db: finalize Kairo MVP schema`
 - `a8c7a16` — `db: add @kairo/db package manifest and Prisma client entry`
+- `60038bc` — `docs: update Phase 1 log (db package files commit)`
 
 Next:
 
