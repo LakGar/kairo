@@ -3,21 +3,12 @@ import { useUser } from "@clerk/expo";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useUIPalette } from "@/hooks/use-ui-palette";
-import { CreateEventForm } from "@/src/features/events/create-event-form";
 
 export type TabScreenHeaderVariant = "home" | "discover" | "chat";
 
@@ -78,7 +69,6 @@ export function TabScreenHeader({
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const colorScheme = useColorScheme() ?? "light";
   const scheme = colorScheme === "dark" ? "dark" : "light";
   const themePrimary = useThemeColor({}, "text");
@@ -109,20 +99,6 @@ export function TabScreenHeader({
         },
       ]}
     >
-      <Modal
-        visible={createModalOpen}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setCreateModalOpen(false)}
-      >
-        <CreateEventForm
-          sheetMode={{ onRequestClose: () => setCreateModalOpen(false) }}
-          onSuccess={(event) => {
-            setCreateModalOpen(false);
-            router.push(`/(tabs)/events/${event.id}`);
-          }}
-        />
-      </Modal>
       <BlurView
         pointerEvents="none"
         tint={headerBlurTint}
@@ -170,7 +146,7 @@ export function TabScreenHeader({
                 style={styles.iconBtn}
                 accessibilityRole="button"
                 accessibilityLabel="Create"
-                onPress={() => setCreateModalOpen(true)}
+                onPress={() => router.push("/(tabs)/events/create")}
               >
                 <Ionicons name="add" size={26} color={primary} />
               </Pressable>

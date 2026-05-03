@@ -15,6 +15,7 @@ export default function EventsStackLayout() {
           headerBackTitle: "My events",
         }}
       />
+      <Stack.Screen name="create" options={{ headerShown: false, title: "Create event" }} />
     </Stack>
   );
 }

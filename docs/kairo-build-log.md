@@ -161,6 +161,23 @@ Done:
 - **Commit:** `d231cbd` — `mobile: refine home dashboard UI`
 - **Push:** `git push origin main` — succeeded (`76cd75b..d231cbd`); follow-up `4776083` — `docs: record home dashboard UI push`.
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Premium create event screen
+
+- **Task:** Build premium Create Event screen (mock/local state, validation, glassy dark UI); route under events stack; Home header + routes to create; no backend/auth/onboarding/DB/website changes in scope.
+- **Before:** `git status` — large mixed dirty tree; this session commits **only** create-event feature files, `tab-screen-header` (+) navigation, `(tabs)/create` + `events` stack registration, and this log.
+
+**After (2026-05-03):**
+
+- **Done:** `PremiumCreateEventScreen` — header (back / centered title / check), cover gradient + FAB `console.log` + TODO image picker, pill name/location/description, time panel (defaults + TODO picker logs), Visibility / Participation / Format / Stakes (conditional notes, no betting copy) / Proof (conditional prompt) / Capacity (gated by toggles) / Access (approval switch + price row TODO), full-width Create button; `validateCreateEventForm`; errors only after submit; clear on edit; success banner + payload `console.log`; TODO backend API comment.
+- **Route:** `/(tabs)/events/create` (`mobile/app/(tabs)/events/create.tsx`); `(tabs)/create` tab renders same screen; `TabScreenHeader` home + opens `router.push("/(tabs)/events/create")` (modal + API `CreateEventForm` removed from header).
+- **Files added:** `mobile/src/features/events/create-event.types.ts`, `create-event-validation.ts`, `premium-create-event-screen.tsx`, `components/create-event-*.tsx` (pill, section, option-card, toggle-row), `mobile/app/(tabs)/events/create.tsx`.
+- **Files changed:** `mobile/app/(tabs)/create.tsx`, `mobile/app/(tabs)/events/_layout.tsx`, `mobile/components/tab-screen-header.tsx`, `docs/kairo-build-log.md`.
+- **Commands run:** `npm run typecheck` (mobile) — pass; `npm run lint` (mobile) — pass (onboarding warnings pre-existing).
+- **Route visually checked:** Source — `/(tabs)/events/create`, `/(tabs)/create`; device not re-run in agent.
+- **TODOs left:** Wire `POST /events` (or client) when ready; image + datetime pickers; entry fee flow; replace `console.log` stubs.
+- **Commit:** `585048e` — `mobile: build premium create event screen`
+- **Push:** `git push origin main` — succeeded (`b3bde7e..585048e`, amend included build-log push line).
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
