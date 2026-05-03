@@ -9,14 +9,23 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { EventJoinSection } from "@/src/features/events/event-join-section";
+import { EventTeamsSection } from "@/src/features/events/event-teams-section";
 import { formatEventRange } from "@/src/features/events/format-event-range";
 import { useEventDetail } from "@/src/features/events/use-event-detail";
+import { useEventTeams } from "@/src/features/events/use-event-teams";
 
 export default function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const navigation = useNavigation();
   const router = useRouter();
   const { event, loading, error, reload } = useEventDetail(eventId);
+  const {
+    teams,
+    loading: teamsLoading,
+    error: teamsError,
+    refresh: refreshTeams,
+  } = useEventTeams(eventId);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -97,6 +106,17 @@ export default function EventDetailScreen() {
           {event._count.matches}
         </ThemedText>
       </ThemedView>
+
+      <EventJoinSection event={event} onJoined={() => void reload()} />
+
+      <EventTeamsSection
+        event={event}
+        teams={teams}
+        teamsLoading={teamsLoading}
+        teamsError={teamsError}
+        onTeamsChanged={() => void refreshTeams()}
+        onEventChanged={() => void reload()}
+      />
     </ScrollView>
   );
 }

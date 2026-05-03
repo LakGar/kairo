@@ -99,6 +99,7 @@ Done:
 - [x] **Phase 6 (2026-05-02):** `mobile/src/api/` — `createKairoApi` / `createKairoApiFromEnv` for all Phase 4 REST paths; JSON envelope + `KairoApiError`; DTO types for events, teams, matches, proof, stakes; dev `x-kairo-user-id` from `EXPO_PUBLIC_KAIRO_DEV_USER_ID` or `expo.extra.devUserId`; base URL from `EXPO_PUBLIC_API_URL` or `expo.extra.apiUrl` (`app.config.ts` merges `app.json` + extra). `@kairo/shared` via `file:../packages/shared` for input types re-exported from `@/src/api`. `mobile/.env.example`; `npm run typecheck`.
 - [x] **Phase 7 (2026-05-02):** Event discovery — `mobile/src/features/events/` (`useUpcomingEvents`, `useEventDetail`, `EventListRow`, `format-event-range`); `(tabs)/index` lists `GET /api/events` with pull-to-refresh, empty state, config/API errors + retry; `(tabs)/events/[eventId]` shows `GET /api/events/:id` (about, location, organizer, counts); `(tabs)/_layout` registers Stack screens with header sign-out.
 - [x] **Phase 8 (2026-05-02):** Create event — `CreateEventForm` + `create-event-defaults`; `createEventSchema` (`@kairo/shared`) client validation; `POST /api/events` via `createKairoApiFromEnv`; `(tabs)/create` draft flow, `router.replace` to new event detail; Discover header **Create** + **Sign out**; `.env.example` notes dev user id required for creates.
+- [x] **Phase 9 (2026-05-02):** Join + teams on event detail — `useEventTeams`, `EventJoinSection` (`POST /api/events/:id/join` with PLAYER/WATCHER/VOLUNTEER + optional note; draft/cancelled copy), `EventTeamsSection` (list teams, `joinTeam` / `leaveTeam`, `createTeam` with `createTeamSchema`); `(tabs)/events/[eventId]` refreshes event + teams after mutations.
 
 In Progress:
 
@@ -106,7 +107,7 @@ In Progress:
 
 Left:
 
-- [ ] **Phases 9–11:** Join/team flows, organizer tools, proof submit per MVP plan.
+- [ ] **Phases 10–11:** Organizer tools on event detail, proof submit per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Server-backed onboarding persistence (later).
 
@@ -727,7 +728,7 @@ Commit:
 
 Next:
 
-- **PHASE 9:** Join / team flows on mobile (Phases 7–8 complete on `main`).
+- **PHASE 10:** Organizer tools on mobile (Phases 7–9 complete on `main`).
 
 ### 2026-05-02 — PHASE 7: Mobile event discovery UI
 
@@ -779,7 +780,7 @@ Commit:
 
 Next:
 
-- **PHASE 9:** Join / team flows on mobile.
+- **PHASE 10:** Organizer tools on mobile.
 
 ### 2026-05-02 — PHASE 8: Mobile create event (draft)
 
@@ -831,7 +832,55 @@ Commit:
 
 Next:
 
-- **PHASE 9:** Join / team flows on mobile.
+- **PHASE 10:** Organizer tools on mobile.
+
+### 2026-05-02 — PHASE 9: Mobile join event + teams
+
+Area:
+
+- Mobile / Expo / `mobile`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Confirmed Phase 4 routes: `join`, `teams` POST/GET, `teams/[id]/join|leave`.
+
+Planned Work:
+
+- Event detail: join as player/watcher/volunteer; list teams; create team; join/leave team; dev header messaging.
+
+Files Changed:
+
+- `mobile/src/features/events/use-event-teams.ts`, `event-join-section.tsx`, `event-teams-section.tsx`
+- `mobile/app/(tabs)/events/[eventId].tsx`
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+cd mobile && npm run typecheck && npm run lint
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`).
+
+Result:
+
+- On a **published** event, users with dev id can **Join** with role + note, manage **Teams** (create, join, leave). Draft/cancelled paths show copy; teams hidden or explained when `allowTeams` is false.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- (record after `git commit`)
+
+Next:
+
+- **PHASE 10:** Organizer tools MVP on event detail.
 
 ---
 
