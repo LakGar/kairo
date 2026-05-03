@@ -669,7 +669,7 @@ Issues:
 
 Commit:
 
-- `db: add MVP seed script and db:seed wiring` — locate with `git log --oneline --grep="db: add MVP seed"`.
+- `6c4be65` — `db: add MVP seed script and db:seed wiring`
 
 Next:
 
