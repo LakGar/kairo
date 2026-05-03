@@ -140,8 +140,8 @@ Done:
 - **App run:** Not started in this session (Expo may already be running locally); visually verify **Chat** tab.
 - **Route visually checked (source):** `/(tabs)/(home)/chat` (Native Tabs `chat` screen).
 - **TODOs left:** Replace mock Unsplash URLs; add `/(tabs)/(home)/chat/[threadId]` (or stack screen) and wire `router.push` from row + proof review; real-time messaging / API later.
-- **Commit:** `PLACEHOLDER_COMMIT`
-- **Push:** `PLACEHOLDER_PUSH`
+- **Commit:** `100645c` — `mobile: build sleek chat tab`
+- **Push:** `git push origin main` — succeeded (`22f8c09..100645c`).
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Home UI refinement
 
