@@ -774,6 +774,7 @@ Issues:
 Commit:
 
 - `8879c9c` — `mobile: add event discovery UI and detail screen`
+- `7a753a8` — `docs: record Phase 7 event discovery commit hash`
 
 Next:
 
