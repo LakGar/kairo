@@ -876,7 +876,7 @@ Issues:
 
 Commit:
 
-- (record after `git commit`)
+- `cd2e490` — `mobile: add join event and team flows on event detail`
 
 Next:
 
