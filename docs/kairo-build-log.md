@@ -773,7 +773,7 @@ Issues:
 
 Commit:
 
-- (record after `git commit`)
+- `8879c9c` — `mobile: add event discovery UI and detail screen`
 
 Next:
 
