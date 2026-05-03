@@ -5,6 +5,7 @@ import { err, ok, type Result } from "@/src/lib/result";
 import { ActivityAction } from "@/server/activity/activity-actions";
 import { logActivity } from "@/server/activity/activity.service";
 import {
+  queryProofPromptsForEvent,
   queryProofSubmissionById,
   queryProofSubmissionsForEvent,
   queryProofSubmissionsForMatch,
@@ -185,6 +186,11 @@ async function setProofReviewStatus(
   });
 
   return ok({ id: updated.id, status: updated.status });
+}
+
+export async function getProofPromptsForEvent(eventId: string) {
+  const list = await queryProofPromptsForEvent(eventId);
+  return ok(list);
 }
 
 export async function getProofForEvent(eventId: string) {

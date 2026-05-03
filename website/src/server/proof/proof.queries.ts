@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/db";
 
+export async function queryProofPromptsForEvent(eventId: string) {
+  return prisma.proofPrompt.findMany({
+    where: { eventId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function queryProofSubmissionsForEvent(eventId: string) {
   return prisma.proofSubmission.findMany({
     where: { eventId },

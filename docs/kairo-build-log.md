@@ -74,6 +74,7 @@ Done:
 - [x] **Phase 0 audit:** App Router with `website/app/layout.tsx` and `website/app/page.tsx` only — no `website/app/api/*` yet.
 - [x] **Phase 3 prep:** `website/package.json` includes `@kairo/shared` + `@prisma/client`; `npm run typecheck` runs `tsc --noEmit`; `website/src/lib/current-user.ts` (`x-kairo-user-id`); `website/src/server/activity/activity-actions.ts`; `website/.env.example` documents `DATABASE_URL` + dev header (removed misplaced Clerk key from example).
 - [x] **Phase 3:** Server layer under `website/src/server/` — `activity` (`logActivity`), `events` (create/update/publish/cancel/join + queries), `teams` (create/join/leave + queries), `matches` (create/score/winner + queries), `proof` (prompts/submit/approve/reject + queries), `stakes` (create/complete/fail + queries); `website/src/lib/result.ts`, `slug.ts`; path aliases `@/server/*`, `@/src/*` in `website/tsconfig.json`.
+- [x] **Phase 4:** `website/app/api/**` REST handlers — JSON `{ success, data | error }`, HTTP status from service codes; mutating routes use `requireUserId` → `x-kairo-user-id` (TODO Clerk); `website/src/lib/api-http.ts` (`fromServiceResult`, `parseJsonBody`, `requireUserId`); public reads: `GET /api/events` (upcoming), `GET /api/events/[eventId]`, lists for teams/matches/proof/stakes/prompts.
 
 In Progress:
 
@@ -81,8 +82,9 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 4:** `website/app/api/*` routes for mobile + `getCurrentUserIdFromRequest` until Clerk server auth exists.
-- [ ] Website auth strategy if distinct from mobile.
+- [ ] **Phase 5:** `db:seed` + demo data.
+- [ ] **Phase 6+:** Mobile `EXPO_PUBLIC_API_URL` client calling these routes.
+- [ ] Website auth: replace `x-kairo-user-id` with Clerk (or other) when ready.
 
 ### Mobile / Expo / mobile
 
@@ -562,7 +564,62 @@ Commit:
 
 Next:
 
-- **PHASE 4:** Thin API route handlers calling these services + `x-kairo-user-id` dev header.
+- **PHASE 5:** Seed script + demo data.
+
+### 2026-05-03 — PHASE 4: Website REST API for mobile
+
+Area:
+
+- Website / Next.js / `website`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Confirmed Phase 3 services exist; no duplicate Prisma schema.
+
+Planned Work:
+
+- Add `app/api/**` route handlers per MVP list; shared HTTP helpers; dev `x-kairo-user-id` via `requireUserId`.
+
+Files Changed:
+
+- `website/src/lib/api-http.ts` — `fromServiceResult`, `requireUserId`, `parseJsonBody`, `jsonError`.
+- `website/app/api/events/route.ts`, `events/[eventId]/route.ts`, `.../publish`, `.../cancel`, `.../join`, `.../teams`, `.../matches`, `.../proof-prompts`, `.../proof`, `.../stakes`.
+- `website/app/api/teams/[teamId]/join/route.ts`, `.../leave/route.ts`.
+- `website/app/api/matches/[matchId]/score/route.ts`, `.../winner/route.ts`.
+- `website/app/api/proof/[proofSubmissionId]/approve/route.ts`, `.../reject/route.ts`.
+- `website/src/server/proof/proof.queries.ts` + `proof.service.ts` — `getProofPromptsForEvent`.
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+npm run typecheck -w website
+npm run lint -w website
+cd website && npm run build
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck -w website` — passed.
+- [x] `npm run lint -w website` — passed.
+- [x] `npm run build` (website) — passed; route table lists all new API routes.
+
+Result:
+
+- Mobile can call `EXPO_PUBLIC_API_URL` + paths below; mutating requests need `x-kairo-user-id: <User.cuid>` until Clerk replaces it.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `website: add mobile API routes` (hash recorded after push)
+
+Next:
+
+- **PHASE 5:** `db:seed` + demo data; **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
 
 ---
 
