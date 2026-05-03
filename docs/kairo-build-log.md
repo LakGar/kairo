@@ -70,8 +70,9 @@ Left:
 Done:
 
 - [x] `website/lib/db.ts` re-exports `prisma` / `PrismaClient` / `Prisma` from `@kairo/db` (use `import { prisma } from "@/lib/db"` in app code).
-- [x] `website/next.config.ts` transpiles `@kairo/db` (and Turbopack root points at monorepo root).
+- [x] `website/next.config.ts` transpiles `@kairo/db` and `@kairo/shared` (Turbopack root points at monorepo root).
 - [x] **Phase 0 audit:** App Router with `website/app/layout.tsx` and `website/app/page.tsx` only — no `website/app/api/*` yet.
+- [x] **Phase 3 prep:** `website/package.json` includes `@kairo/shared`; `npm run typecheck` runs `tsc --noEmit`; `website/src/lib/current-user.ts` (`x-kairo-user-id`); `website/src/server/activity/activity-actions.ts`; `website/.env.example` documents `DATABASE_URL` + dev header (removed misplaced Clerk key from example).
 
 In Progress:
 
@@ -80,10 +81,8 @@ In Progress:
 Left:
 
 - [ ] **Phase 3:** `website/src/server/*` services + `slug` / `result` helpers per MVP plan.
-- [ ] **Phase 4:** `website/app/api/*` routes for mobile + dev header `x-kairo-user-id` (TODO until Clerk server auth on web).
-- [ ] **Phase 0 git:** Entire `website/` tree is **untracked** locally — must be committed for GitHub to match disk.
+- [ ] **Phase 4:** `website/app/api/*` routes for mobile + `getCurrentUserIdFromRequest` until Clerk server auth exists.
 - [ ] Website auth strategy if distinct from mobile.
-- [ ] Optional root/website `typecheck` script (`next build` already runs TypeScript).
 
 ### Mobile / Expo / mobile
 
@@ -96,6 +95,7 @@ Done:
 - [x] Root `mobile/app/_layout.tsx` — `ClerkProvider`, `tokenCache`, `Slot`, `unstable_settings.anchor` `(tabs)`.
 - [x] Clerk: `@clerk/expo` + `@clerk/expo/legacy` where used in sign-in/sign-up.
 - [x] **Navigation (verified in source):** `sign-in.tsx` → `router.replace("/(tabs)")`; `sign-up.tsx` → `router.replace("/(onboarding)")`; completing onboarding → `router.replace("/(tabs)")` in `use-onboarding-flow.tsx` (`finishOnboarding`). Note: `finish.tsx` is a legacy `Redirect` to `/(onboarding)`; real completion uses the hook above.
+- [x] **Phase 3 prep:** `mobile/.gitignore` ignores `.env` (not only `.env*.local`) so `mobile/.env` cannot be committed accidentally.
 
 In Progress:
 
@@ -103,7 +103,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 0 git:** `mobile/` is **untracked** locally — commit + push when ready.
 - [ ] **Phases 6–11:** API client, events UI, create/join/organizer/proof flows per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] `EXPO_PUBLIC_API_URL` and server-backed onboarding persistence (later).
@@ -117,6 +116,7 @@ Done:
 - [x] `origin` → `https://github.com/LakGar/kairo.git` (fetch/push).
 - [x] `docs/kairo-build-log.md` is the **main** build source of truth; `docs/onboarding-build-log.md` exists for onboarding-only notes.
 - [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports).
+- [x] **Phase 3 prep:** Root `.gitignore` restored/expanded for monorepo (`node_modules`, env files with `!.env.example`, Next/Expo artifacts); `mobile/.gitignore` ignores `.env`.
 
 In Progress:
 
@@ -124,8 +124,7 @@ In Progress:
 
 Left:
 
-- [ ] **Critical git gap (Phase 0):** On this machine, `git status` shows `packages/`, `website/`, `mobile/` as **untracked** and many **deleted** files at repo root (old single Next app). **`origin/main` may not yet contain the monorepo layout seen on disk** — needs a dedicated cleanup + add + commit + push (outside Phase 0 doc-only scope unless expanded).
-- [ ] **Phase 3:** Add `"@kairo/shared": "*"` to `website` (and `transpilePackages` if needed) when server layer imports validators.
+- [ ] **Git cleanup:** Legacy root single-app files may still show as deleted until explicitly committed or restored; keep root layout monorepo-only.
 - [ ] Product language guardrails in UI copy (no gambling framing).
 
 ---
@@ -457,6 +456,59 @@ Commit:
 Next:
 
 - **PHASE 3:** Website server layer + `import` from `@kairo/shared` and `@/lib/db`.
+
+### 2026-05-03 — Phase 3 prep: website wiring, dev user stub, activity constants, gitignore
+
+Area:
+
+- Website / Next.js / `website`
+- Shared / Packages / Types (root ignore rules)
+- Mobile / Expo / `mobile` (`.gitignore` only)
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; verified `mobile/.env` is ignored before staging `mobile/`.
+
+Planned Work:
+
+- Add `@kairo/shared` to website + `transpilePackages`; `getCurrentUserIdFromRequest` + `ActivityAction` constants; root `.gitignore`; `npm run typecheck`; tighten mobile env ignore; fix `website/.env.example`.
+
+Files Changed:
+
+- `.gitignore` — new monorepo-oriented rules at repo root.
+- `website/package.json`, `website/next.config.ts`, `website/.env.example`, `website/src/lib/current-user.ts`, `website/src/server/activity/activity-actions.ts`
+- `mobile/.gitignore`
+- `docs/kairo-build-log.md`
+- `package-lock.json` — workspace link to `@kairo/shared` for website.
+- `package.json` (root) — monorepo workspaces + `db:*` scripts; removes legacy single-app root `package.json` content.
+- Legacy root Next app files — deleted (`src/`, `public/*.svg`, old `next.config.ts`, etc.).
+- `mobile/**` — app skeleton, assets, config, and lockfile (secrets excluded via `.gitignore`).
+
+Commands Run:
+
+```bash
+npm install
+npm run typecheck -w website
+git add … && git commit && git push
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck -w website` — passed.
+- [ ] `npm run lint -w website` — not run.
+
+Result:
+
+- Phase 3 services can import `@kairo/shared` and log via `ActivityAction`; API routes can use `getCurrentUserIdFromRequest`.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `chore: prep website for phase 3 (shared, user stub, gitignore)`
 
 ---
 
