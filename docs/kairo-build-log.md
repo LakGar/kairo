@@ -558,7 +558,7 @@ Issues:
 
 Commit:
 
-- `website: add event service layer`
+- `388edb9` — `website: add event service layer`
 
 Next:
 
