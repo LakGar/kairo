@@ -877,6 +877,7 @@ Issues:
 Commit:
 
 - `cd2e490` — `mobile: add join event and team flows on event detail`
+- `d92397d` — `docs: record Phase 9 commit hash`
 
 Next:
 
