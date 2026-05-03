@@ -106,6 +106,22 @@ Done:
 - [x] **Phase 11 (2026-05-02):** Participant proof submit — `useEventProofSubmitData` (prompts, matches, submissions), `EventProofSubmitSection` on published/live events: `submitProofSchema` + `POST /api/events/:id/proof` (TEXT / LINK / PHOTO+VIDEO via URL paste); optional match and prompt chips; “Your submissions” for the dev user; wired on event detail after teams.
 - [x] **Phase 12 (2026-05-02):** Log closure + checks — `mobile/app/_layout.tsx` duplicate/unused imports removed (lint clean); `npm run typecheck` + `npm run lint` (mobile), `npm run typecheck -w website`; sign-in second-factor flow committed (Clerk legacy `prepareSecondFactor` / `attemptSecondFactor` paths).
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile)
+
+- **Task:** Build premium home dashboard (accountability command center; mock data; no new backend).
+- **Before:** `git status` showed many unrelated modified/untracked files across mobile/website; this session targets **only** home dashboard UI under `mobile/src/features/home/*`, `mobile/app/(tabs)/(home)/dashboard.tsx`, and this log.
+- **Home route note:** Signed-in home tab is `mobile/app/(tabs)/(home)/dashboard.tsx` (Native Tabs `initialRouteName: "dashboard"`). There is **no** `mobile/app/(tabs)/index.tsx` in this layout; do not add a duplicate tabs index.
+
+**After (2026-05-03):**
+
+- **Done:** Premium home dashboard (mock UI) — score hero, next action, commitments carousel, proof inbox, streak/rank row, invites, quick actions, recent activity; design tokens `#0B0F14` + surfaces; Unsplash placeholders with TODOs in `home.mock.ts`; existing `TabScreenHeader` retained (not duplicated).
+- **Files added:** `mobile/src/features/home/home-tokens.ts`, `home.mock.ts`, `home-dashboard.tsx`, `components/*.tsx` (9 components).
+- **Files changed:** `mobile/app/(tabs)/(home)/dashboard.tsx` (replaced API-driven feed with scroll + `HomeDashboard`), `docs/kairo-build-log.md` (this session).
+- **Commands run:** `npm run typecheck` (mobile) — pass; `npm run lint` (mobile) — pass with 4 pre-existing warnings in `onboarding-welcome-hero.tsx` (unused consts), unrelated to home.
+- **App run:** Not executed in this agent session (Expo already running locally per user); visually verify Home tab + navigation on device.
+- **Routes used from home (typed):** `/(tabs)/create`, `/(tabs)/events`, `/(tabs)/events/[placeholder]`, `/(tabs)/settings`; Discover remains `(home)/index` via tab switch, not pushed from Join (changed to events list for typed routes).
+- **TODOs left:** Wire mock → API; real `eventId` for View Event; proof inbox / submit flows; invite accept/decline; replace remote images with CDN/event covers.
+
 In Progress:
 
 - [ ] (none)
