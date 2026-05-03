@@ -41,6 +41,8 @@ Single roadmap; execute one phase per session unless explicitly combined.
 
 **Positioning:** Luma = register; Kairo = participate. Copy: task, challenge, reward, prize, donation, entry fee — avoid bet/wager/odds/gambling/payout framing.
 
+**MVP mobile roadmap (2026-05-02):** Phases **6–12** are implemented for core flows against the Phase 4 API using the dev user header (`EXPO_PUBLIC_KAIRO_DEV_USER_ID`). Clerk-backed API identity and real media upload remain follow-ups per non-goals above.
+
 ---
 
 ## Project Areas
@@ -101,6 +103,8 @@ Done:
 - [x] **Phase 8 (2026-05-02):** Create event — `CreateEventForm` + `create-event-defaults`; `createEventSchema` (`@kairo/shared`) client validation; `POST /api/events` via `createKairoApiFromEnv`; `(tabs)/create` draft flow, `router.replace` to new event detail; Discover header **Create** + **Sign out**; `.env.example` notes dev user id required for creates.
 - [x] **Phase 9 (2026-05-02):** Join + teams on event detail — `useEventTeams`, `EventJoinSection` (`POST /api/events/:id/join` with PLAYER/WATCHER/VOLUNTEER + optional note; draft/cancelled copy), `EventTeamsSection` (list teams, `joinTeam` / `leaveTeam`, `createTeam` with `createTeamSchema`); `(tabs)/events/[eventId]` refreshes event + teams after mutations.
 - [x] **Phase 10 (2026-05-02):** Organizer tools on event detail — `useEventOrganizerData` (matches, proof prompts, proof submissions), `EventOrganizerSection` when `EXPO_PUBLIC_KAIRO_DEV_USER_ID` matches `event.organizerId`: publish / cancel (confirm), list matches with score + winner actions, create match (`createManualMatchSchema`), proof prompts (`createProofPromptSchema`), pending proof approve/reject; draft join copy points hosts to organizer tools; detail wires section above join/teams.
+- [x] **Phase 11 (2026-05-02):** Participant proof submit — `useEventProofSubmitData` (prompts, matches, submissions), `EventProofSubmitSection` on published/live events: `submitProofSchema` + `POST /api/events/:id/proof` (TEXT / LINK / PHOTO+VIDEO via URL paste); optional match and prompt chips; “Your submissions” for the dev user; wired on event detail after teams.
+- [x] **Phase 12 (2026-05-02):** Log closure + checks — `mobile/app/_layout.tsx` duplicate/unused imports removed (lint clean); `npm run typecheck` + `npm run lint` (mobile), `npm run typecheck -w website`; sign-in second-factor flow committed (Clerk legacy `prepareSecondFactor` / `attemptSecondFactor` paths).
 
 In Progress:
 
@@ -108,7 +112,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 11:** Participant proof submit (text/URL) per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Server-backed onboarding persistence (later).
 
@@ -882,7 +885,7 @@ Commit:
 
 Next:
 
-- **PHASE 11:** Participant proof submit on mobile.
+- **PHASES 11–12:** See session at end of log (proof submit + closure).
 
 ### 2026-05-02 — PHASE 10: Mobile organizer tools on event detail
 
@@ -915,7 +918,7 @@ cd mobile && npm run typecheck && npm run lint
 Tests / Checks:
 
 - [x] `npm run typecheck` (mobile) — passed.
-- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`).
+- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`; cleared in Phases 11–12 session).
 
 Result:
 
@@ -932,7 +935,60 @@ Commit:
 
 Next:
 
-- **PHASE 11:** Participant proof submit (text/URL).
+- **PHASES 11–12:** Delivered in session below (MVP mobile roadmap complete for Phases 6–12).
+
+### 2026-05-02 — PHASES 11–12: Participant proof submit + MVP log closure
+
+Area:
+
+- Mobile / Expo / `mobile` (proof UI, layout lint, sign-in MFA)
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Confirmed `submitProofSchema` and `POST /api/events/[eventId]/proof`.
+
+Planned Work:
+
+- Phase 11: participant proof submit on event detail (text + URL types per shared Zod).
+- Phase 12: clear mobile root lint noise; run mobile + website typechecks; record closure; include pending sign-in second-factor improvements.
+
+Files Changed:
+
+- `mobile/src/features/events/use-event-proof-submit-data.ts`, `event-proof-submit-section.tsx`
+- `mobile/app/(tabs)/events/[eventId].tsx` — `EventProofSubmitSection` after teams.
+- `mobile/app/_layout.tsx` — single `expo-router` import; drop unused `Stack` / `StatusBar`.
+- `mobile/app/(auth)/sign-in.tsx` — second-factor preparation and verification flow.
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+cd mobile && npm run typecheck && npm run lint
+npm run typecheck -w website
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (no warnings).
+- [x] `npm run typecheck` (website) — passed.
+
+Result:
+
+- Published/live events show **Submit proof** with validation aligned to the API; users see their own submission rows. Root layout lint is clean. Sign-in supports email/phone/TOTP/backup second factors when Clerk returns `needs_second_factor`.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `9a8667a` — `mobile: proof submit, layout cleanup, and sign-in second factor`
+
+Next:
+
+- Product follow-ups: Clerk on website API, real uploads, optional monorepo workspace for `mobile`.
 
 ---
 
