@@ -16,7 +16,8 @@ if (!publishableKey) {
 }
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  /** Default entry while iterating on onboarding UI; switch back to `(tabs)` when done. */
+  anchor: "(onboarding)",
 };
 
 export default function RootLayout() {

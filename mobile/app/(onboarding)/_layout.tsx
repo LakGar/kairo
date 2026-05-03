@@ -8,7 +8,9 @@ export default function OnboardingLayout() {
     return null;
   }
 
-  if (!isSignedIn) {
+  // In __DEV__, allow unsigned access so onboarding UI can be designed without signing in.
+  // Production builds still require Clerk before showing this stack.
+  if (!isSignedIn && !__DEV__) {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
