@@ -508,7 +508,7 @@ Issues:
 
 Commit:
 
-- `chore: prep website for phase 3 (shared, user stub, gitignore)`
+- `fc91216` — `chore: prep website for phase 3 (shared, user stub, gitignore)`
 
 ---
 
