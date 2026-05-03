@@ -12,14 +12,7 @@ export const eventFormatSchema = z.enum([
 /** Mirrors `EventVisibility` in Prisma. */
 export const eventVisibilitySchema = z.enum(["PUBLIC", "PRIVATE", "INVITE_ONLY"]);
 
-/** Mirrors `EventParticipantRole` in Prisma (join flows exclude ORGANIZER). */
-export const eventParticipantRoleSchema = z.enum([
-  "ORGANIZER",
-  "PLAYER",
-  "WATCHER",
-  "VOLUNTEER",
-]);
-
+/** Join flows: `PLAYER` | `WATCHER` | `VOLUNTEER` (mirrors Prisma subset). */
 export const joinEventParticipantRoleSchema = z.enum(["PLAYER", "WATCHER", "VOLUNTEER"]);
 
 /** Mirrors `MatchStatus` in Prisma. */
