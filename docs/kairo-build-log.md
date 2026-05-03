@@ -721,7 +721,7 @@ Issues:
 
 Commit:
 
-- `mobile: add Kairo API client and EXPO_PUBLIC_API_URL` — locate with `git log --oneline --grep="Kairo API client"`.
+- `dbe0c15` — `mobile: add Kairo API client and EXPO_PUBLIC_API_URL`
 
 Next:
 
