@@ -826,7 +826,7 @@ Issues:
 
 Commit:
 
-- `mobile: add create event draft flow` — locate with `git log --oneline --grep="create event draft"`.
+- `52de809` — `mobile: add create event draft flow`
 
 Next:
 
