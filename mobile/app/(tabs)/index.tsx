@@ -1,52 +1,120 @@
-import { Show, useUser } from "@clerk/expo";
-import { useClerk } from "@clerk/expo";
-import { Link } from "expo-router";
-import { Text, View, Pressable, StyleSheet } from "react-native";
+import { useUser } from "@clerk/expo";
+import { useRouter } from "expo-router";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function Page() {
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { EventListRow } from "@/src/features/events/event-list-row";
+import { useUpcomingEvents } from "@/src/features/events/use-upcoming-events";
+import type { ApiEventPublic } from "@/src/api";
+
+export default function DiscoverScreen() {
   const { user } = useUser();
-  const { signOut } = useClerk();
+  const router = useRouter();
+  const { events, loading, refreshing, error, refresh } = useUpcomingEvents();
+
+  const onOpenEvent = (event: ApiEventPublic) => {
+    router.push(`/(tabs)/events/${event.id}`);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome!</Text>
-      <Show when="signed-out">
-        <Link href="/(auth)/sign-in">
-          <Text>Sign in</Text>
-        </Link>
-        <Link href="/(auth)/sign-up">
-          <Text>Sign up</Text>
-        </Link>
-      </Show>
-      <Show when="signed-in">
-        <Text>Hello {user?.emailAddresses[0].emailAddress}</Text>
-        <Pressable style={styles.button} onPress={() => signOut()}>
-          <Text style={styles.buttonText}>Sign out</Text>
-        </Pressable>
-      </Show>
-    </View>
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title">Discover</ThemedText>
+        {user?.emailAddresses[0]?.emailAddress ? (
+          <ThemedText type="muted" numberOfLines={1}>
+            {user.emailAddresses[0].emailAddress}
+          </ThemedText>
+        ) : null}
+      </ThemedView>
+
+      {loading && !refreshing ? (
+        <ThemedView style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <ThemedText type="muted">Loading events…</ThemedText>
+        </ThemedView>
+      ) : error ? (
+        <ThemedView style={styles.centered}>
+          <ThemedText type="subtitle" style={styles.centerText}>
+            {error.message}
+          </ThemedText>
+          <Pressable style={styles.button} onPress={() => void refresh()}>
+            <ThemedText style={styles.buttonLabel}>Retry</ThemedText>
+          </Pressable>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />
+          }
+          ListEmptyComponent={
+            <ThemedView style={styles.empty}>
+              <ThemedText type="subtitle">No upcoming events</ThemedText>
+              <ThemedText type="muted" style={styles.emptySub}>
+                Published events with a future start date appear here once your API and
+                database are set up.
+              </ThemedText>
+            </ThemedView>
+          }
+          renderItem={({ item }) => (
+            <EventListRow event={item} onPress={() => onOpenEvent(item)} />
+          )}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    padding: 20,
-    paddingTop: 60,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    flexGrow: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
     gap: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
+  centerText: {
+    textAlign: "center",
+  },
+  empty: {
+    paddingVertical: 48,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    gap: 8,
+  },
+  emptySub: {
+    textAlign: "center",
   },
   button: {
     backgroundColor: "#0a7ea4",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    alignItems: "center",
   },
-  buttonText: {
+  buttonLabel: {
     color: "#fff",
     fontWeight: "600",
   },

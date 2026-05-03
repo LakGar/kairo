@@ -90,13 +90,14 @@ Done:
 
 - [x] **Phase 0 audit:** `mobile/package.json` — `main`: `expo-router/entry`; Expo SDK ~54; `expo-router`, `@clerk/expo`, fonts, etc.
 - [x] Auth screens: `mobile/app/(auth)/` — `_layout.tsx`, `index.tsx`, `sign-in.tsx`, `sign-up.tsx`.
-- [x] Tabs: `mobile/app/(tabs)/` — `_layout.tsx`, `index.tsx`.
+- [x] Tabs: `mobile/app/(tabs)/` — `_layout.tsx` (Stack + auth gate), `index.tsx`, `events/[eventId].tsx`.
 - [x] Onboarding: `mobile/app/(onboarding)/` — `_layout.tsx`, `index.tsx`, `finish.tsx` (plus `mobile/src/features/onboarding/*`).
 - [x] Root `mobile/app/_layout.tsx` — `ClerkProvider`, `tokenCache`, `Slot`, `unstable_settings.anchor` `(tabs)`.
 - [x] Clerk: `@clerk/expo` + `@clerk/expo/legacy` where used in sign-in/sign-up.
 - [x] **Navigation (verified in source):** `sign-in.tsx` → `router.replace("/(tabs)")`; `sign-up.tsx` → `router.replace("/(onboarding)")`; completing onboarding → `router.replace("/(tabs)")` in `use-onboarding-flow.tsx` (`finishOnboarding`). Note: `finish.tsx` is a legacy `Redirect` to `/(onboarding)`; real completion uses the hook above.
 - [x] **Phase 3 prep:** `mobile/.gitignore` ignores `.env` (not only `.env*.local`) so `mobile/.env` cannot be committed accidentally.
 - [x] **Phase 6 (2026-05-02):** `mobile/src/api/` — `createKairoApi` / `createKairoApiFromEnv` for all Phase 4 REST paths; JSON envelope + `KairoApiError`; DTO types for events, teams, matches, proof, stakes; dev `x-kairo-user-id` from `EXPO_PUBLIC_KAIRO_DEV_USER_ID` or `expo.extra.devUserId`; base URL from `EXPO_PUBLIC_API_URL` or `expo.extra.apiUrl` (`app.config.ts` merges `app.json` + extra). `@kairo/shared` via `file:../packages/shared` for input types re-exported from `@/src/api`. `mobile/.env.example`; `npm run typecheck`.
+- [x] **Phase 7 (2026-05-02):** Event discovery — `mobile/src/features/events/` (`useUpcomingEvents`, `useEventDetail`, `EventListRow`, `format-event-range`); `(tabs)/index` lists `GET /api/events` with pull-to-refresh, empty state, config/API errors + retry; `(tabs)/events/[eventId]` shows `GET /api/events/:id` (about, location, organizer, counts); `(tabs)/_layout` registers Stack screens with header sign-out.
 
 In Progress:
 
@@ -104,7 +105,7 @@ In Progress:
 
 Left:
 
-- [ ] **Phases 7–11:** Events UI, create/join/organizer/proof flows per MVP plan.
+- [ ] **Phases 8–11:** Create event, join/team flows, organizer tools, proof submit per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Server-backed onboarding persistence (later).
 
@@ -709,7 +710,7 @@ cd mobile && npm install && npm run typecheck && npm run lint
 Tests / Checks:
 
 - [x] `npm run typecheck` (mobile) — passed.
-- [x] `npm run lint` (mobile) — passed (warnings only in pre-existing `app/_layout.tsx` and `app/(tabs)/index.tsx`; no new errors).
+- [x] `npm run lint` (mobile) — passed (warnings only in pre-existing root `app/_layout.tsx`; no new errors).
 
 Result:
 
@@ -725,7 +726,58 @@ Commit:
 
 Next:
 
-- **PHASE 7:** Event discovery UI on mobile.
+- **PHASE 8:** Create event flow on mobile.
+
+### 2026-05-02 — PHASE 7: Mobile event discovery UI
+
+Area:
+
+- Mobile / Expo / `mobile`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; reused Phase 6 `@/src/api` client and existing themed components.
+
+Planned Work:
+
+- Upcoming events list + navigation to read-only event detail; loading / empty / error states aligned with MVP positioning.
+
+Files Changed:
+
+- `mobile/src/features/events/format-event-range.ts`, `use-upcoming-events.ts`, `use-event-detail.ts`, `event-list-row.tsx`
+- `mobile/app/(tabs)/index.tsx` — Discover list screen.
+- `mobile/app/(tabs)/events/[eventId].tsx` — Event detail screen.
+- `mobile/app/(tabs)/_layout.tsx` — Stack screen options, header sign-out.
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+git status
+cd mobile && npm run typecheck && npm run lint
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`).
+
+Result:
+
+- Signed-in users see **Discover** with upcoming published events; tap opens **Event** detail. Requires `EXPO_PUBLIC_API_URL` and a running website with data (e.g. after `db:seed`).
+
+Issues:
+
+- (none)
+
+Commit:
+
+- (record after `git commit`)
+
+Next:
+
+- **PHASE 8:** Create event flow on mobile.
 
 ---
 
