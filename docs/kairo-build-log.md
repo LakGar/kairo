@@ -82,7 +82,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 6+:** Mobile `EXPO_PUBLIC_API_URL` client calling these routes.
 - [ ] Website auth: replace `x-kairo-user-id` with Clerk (or other) when ready.
 
 ### Mobile / Expo / mobile
@@ -97,6 +96,7 @@ Done:
 - [x] Clerk: `@clerk/expo` + `@clerk/expo/legacy` where used in sign-in/sign-up.
 - [x] **Navigation (verified in source):** `sign-in.tsx` → `router.replace("/(tabs)")`; `sign-up.tsx` → `router.replace("/(onboarding)")`; completing onboarding → `router.replace("/(tabs)")` in `use-onboarding-flow.tsx` (`finishOnboarding`). Note: `finish.tsx` is a legacy `Redirect` to `/(onboarding)`; real completion uses the hook above.
 - [x] **Phase 3 prep:** `mobile/.gitignore` ignores `.env` (not only `.env*.local`) so `mobile/.env` cannot be committed accidentally.
+- [x] **Phase 6 (2026-05-02):** `mobile/src/api/` — `createKairoApi` / `createKairoApiFromEnv` for all Phase 4 REST paths; JSON envelope + `KairoApiError`; DTO types for events, teams, matches, proof, stakes; dev `x-kairo-user-id` from `EXPO_PUBLIC_KAIRO_DEV_USER_ID` or `expo.extra.devUserId`; base URL from `EXPO_PUBLIC_API_URL` or `expo.extra.apiUrl` (`app.config.ts` merges `app.json` + extra). `@kairo/shared` via `file:../packages/shared` for input types re-exported from `@/src/api`. `mobile/.env.example`; `npm run typecheck`.
 
 In Progress:
 
@@ -104,9 +104,9 @@ In Progress:
 
 Left:
 
-- [ ] **Phases 6–11:** API client, events UI, create/join/organizer/proof flows per MVP plan.
+- [ ] **Phases 7–11:** Events UI, create/join/organizer/proof flows per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
-- [ ] `EXPO_PUBLIC_API_URL` and server-backed onboarding persistence (later).
+- [ ] Server-backed onboarding persistence (later).
 
 ### Shared / Packages / Types
 
@@ -618,7 +618,7 @@ Commit:
 
 Next:
 
-- **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
+- **PHASE 5:** seed (`db:seed`); **PHASE 6:** mobile API client — see sessions below on `main`.
 
 ### 2026-05-02 — PHASE 5: Database seed (`db:seed`)
 
@@ -673,7 +673,59 @@ Commit:
 
 Next:
 
-- **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
+- **PHASE 7:** mobile event discovery UI.
+
+### 2026-05-02 — PHASE 6: Mobile API client (`EXPO_PUBLIC_API_URL`)
+
+Area:
+
+- Mobile / Expo / `mobile`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; inspected `website/app/api/**` and `website/src/lib/api-http.ts` for envelope + routes.
+
+Planned Work:
+
+- Typed fetch client for all MVP REST endpoints; env + `app.config` extra for API base URL and dev user id; align with `{ success, data | error }`.
+
+Files Changed:
+
+- `mobile/app.config.ts` — dynamic config: `extra.apiUrl` / `extra.devUserId` from env at build time.
+- `mobile/.env.example` — `EXPO_PUBLIC_API_URL`, optional `EXPO_PUBLIC_KAIRO_DEV_USER_ID`.
+- `mobile/src/api/config.ts`, `types.ts`, `kairo-client.ts`, `index.ts` — client + exports + shared input type re-exports.
+- `mobile/package.json` — `typecheck`, dependency `@kairo/shared` (`file:../packages/shared`).
+- `mobile/package-lock.json`
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+git status
+cd mobile && npm install && npm run typecheck && npm run lint
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (warnings only in pre-existing `app/_layout.tsx` and `app/(tabs)/index.tsx`; no new errors).
+
+Result:
+
+- Import `createKairoApiFromEnv` from `@/src/api` (or `@/src/api/index`) after copying `mobile/.env.example` → `mobile/.env` and setting `EXPO_PUBLIC_API_URL` to the running Next site. Mutations need a dev user id until Clerk replaces `x-kairo-user-id` on the website.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `mobile: add Kairo API client and EXPO_PUBLIC_API_URL` — locate with `git log --oneline --grep="Kairo API client"`.
+
+Next:
+
+- **PHASE 7:** Event discovery UI on mobile.
 
 ---
 
