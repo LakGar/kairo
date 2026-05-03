@@ -100,6 +100,7 @@ Done:
 - [x] **Phase 7 (2026-05-02):** Event discovery — `mobile/src/features/events/` (`useUpcomingEvents`, `useEventDetail`, `EventListRow`, `format-event-range`); `(tabs)/index` lists `GET /api/events` with pull-to-refresh, empty state, config/API errors + retry; `(tabs)/events/[eventId]` shows `GET /api/events/:id` (about, location, organizer, counts); `(tabs)/_layout` registers Stack screens with header sign-out.
 - [x] **Phase 8 (2026-05-02):** Create event — `CreateEventForm` + `create-event-defaults`; `createEventSchema` (`@kairo/shared`) client validation; `POST /api/events` via `createKairoApiFromEnv`; `(tabs)/create` draft flow, `router.replace` to new event detail; Discover header **Create** + **Sign out**; `.env.example` notes dev user id required for creates.
 - [x] **Phase 9 (2026-05-02):** Join + teams on event detail — `useEventTeams`, `EventJoinSection` (`POST /api/events/:id/join` with PLAYER/WATCHER/VOLUNTEER + optional note; draft/cancelled copy), `EventTeamsSection` (list teams, `joinTeam` / `leaveTeam`, `createTeam` with `createTeamSchema`); `(tabs)/events/[eventId]` refreshes event + teams after mutations.
+- [x] **Phase 10 (2026-05-02):** Organizer tools on event detail — `useEventOrganizerData` (matches, proof prompts, proof submissions), `EventOrganizerSection` when `EXPO_PUBLIC_KAIRO_DEV_USER_ID` matches `event.organizerId`: publish / cancel (confirm), list matches with score + winner actions, create match (`createManualMatchSchema`), proof prompts (`createProofPromptSchema`), pending proof approve/reject; draft join copy points hosts to organizer tools; detail wires section above join/teams.
 
 In Progress:
 
@@ -107,7 +108,7 @@ In Progress:
 
 Left:
 
-- [ ] **Phases 10–11:** Organizer tools on event detail, proof submit per MVP plan.
+- [ ] **Phase 11:** Participant proof submit (text/URL) per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Server-backed onboarding persistence (later).
 
@@ -881,7 +882,56 @@ Commit:
 
 Next:
 
-- **PHASE 10:** Organizer tools MVP on event detail.
+- **PHASE 11:** Participant proof submit on mobile.
+
+### 2026-05-02 — PHASE 10: Mobile organizer tools on event detail
+
+Area:
+
+- Mobile / Expo / `mobile`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Confirmed Phase 4 routes: `publish`, `cancel`, `matches`, `proof-prompts`, `proof`, match score/winner, proof approve/reject.
+
+Planned Work:
+
+- Host-only section on event detail: lifecycle, matches CRUD-lite, proof prompts, proof inbox.
+
+Files Changed:
+
+- `mobile/src/features/events/use-event-organizer-data.ts`, `event-organizer-section.tsx`
+- `mobile/app/(tabs)/events/[eventId].tsx` — `EventOrganizerSection` + order (organizer above join/teams).
+- `mobile/src/features/events/event-join-section.tsx` — draft copy for host vs guest.
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+cd mobile && npm run typecheck && npm run lint
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`).
+
+Result:
+
+- When the dev user id matches the event organizer, **Organizer tools** loads matches, prompts, and submissions; publish/cancel, create match (team chips + optional round/match#/schedule), score/winner updates, add proof prompts, approve/reject pending proof.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- (record after `git commit`)
+
+Next:
+
+- **PHASE 11:** Participant proof submit (text/URL).
 
 ---
 

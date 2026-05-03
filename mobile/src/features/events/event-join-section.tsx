@@ -49,12 +49,14 @@ export function EventJoinSection({ event, onJoined }: Props) {
   const open = event.status === "PUBLISHED" || event.status === "LIVE";
 
   if (event.status === "DRAFT") {
+    const isHost = Boolean(devUserId && devUserId === event.organizerId);
     return (
       <ThemedView style={styles.block}>
         <ThemedText type="subtitle">Join this event</ThemedText>
         <ThemedText type="muted" style={styles.gapTop}>
-          This event is still a draft. Publish it from the website (or a future mobile
-          flow) before participants can register.
+          {isHost
+            ? "This event is still a draft. Use Organizer tools on this screen to publish when you are ready."
+            : "This event is still a draft. The host must publish it before participants can register."}
         </ThemedText>
       </ThemedView>
     );

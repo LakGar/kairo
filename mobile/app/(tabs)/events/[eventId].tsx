@@ -10,6 +10,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { EventJoinSection } from "@/src/features/events/event-join-section";
+import { EventOrganizerSection } from "@/src/features/events/event-organizer-section";
 import { EventTeamsSection } from "@/src/features/events/event-teams-section";
 import { formatEventRange } from "@/src/features/events/format-event-range";
 import { useEventDetail } from "@/src/features/events/use-event-detail";
@@ -106,6 +107,12 @@ export default function EventDetailScreen() {
           {event._count.matches}
         </ThemedText>
       </ThemedView>
+
+      <EventOrganizerSection
+        event={event}
+        teams={teams}
+        onEventChanged={() => void reload()}
+      />
 
       <EventJoinSection event={event} onJoined={() => void reload()} />
 
