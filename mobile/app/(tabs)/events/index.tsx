@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useUIPalette } from "@/hooks/use-ui-palette";
 import { EventListRow } from "@/src/features/events/event-list-row";
 import { useMyEvents } from "@/src/features/events/use-my-events";
 import type { ApiEventPublic } from "@/src/api";
@@ -21,8 +22,8 @@ type Segment = "hosting" | "attending";
 
 export default function MyEventsScreen() {
   const router = useRouter();
+  const ui = useUIPalette();
   const tint = useThemeColor({}, "tint");
-  const borderColor = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
   const { hosting, attending, loading, refreshing, error, refresh } = useMyEvents();
   const [segment, setSegment] = useState<Segment>("hosting");
 
@@ -35,36 +36,64 @@ export default function MyEventsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: ui.groupedBackground }]} edges={["bottom"]}>
       <ThemedView style={styles.pad}>
         <ThemedText type="muted">
           Events you organize and events you have joined (dev API user).
         </ThemedText>
       </ThemedView>
 
-      <View style={[styles.segmentWrap, { borderColor }]}>
-        <Pressable
-          onPress={() => setSegment("hosting")}
-          style={[
-            styles.segmentBtn,
-            segment === "hosting" && { borderBottomColor: tint, borderBottomWidth: 2 },
-          ]}
-        >
-          <ThemedText type={segment === "hosting" ? "default" : "muted"}>
-            Hosting ({hosting.length})
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          onPress={() => setSegment("attending")}
-          style={[
-            styles.segmentBtn,
-            segment === "attending" && { borderBottomColor: tint, borderBottomWidth: 2 },
-          ]}
-        >
-          <ThemedText type={segment === "attending" ? "default" : "muted"}>
-            Attending ({attending.length})
-          </ThemedText>
-        </Pressable>
+      <View style={styles.segmentOuter}>
+        <View style={[styles.segmentTrack, { backgroundColor: ui.segmentTrack }]}>
+          <Pressable
+            onPress={() => setSegment("hosting")}
+            style={[
+              styles.segmentBtn,
+              segment === "hosting" && {
+                backgroundColor: ui.segmentActive,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.08,
+                shadowRadius: 3,
+              },
+            ]}
+          >
+            <ThemedText
+              type="small"
+              style={[
+                styles.segmentLabel,
+                segment === "hosting" ? styles.segmentLabelOn : styles.segmentLabelOff,
+                segment === "hosting" && { color: tint },
+              ]}
+            >
+              Hosting · {hosting.length}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => setSegment("attending")}
+            style={[
+              styles.segmentBtn,
+              segment === "attending" && {
+                backgroundColor: ui.segmentActive,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.08,
+                shadowRadius: 3,
+              },
+            ]}
+          >
+            <ThemedText
+              type="small"
+              style={[
+                styles.segmentLabel,
+                segment === "attending" ? styles.segmentLabelOn : styles.segmentLabelOff,
+                segment === "attending" && { color: tint },
+              ]}
+            >
+              Attending · {attending.length}
+            </ThemedText>
+          </Pressable>
+        </View>
       </View>
 
       {loading && !refreshing ? (
@@ -77,8 +106,11 @@ export default function MyEventsScreen() {
           <ThemedText type="subtitle" style={styles.centerText}>
             {error.message}
           </ThemedText>
-          <Pressable style={styles.button} onPress={() => void refresh()}>
-            <ThemedText style={styles.buttonLabel}>Retry</ThemedText>
+          <Pressable
+            style={[styles.button, { backgroundColor: tint }]}
+            onPress={() => void refresh()}
+          >
+            <ThemedText style={[styles.buttonLabel, { color: ui.linkOnTint }]}>Retry</ThemedText>
           </Pressable>
         </ThemedView>
       ) : (
@@ -119,19 +151,37 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
-  segmentWrap: {
+  segmentOuter: {
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  segmentTrack: {
     flexDirection: "row",
-    marginHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentLabel: {
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  segmentLabelOn: {
+    opacity: 1,
+  },
+  segmentLabelOff: {
+    opacity: 0.55,
   },
   listContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    paddingBottom: 24,
     flexGrow: 1,
   },
   centered: {
@@ -154,13 +204,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
   },
   buttonLabel: {
-    color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });

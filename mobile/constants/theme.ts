@@ -27,6 +27,39 @@ export const Colors = {
   },
 };
 
+/**
+ * Semantic surfaces for cards, lists, and chrome — use via `useUIPalette()`.
+ * Keeps screens visually aligned without a separate design system package.
+ */
+export const UiPalette = {
+  light: {
+    groupedBackground: "#F2F2F7",
+    card: "#FFFFFF",
+    cardBorder: "rgba(60, 60, 67, 0.12)",
+    tabBar: "#FBFBFD",
+    tabBarBorder: "rgba(60, 60, 67, 0.18)",
+    segmentTrack: "#E5E5EA",
+    segmentActive: "#FFFFFF",
+    heroTintWash: "rgba(10, 126, 164, 0.12)",
+    danger: "#C62828",
+    linkOnTint: "#FFFFFF",
+  },
+  dark: {
+    groupedBackground: "#000000",
+    card: "#1C1C1E",
+    cardBorder: "rgba(255, 255, 255, 0.12)",
+    tabBar: "#161616",
+    tabBarBorder: "rgba(255, 255, 255, 0.1)",
+    segmentTrack: "#2C2C2E",
+    segmentActive: "#3A3A3C",
+    heroTintWash: "rgba(255, 255, 255, 0.08)",
+    danger: "#EF5350",
+    linkOnTint: "#11181C",
+  },
+} as const;
+
+export type UiScheme = keyof typeof UiPalette;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

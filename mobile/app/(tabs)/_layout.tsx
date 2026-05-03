@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
 import { Redirect, Tabs } from "expo-router";
-import { Platform } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useUIPalette } from "@/hooks/use-ui-palette";
 
 export default function TabLayout() {
   const { isSignedIn, isLoaded } = useAuth();
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
+  const ui = useUIPalette();
 
   if (!isLoaded) {
     return null;
@@ -24,15 +26,27 @@ export default function TabLayout() {
       initialRouteName="dashboard"
       screenOptions={{
         headerTitleAlign: "center",
+        headerStyle: {
+          backgroundColor: ui.groupedBackground,
+        },
+        headerShadowVisible: false,
+        headerTitleStyle: {
+          fontWeight: "700",
+          fontSize: 17,
+        },
         tabBarActiveTintColor: palette.tabIconSelected,
         tabBarInactiveTintColor: palette.tabIconDefault,
         tabBarStyle: {
-          paddingTop: 4,
-          height: Platform.OS === "ios" ? 88 : 64,
+          backgroundColor: ui.tabBar,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: ui.tabBarBorder,
+          paddingTop: 6,
+          height: Platform.OS === "ios" ? 88 : 68,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
+          letterSpacing: 0.2,
         },
       }}
     >

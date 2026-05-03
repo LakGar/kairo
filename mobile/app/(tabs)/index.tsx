@@ -11,6 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useUIPalette } from "@/hooks/use-ui-palette";
 import { EventListRow } from "@/src/features/events/event-list-row";
 import { useUpcomingEvents } from "@/src/features/events/use-upcoming-events";
 import type { ApiEventPublic } from "@/src/api";
@@ -18,6 +20,8 @@ import type { ApiEventPublic } from "@/src/api";
 export default function DiscoverScreen() {
   const { user } = useUser();
   const router = useRouter();
+  const ui = useUIPalette();
+  const tint = useThemeColor({}, "tint");
   const { events, loading, refreshing, error, refresh } = useUpcomingEvents();
 
   const onOpenEvent = (event: ApiEventPublic) => {
@@ -25,7 +29,7 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: ui.groupedBackground }]} edges={["bottom"]}>
       <ThemedView style={styles.header}>
         <ThemedText type="muted">
           Upcoming published events. Pull down to refresh.
@@ -47,8 +51,8 @@ export default function DiscoverScreen() {
           <ThemedText type="subtitle" style={styles.centerText}>
             {error.message}
           </ThemedText>
-          <Pressable style={styles.button} onPress={() => void refresh()}>
-            <ThemedText style={styles.buttonLabel}>Retry</ThemedText>
+          <Pressable style={[styles.button, { backgroundColor: tint }]} onPress={() => void refresh()}>
+            <ThemedText style={[styles.buttonLabel, { color: ui.linkOnTint }]}>Retry</ThemedText>
           </Pressable>
         </ThemedView>
       ) : (
@@ -93,6 +97,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
+    paddingBottom: 24,
     flexGrow: 1,
   },
   centered: {
@@ -115,13 +120,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
   },
   buttonLabel: {
-    color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
