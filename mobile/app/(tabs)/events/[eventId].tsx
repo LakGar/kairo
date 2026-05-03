@@ -11,6 +11,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { EventJoinSection } from "@/src/features/events/event-join-section";
 import { EventOrganizerSection } from "@/src/features/events/event-organizer-section";
+import { EventProofSubmitSection } from "@/src/features/events/event-proof-submit-section";
 import { EventTeamsSection } from "@/src/features/events/event-teams-section";
 import { formatEventRange } from "@/src/features/events/format-event-range";
 import { useEventDetail } from "@/src/features/events/use-event-detail";
@@ -124,6 +125,8 @@ export default function EventDetailScreen() {
         onTeamsChanged={() => void refreshTeams()}
         onEventChanged={() => void reload()}
       />
+
+      <EventProofSubmitSection event={event} onSubmitted={() => void reload()} />
     </ScrollView>
   );
 }
