@@ -90,7 +90,7 @@ Done:
 
 - [x] **Phase 0 audit:** `mobile/package.json` — `main`: `expo-router/entry`; Expo SDK ~54; `expo-router`, `@clerk/expo`, fonts, etc.
 - [x] Auth screens: `mobile/app/(auth)/` — `_layout.tsx`, `index.tsx`, `sign-in.tsx`, `sign-up.tsx`.
-- [x] Tabs: `mobile/app/(tabs)/` — `_layout.tsx` (Stack + auth gate), `index.tsx`, `events/[eventId].tsx`.
+- [x] Tabs: `mobile/app/(tabs)/` — `_layout.tsx` (Stack + auth gate), `index.tsx`, `create.tsx`, `events/[eventId].tsx`.
 - [x] Onboarding: `mobile/app/(onboarding)/` — `_layout.tsx`, `index.tsx`, `finish.tsx` (plus `mobile/src/features/onboarding/*`).
 - [x] Root `mobile/app/_layout.tsx` — `ClerkProvider`, `tokenCache`, `Slot`, `unstable_settings.anchor` `(tabs)`.
 - [x] Clerk: `@clerk/expo` + `@clerk/expo/legacy` where used in sign-in/sign-up.
@@ -98,6 +98,7 @@ Done:
 - [x] **Phase 3 prep:** `mobile/.gitignore` ignores `.env` (not only `.env*.local`) so `mobile/.env` cannot be committed accidentally.
 - [x] **Phase 6 (2026-05-02):** `mobile/src/api/` — `createKairoApi` / `createKairoApiFromEnv` for all Phase 4 REST paths; JSON envelope + `KairoApiError`; DTO types for events, teams, matches, proof, stakes; dev `x-kairo-user-id` from `EXPO_PUBLIC_KAIRO_DEV_USER_ID` or `expo.extra.devUserId`; base URL from `EXPO_PUBLIC_API_URL` or `expo.extra.apiUrl` (`app.config.ts` merges `app.json` + extra). `@kairo/shared` via `file:../packages/shared` for input types re-exported from `@/src/api`. `mobile/.env.example`; `npm run typecheck`.
 - [x] **Phase 7 (2026-05-02):** Event discovery — `mobile/src/features/events/` (`useUpcomingEvents`, `useEventDetail`, `EventListRow`, `format-event-range`); `(tabs)/index` lists `GET /api/events` with pull-to-refresh, empty state, config/API errors + retry; `(tabs)/events/[eventId]` shows `GET /api/events/:id` (about, location, organizer, counts); `(tabs)/_layout` registers Stack screens with header sign-out.
+- [x] **Phase 8 (2026-05-02):** Create event — `CreateEventForm` + `create-event-defaults`; `createEventSchema` (`@kairo/shared`) client validation; `POST /api/events` via `createKairoApiFromEnv`; `(tabs)/create` draft flow, `router.replace` to new event detail; Discover header **Create** + **Sign out**; `.env.example` notes dev user id required for creates.
 
 In Progress:
 
@@ -105,7 +106,7 @@ In Progress:
 
 Left:
 
-- [ ] **Phases 8–11:** Create event, join/team flows, organizer tools, proof submit per MVP plan.
+- [ ] **Phases 9–11:** Join/team flows, organizer tools, proof submit per MVP plan.
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Server-backed onboarding persistence (later).
 
@@ -726,7 +727,7 @@ Commit:
 
 Next:
 
-- **PHASE 8:** Create event flow on mobile.
+- **PHASE 9:** Join / team flows on mobile (Phases 7–8 complete on `main`).
 
 ### 2026-05-02 — PHASE 7: Mobile event discovery UI
 
@@ -778,7 +779,58 @@ Commit:
 
 Next:
 
-- **PHASE 8:** Create event flow on mobile.
+- **PHASE 9:** Join / team flows on mobile.
+
+### 2026-05-02 — PHASE 8: Mobile create event (draft)
+
+Area:
+
+- Mobile / Expo / `mobile`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; aligned payload with `createEventSchema` / `POST /api/events`.
+
+Planned Work:
+
+- Screen to collect MVP create-event fields, validate with shared Zod, submit with dev user header, navigate to new event detail.
+
+Files Changed:
+
+- `mobile/src/features/events/create-event-form.tsx`, `create-event-defaults.ts`
+- `mobile/app/(tabs)/create.tsx`
+- `mobile/app/(tabs)/_layout.tsx` — Create + Sign out on Discover; `create` stack screen.
+- `mobile/.env.example`
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+git status
+cd mobile && npm run typecheck && npm run lint
+```
+
+Tests / Checks:
+
+- [x] `npm run typecheck` (mobile) — passed.
+- [x] `npm run lint` (mobile) — passed (warnings only in root `app/_layout.tsx`).
+
+Result:
+
+- **Create** opens **New event**; **Create draft** posts to the website API (requires `EXPO_PUBLIC_API_URL` + `EXPO_PUBLIC_KAIRO_DEV_USER_ID`). Success opens the new event (draft) on the detail screen. Publish remains a later flow / website.
+
+Issues:
+
+- (none)
+
+Commit:
+
+- `mobile: add create event draft flow` — locate with `git log --oneline --grep="create event draft"`.
+
+Next:
+
+- **PHASE 9:** Join / team flows on mobile.
 
 ---
 

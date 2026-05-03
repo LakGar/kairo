@@ -1,24 +1,37 @@
 import { useAuth, useClerk } from "@clerk/expo";
-import { Redirect, Stack } from "expo-router";
-import { Pressable, StyleSheet } from "react-native";
+import { Redirect, Stack, useRouter } from "expo-router";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-function HeaderSignOut() {
+function HeaderDiscoverActions() {
+  const router = useRouter();
   const { signOut } = useClerk();
   const tint = useThemeColor({}, "tint");
   return (
-    <Pressable
-      onPress={() => void signOut()}
-      style={({ pressed }) => [styles.headerBtn, pressed && styles.headerBtnPressed]}
-      accessibilityRole="button"
-      accessibilityLabel="Sign out"
-    >
-      <ThemedText type="small" style={[styles.headerBtnText, { color: tint }]}>
-        Sign out
-      </ThemedText>
-    </Pressable>
+    <View style={styles.headerRow}>
+      <Pressable
+        onPress={() => router.push("/(tabs)/create")}
+        style={({ pressed }) => [styles.headerBtn, pressed && styles.headerBtnPressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Create event"
+      >
+        <ThemedText type="small" style={[styles.headerBtnText, { color: tint }]}>
+          Create
+        </ThemedText>
+      </Pressable>
+      <Pressable
+        onPress={() => void signOut()}
+        style={({ pressed }) => [styles.headerBtn, pressed && styles.headerBtnPressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Sign out"
+      >
+        <ThemedText type="small" style={[styles.headerBtnText, { color: tint }]}>
+          Sign out
+        </ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -43,7 +56,14 @@ export default function Layout() {
         name="index"
         options={{
           title: "Discover",
-          headerRight: () => <HeaderSignOut />,
+          headerRight: () => <HeaderDiscoverActions />,
+        }}
+      />
+      <Stack.Screen
+        name="create"
+        options={{
+          title: "New event",
+          headerBackTitle: "Discover",
         }}
       />
       <Stack.Screen
@@ -58,8 +78,13 @@ export default function Layout() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 4,
+    gap: 4,
+  },
   headerBtn: {
-    marginRight: 12,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
