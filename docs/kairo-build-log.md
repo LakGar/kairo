@@ -51,7 +51,8 @@ Done:
 
 - [x] Prisma schema lives in `packages/db/prisma/schema.prisma` (single schema; no `website/prisma`).
 - [x] `@kairo/db` package exists (`packages/db`).
-- [x] Root scripts include `db:generate`, `db:migrate`, `db:push`, `db:studio`.
+- [x] Root scripts include `db:generate`, `db:migrate`, `db:push`, `db:studio`, `db:seed`.
+- [x] **Phase 5 (2026-05-02):** `packages/db/prisma/seed.ts` — idempotent MVP demo data; `prisma.seed` + `npm run seed` in `@kairo/db`; root `db:seed`. Seed skips with a warning when `DATABASE_URL` is unset; otherwise runs cleanup + inserts (users, events, teams, bracket/matches, proof, stakes, activity log).
 - [x] Prisma client generates from the DB package.
 - [x] **Phase 0 audit (2026-05-02):** On disk, schema includes models `User`, `Profile`, `Event`, `EventParticipant`, `Team`, `TeamMember`, `Bracket`, `Match`, `ProofPrompt`, `ProofSubmission`, `Stake`, `ActivityLog` and enums `UserRole` through `StakeStatus` as required for MVP foundation.
 - [x] **Phase 1 (2026-05-02):** Schema reviewed end-to-end; `ProofSubmission.eventId` ↔ `Event` relation intact; no payments/AI/storage tables added; proof remains `url` + `text` only. Composite indexes added for common lookups: `Event` `[status, startsAt]` (replaces standalone `[status]` to avoid redundancy), `EventParticipant` `[eventId, userId]`, `ProofSubmission` `[eventId, status]`, `Stake` `[eventId, status]`; `ActivityLog` `[createdAt]` for timelines.
@@ -62,7 +63,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 5:** `db:seed` script and demo data (`db:seed` not in root scripts yet).
 - [ ] Apply migrations or `db:push` when `DATABASE_URL` is set and intentional (no Postgres URL in repo root or `packages/db/.env` today — only `mobile/.env` for Clerk).
 
 ### Website / Next.js / website
@@ -82,7 +82,6 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 5:** `db:seed` + demo data.
 - [ ] **Phase 6+:** Mobile `EXPO_PUBLIC_API_URL` client calling these routes.
 - [ ] Website auth: replace `x-kairo-user-id` with Clerk (or other) when ready.
 
@@ -564,7 +563,7 @@ Commit:
 
 Next:
 
-- **PHASE 5:** Seed script + demo data.
+- **PHASE 4:** REST API (completed in session below); then **PHASE 5** seed (completed 2026-05-02).
 
 ### 2026-05-03 — PHASE 4: Website REST API for mobile
 
@@ -619,7 +618,62 @@ Commit:
 
 Next:
 
-- **PHASE 5:** `db:seed` + demo data; **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
+- **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
+
+### 2026-05-02 — PHASE 5: Database seed (`db:seed`)
+
+Area:
+
+- Database / Prisma / `packages/db`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status`; inspected `packages/db/package.json` and Prisma schema (no duplicate schema).
+
+Planned Work:
+
+- Add idempotent `prisma/seed.ts`, wire `prisma db seed` + root `db:seed`, document and verify commands.
+
+Files Changed:
+
+- `packages/db/prisma/seed.ts` — MVP demo seed (cleanup by slug/email, then users/profiles, two published events, participants, teams/members, bracket, matches, proof prompts + one submission, stakes, activity log). Exits early when `DATABASE_URL` is missing.
+- `packages/db/package.json` — `prisma.seed`: `tsx prisma/seed.ts`; script `seed`; devDependency `tsx`.
+- `package.json` (root) — script `db:seed`.
+- `package-lock.json` — lockfile update for `tsx`.
+- `docs/kairo-build-log.md`
+
+Commands Run:
+
+```bash
+git status
+npm install
+npm run db:seed
+DATABASE_URL=postgresql://localhost:5432/kairo npm run db:seed
+cd packages/db && DATABASE_URL=postgresql://localhost:5432/kairo npx prisma validate
+```
+
+Tests / Checks:
+
+- [x] `npm run db:seed` (no `DATABASE_URL` in environment) — exited 0; seed script logged `Skipping seed: DATABASE_URL is not set.`; Prisma reported seed executed.
+- [x] `DATABASE_URL=postgresql://localhost:5432/kairo npm run db:seed` — seed attempted DB work; failed with `PrismaClientInitializationError` / user denied access on database `(not available)` (no reachable local Postgres in this environment — expected).
+- [x] `DATABASE_URL=postgresql://localhost:5432/kairo npx prisma validate` (in `packages/db`) — passed.
+
+Result:
+
+- From repo root: `npm run db:seed` runs Prisma seed for `@kairo/db`. Set `DATABASE_URL` and apply schema (`db:push` or migrate) before expecting a successful full seed.
+
+Issues:
+
+- Full seed against a live DB was not verified here (no local Postgres accepting the test URL).
+
+Commit:
+
+- `db: add MVP seed script and db:seed wiring` — locate with `git log --oneline --grep="db: add MVP seed"`.
+
+Next:
+
+- **PHASE 6:** mobile API client + `EXPO_PUBLIC_API_URL`.
 
 ---
 
