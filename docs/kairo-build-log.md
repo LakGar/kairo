@@ -928,6 +928,7 @@ Issues:
 Commit:
 
 - `300ec95` — `mobile: add organizer tools on event detail`
+- `0fd7b44` — `docs: record Phase 10 commit hash`
 
 Next:
 
