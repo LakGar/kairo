@@ -927,7 +927,7 @@ Issues:
 
 Commit:
 
-- (record after `git commit`)
+- `300ec95` — `mobile: add organizer tools on event detail`
 
 Next:
 
