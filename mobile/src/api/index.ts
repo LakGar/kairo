@@ -9,6 +9,7 @@ export {
   KairoApiError,
   type ApiEnvelope,
   type ApiEventPublic,
+  type ApiMyEventsPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,

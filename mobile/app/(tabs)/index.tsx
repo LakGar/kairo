@@ -27,10 +27,12 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <ThemedView style={styles.header}>
-        <ThemedText type="title">Discover</ThemedText>
+        <ThemedText type="muted">
+          Upcoming published events. Pull down to refresh.
+        </ThemedText>
         {user?.emailAddresses[0]?.emailAddress ? (
-          <ThemedText type="muted" numberOfLines={1}>
-            {user.emailAddresses[0].emailAddress}
+          <ThemedText type="small" numberOfLines={1} style={styles.signedIn}>
+            Signed in as {user.emailAddresses[0].emailAddress}
           </ThemedText>
         ) : null}
       </ThemedView>
@@ -83,7 +85,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    gap: 4,
+    gap: 6,
+  },
+  signedIn: {
+    marginTop: 4,
+    opacity: 0.85,
   },
   listContent: {
     paddingHorizontal: 16,

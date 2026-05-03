@@ -1,42 +1,15 @@
-import { useAuth, useClerk } from "@clerk/expo";
-import { Redirect, Stack, useRouter } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@clerk/expo";
+import { Redirect, Tabs } from "expo-router";
+import { Platform } from "react-native";
 
-import { ThemedText } from "@/components/themed-text";
-import { useThemeColor } from "@/hooks/use-theme-color";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-function HeaderDiscoverActions() {
-  const router = useRouter();
-  const { signOut } = useClerk();
-  const tint = useThemeColor({}, "tint");
-  return (
-    <View style={styles.headerRow}>
-      <Pressable
-        onPress={() => router.push("/(tabs)/create")}
-        style={({ pressed }) => [styles.headerBtn, pressed && styles.headerBtnPressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Create event"
-      >
-        <ThemedText type="small" style={[styles.headerBtnText, { color: tint }]}>
-          Create
-        </ThemedText>
-      </Pressable>
-      <Pressable
-        onPress={() => void signOut()}
-        style={({ pressed }) => [styles.headerBtn, pressed && styles.headerBtnPressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Sign out"
-      >
-        <ThemedText type="small" style={[styles.headerBtnText, { color: tint }]}>
-          Sign out
-        </ThemedText>
-      </Pressable>
-    </View>
-  );
-}
-
-export default function Layout() {
+export default function TabLayout() {
   const { isSignedIn, isLoaded } = useAuth();
+  const colorScheme = useColorScheme() ?? "light";
+  const palette = Colors[colorScheme];
 
   if (!isLoaded) {
     return null;
@@ -47,51 +20,81 @@ export default function Layout() {
   }
 
   return (
-    <Stack
+    <Tabs
+      initialRouteName="dashboard"
       screenOptions={{
         headerTitleAlign: "center",
+        tabBarActiveTintColor: palette.tabIconSelected,
+        tabBarInactiveTintColor: palette.tabIconDefault,
+        tabBarStyle: {
+          paddingTop: 4,
+          height: Platform.OS === "ios" ? 88 : 64,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
     >
-      <Stack.Screen
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: "Discover",
-          headerRight: () => <HeaderDiscoverActions />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "compass" : "compass-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
-      <Stack.Screen
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "calendar" : "calendar-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="create"
         options={{
           title: "New event",
-          headerBackTitle: "Discover",
+          tabBarLabel: "Create",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "add-circle" : "add-circle-outline"}
+              size={26}
+              color={color}
+            />
+          ),
         }}
       />
-      <Stack.Screen
-        name="events/[eventId]"
+      <Tabs.Screen
+        name="profile"
         options={{
-          title: "Event",
-          headerBackTitle: "Back",
+          title: "Profile",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+          ),
         }}
       />
-    </Stack>
+    </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 4,
-    gap: 4,
-  },
-  headerBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  headerBtnPressed: {
-    opacity: 0.7,
-  },
-  headerBtnText: {
-    fontWeight: "600",
-  },
-});

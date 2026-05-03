@@ -4,6 +4,7 @@ import {
   KairoApiError,
   type ApiEnvelope,
   type ApiEventPublic,
+  type ApiMyEventsPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,
@@ -77,6 +78,7 @@ async function requestEnvelope<T>(
 
 export interface KairoApi {
   listUpcomingEvents: () => Promise<ApiEventPublic[]>;
+  getMyEvents: () => Promise<ApiMyEventsPayload>;
   getEvent: (eventId: string) => Promise<ApiEventPublic>;
   createEvent: (body: unknown) => Promise<ApiEventPublic>;
   updateEvent: (eventId: string, body: unknown) => Promise<ApiEventPublic>;
@@ -114,6 +116,7 @@ export function createKairoApi(config: {
 
   return {
     listUpcomingEvents: () => req("/api/events"),
+    getMyEvents: () => req("/api/me/events"),
     getEvent: (eventId) => req(`/api/events/${encodeURIComponent(eventId)}`),
     createEvent: (body) => req("/api/events", { method: "POST", json: body }),
     updateEvent: (eventId, body) =>

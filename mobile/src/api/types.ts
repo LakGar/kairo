@@ -78,6 +78,12 @@ export interface ApiEventPublic {
   };
 }
 
+/** `GET /api/me/events` — events you host vs events you joined. */
+export interface ApiMyEventsPayload {
+  hosting: ApiEventPublic[];
+  attending: ApiEventPublic[];
+}
+
 export interface ApiTeamMember {
   id: string;
   teamId: string;
