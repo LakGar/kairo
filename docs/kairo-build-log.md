@@ -352,6 +352,7 @@ Planned Work:
 Files Changed:
 
 - `packages/db/prisma/schema.prisma` — composite indexes on `Event`, `EventParticipant`, `ProofSubmission`, `Stake`; `ActivityLog.createdAt`; dropped redundant `Event` index on `status` alone in favor of `[status, startsAt]`.
+- `packages/db/package.json`, `packages/db/tsconfig.json`, `packages/db/src/index.ts`, `packages/db/.env.example` — committed in follow-up so `@kairo/db` is usable from git (first commit had only the schema file by mistake).
 - `docs/kairo-build-log.md` — Phase 1 session + Database area updates.
 
 Commands Run:
@@ -362,6 +363,8 @@ git status -sb
 DATABASE_URL="postgresql://user:pass@localhost:5432/kairo" npx prisma validate --schema=packages/db/prisma/schema.prisma
 npm run db:generate
 # npm run db:push — skipped: no intentional real DATABASE_URL in workspace for sync
+git add packages/db/prisma/schema.prisma docs/kairo-build-log.md && git commit -m "db: finalize Kairo MVP schema" && git push
+git add packages/db/package.json packages/db/tsconfig.json packages/db/src packages/db/.env.example && git commit -m "db: add @kairo/db package manifest and Prisma client entry" && git push
 ```
 
 Tests / Checks:
@@ -377,7 +380,7 @@ Result:
 
 Issues:
 
-- (none)
+- First `git add` for Phase 1 only staged `schema.prisma` + docs, leaving `@kairo/db` manifest/client untracked; fixed immediately with a second commit so clones can run `prisma generate` / workspace installs.
 
 After Checklist:
 
@@ -386,7 +389,8 @@ After Checklist:
 
 Commit:
 
-- `db: finalize Kairo MVP schema`
+- `272635a` — `db: finalize Kairo MVP schema`
+- `a8c7a16` — `db: add @kairo/db package manifest and Prisma client entry`
 
 Next:
 
