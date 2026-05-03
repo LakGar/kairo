@@ -116,6 +116,7 @@ Done:
 - [x] **Phase 0 audit:** Root `package-lock.json` is the lockfile for workspace installs; `website/` has no nested `package-lock.json` in tree.
 - [x] `origin` → `https://github.com/LakGar/kairo.git` (fetch/push).
 - [x] `docs/kairo-build-log.md` is the **main** build source of truth; `docs/onboarding-build-log.md` exists for onboarding-only notes.
+- [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports).
 
 In Progress:
 
@@ -124,7 +125,7 @@ In Progress:
 Left:
 
 - [ ] **Critical git gap (Phase 0):** On this machine, `git status` shows `packages/`, `website/`, `mobile/` as **untracked** and many **deleted** files at repo root (old single Next app). **`origin/main` may not yet contain the monorepo layout seen on disk** — needs a dedicated cleanup + add + commit + push (outside Phase 0 doc-only scope unless expanded).
-- [ ] **Phase 2:** `packages/shared` or defer validators under `website/src/server` (per plan).
+- [ ] **Phase 3:** Add `"@kairo/shared": "*"` to `website` (and `transpilePackages` if needed) when server layer imports validators.
 - [ ] Product language guardrails in UI copy (no gambling framing).
 
 ---
@@ -395,9 +396,67 @@ Commit:
 
 Next:
 
-- **PHASE 2:** Shared validators (`packages/shared` or defer under website).
+- **PHASE 3:** Website server services + wire `@kairo/shared` / `@/lib/db`.
 - **PHASE 5:** Seed script when ready.
 - Configure `DATABASE_URL` locally and run `npm run db:push` or `db:migrate` when you want a physical DB.
+
+### 2026-05-03 — PHASE 2: Shared Zod validators (`@kairo/shared`)
+
+Area:
+
+- Shared / Packages / Types — `packages/shared`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status -sb`.
+- [x] Confirmed root workspaces include `packages/*` and no pre-existing `packages/shared` (no duplicate package).
+- [x] Confirmed Prisma enums in `packages/db/prisma/schema.prisma` for alignment (manual mirror in `src/enums.ts`).
+
+Planned Work:
+
+- Add `@kairo/shared` with Zod schemas from MVP plan: events (create/update/join), teams (create/join), matches (create/score/winner), proof (prompt/submit/review), stakes (create/update status).
+- Avoid `@prisma/client` in shared; keep literals in sync with DB enums by convention.
+
+Files Changed:
+
+- `packages/shared/package.json`, `packages/shared/tsconfig.json`, `packages/shared/src/*.ts` — new package.
+- `package-lock.json` — workspace dependency `zod` for `@kairo/shared`.
+- `docs/kairo-build-log.md` — Shared area + this session.
+
+Commands Run:
+
+```bash
+git status -sb
+npm install
+npx tsc --noEmit -p packages/shared/tsconfig.json
+```
+
+Tests / Checks:
+
+- [x] `npx tsc --noEmit -p packages/shared/tsconfig.json` — passed.
+- [ ] Root / website `npm run lint` — not run (out of scope for this package-only change).
+
+Result:
+
+- `@kairo/shared` ready for Phase 3 `website` service imports (`"@kairo/shared": "*"` + optional `transpilePackages`).
+
+Issues:
+
+- (none)
+
+After Checklist:
+
+- [x] Updated Shared Done / Left and this session.
+- [x] Ran Typecheck for `packages/shared` only.
+
+Commit:
+
+- `shared: add zod validators package`
+
+Next:
+
+- **PHASE 3:** Website server layer + `import` from `@kairo/shared` and `@/lib/db`.
 
 ---
 
