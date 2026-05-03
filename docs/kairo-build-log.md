@@ -122,7 +122,7 @@ Commands Run:
 git status
 git add docs/kairo-build-log.md
 git commit -m "add Kairo build log"
-git push   # failed — see Issues
+git push   # failed initially — no remote (see Issues)
 ```
 
 Tests / Checks:
@@ -139,9 +139,9 @@ Result:
 
 Issues:
 
-- `git push` failed: no Git remote is configured for this repository.
+- `git push` failed at first: no Git remote was configured.
 
-Exact error from `git push`:
+Exact error from that first `git push`:
 
 ```text
 fatal: No configured push destination.
@@ -154,13 +154,15 @@ and then push using the remote name
     git push <name>
 ```
 
+Resolved later: origin added and `main` pushed (see work session **Configure origin and push main** below).
+
 After Checklist:
 
 - [x] Updated Done / In Progress / Left sections for all areas.
 - [x] Added this work session (push result recorded after `git push`).
 - [x] Ran `git status`.
 - [x] Committed stable changes (scoped to `docs/kairo-build-log.md` only).
-- [ ] Pushed to GitHub — blocked until a remote exists (`git remote add origin <url>` then `git push -u origin main`).
+- [x] Pushed to GitHub — completed after `git remote add` + `git push -u origin main` (see session below).
 
 Commit:
 
@@ -170,6 +172,60 @@ Next:
 
 - Implement website backend APIs or server actions; keep each task scoped and update this log per session.
 - Run `npm run db:push` or `db:migrate` when a database URL is configured.
+
+### 2026-05-02 — Configure origin and push main
+
+Area:
+
+- Shared / Packages / Types (repository hosting)
+
+Before Checklist:
+
+- [x] Checked `git remote -v` after adding origin.
+- [x] Confirmed branch is `main`.
+
+Planned Work:
+
+- Add `origin` remote and push `main` to GitHub.
+
+Files Changed:
+
+- (none for the push itself; this session documents the command-only step.)
+
+Commands Run:
+
+```bash
+git remote add origin https://github.com/LakGar/kairo.git
+git branch --show-current   # main
+git push -u origin main
+```
+
+Tests / Checks:
+
+- [ ] Typecheck — not run (no code change).
+- [ ] Lint — not run.
+
+Result:
+
+- `origin` points at `https://github.com/LakGar/kairo.git`.
+- Remote branch `main` created; local `main` tracks `origin/main`.
+
+Issues:
+
+- (none)
+
+After Checklist:
+
+- [x] Updated this work session in `docs/kairo-build-log.md`.
+- [x] Prior session’s “Pushed to GitHub” note corrected to reflect successful push.
+
+Commit:
+
+- `docs: record successful GitHub push in build log` (includes this session text)
+
+Next:
+
+- Commit and push remaining monorepo work when ready (large unstaged/untracked tree locally is not yet on `origin`).
 
 ---
 
