@@ -175,8 +175,8 @@ Done:
 - **Commands run:** `npm run typecheck` (mobile) — pass; `npm run lint` (mobile) — pass (onboarding warnings pre-existing).
 - **Route visually checked:** Source — `/(tabs)/events/create`, `/(tabs)/create`; device not re-run in agent.
 - **TODOs left:** Wire `POST /events` (or client) when ready; image + datetime pickers; entry fee flow; replace `console.log` stubs.
-- **Commit:** `41984c7` — `mobile: build premium create event screen`
-- **Push:** `git push origin main` — succeeded (`b3bde7e..41984c7`).
+- **Commit:** `41984c7` — `mobile: build premium create event screen`; `94d223f` — `docs: align create event session with commit hash`.
+- **Push:** `git push origin main` — succeeded (`b3bde7e..94d223f`).
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
