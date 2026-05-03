@@ -54,6 +54,7 @@ Done:
 - [x] Root scripts include `db:generate`, `db:migrate`, `db:push`, `db:studio`.
 - [x] Prisma client generates from the DB package.
 - [x] **Phase 0 audit (2026-05-02):** On disk, schema includes models `User`, `Profile`, `Event`, `EventParticipant`, `Team`, `TeamMember`, `Bracket`, `Match`, `ProofPrompt`, `ProofSubmission`, `Stake`, `ActivityLog` and enums `UserRole` through `StakeStatus` as required for MVP foundation.
+- [x] **Phase 1 (2026-05-02):** Schema reviewed end-to-end; `ProofSubmission.eventId` ↔ `Event` relation intact; no payments/AI/storage tables added; proof remains `url` + `text` only. Composite indexes added for common lookups: `Event` `[status, startsAt]` (replaces standalone `[status]` to avoid redundancy), `EventParticipant` `[eventId, userId]`, `ProofSubmission` `[eventId, status]`, `Stake` `[eventId, status]`; `ActivityLog` `[createdAt]` for timelines.
 
 In Progress:
 
@@ -61,9 +62,8 @@ In Progress:
 
 Left:
 
-- [ ] **Phase 1:** Schema audit + any MVP adjustments (indexes, relations, no overbuild).
 - [ ] **Phase 5:** `db:seed` script and demo data (`db:seed` not in root scripts yet).
-- [ ] Apply migrations or `db:push` when `DATABASE_URL` is set and intentional.
+- [ ] Apply migrations or `db:push` when `DATABASE_URL` is set and intentional (no Postgres URL in repo root or `packages/db/.env` today — only `mobile/.env` for Clerk).
 
 ### Website / Next.js / website
 
@@ -329,8 +329,70 @@ Commit:
 
 Next:
 
-- **PHASE 1:** Database schema audit and finalize MVP schema in `packages/db`.
 - **Git hygiene (parallel priority):** Commit untracked monorepo paths so `origin` reflects real code.
+
+### 2026-05-02 — PHASE 1: Database schema audit and MVP indexes
+
+Area:
+
+- Database / Prisma / `packages/db`
+
+Before Checklist:
+
+- [x] Opened `docs/kairo-build-log.md`.
+- [x] Ran `git status -sb`.
+- [x] Read full `packages/db/prisma/schema.prisma` (models, enums, relations, indexes).
+
+Planned Work:
+
+- Confirm MVP model/enum set; avoid overbuild (no payments pipeline, no file storage tables).
+- Add only high-value indexes for list/filter patterns.
+- Run `prisma validate` + `npm run db:generate`; run `db:push` only if a real `DATABASE_URL` exists.
+
+Files Changed:
+
+- `packages/db/prisma/schema.prisma` — composite indexes on `Event`, `EventParticipant`, `ProofSubmission`, `Stake`; `ActivityLog.createdAt`; dropped redundant `Event` index on `status` alone in favor of `[status, startsAt]`.
+- `docs/kairo-build-log.md` — Phase 1 session + Database area updates.
+
+Commands Run:
+
+```bash
+git status -sb
+# prisma validate (first attempt without DATABASE_URL) failed P1012 — env missing
+DATABASE_URL="postgresql://user:pass@localhost:5432/kairo" npx prisma validate --schema=packages/db/prisma/schema.prisma
+npm run db:generate
+# npm run db:push — skipped: no intentional real DATABASE_URL in workspace for sync
+```
+
+Tests / Checks:
+
+- [x] `prisma validate` — passed when run with **placeholder** `DATABASE_URL` (CLI otherwise errors with P1012 in this repo).
+- [x] `npm run db:generate` — passed.
+- [ ] `npm run db:push` / migrate — not run (no configured Postgres URL for Prisma in repo; push not intended this session).
+- [ ] Typecheck / lint — not run (schema-only change).
+
+Result:
+
+- MVP schema finalized for Phase 1 scope; client regenerated.
+
+Issues:
+
+- (none)
+
+After Checklist:
+
+- [x] Updated Database Done / Left and this work session.
+- [x] Ran checks above; documented skipped `db:push`.
+
+Commit:
+
+- `db: finalize Kairo MVP schema`
+
+Next:
+
+- **PHASE 2:** Shared validators (`packages/shared` or defer under website).
+- **PHASE 5:** Seed script when ready.
+- Configure `DATABASE_URL` locally and run `npm run db:push` or `db:migrate` when you want a physical DB.
 
 ---
 

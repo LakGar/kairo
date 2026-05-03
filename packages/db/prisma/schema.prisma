@@ -1,0 +1,406 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+  INVITE_ONLY
+}
+
+enum EventFormat {
+  OPEN_MEETUP
+  TEAM_TOURNAMENT
+  SOLO_COMPETITION
+  ROUND_ROBIN
+  SINGLE_ELIMINATION
+}
+
+enum EventParticipantRole {
+  ORGANIZER
+  PLAYER
+  WATCHER
+  VOLUNTEER
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  WAITLISTED
+  REJECTED
+  CANCELLED
+}
+
+enum TeamMemberRole {
+  CAPTAIN
+  MEMBER
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ProofType {
+  PHOTO
+  VIDEO
+  TEXT
+  LINK
+}
+
+enum ProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum StakeType {
+  NONE
+  TASK
+  DONATION
+  PRIZE
+}
+
+enum StakeStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      UserRole @default(USER)
+
+  profile   Profile?
+
+  createdEvents Event[] @relation("EventOrganizer")
+
+  eventParticipants EventParticipant[]
+  teamsCreated      Team[]             @relation("TeamCaptain")
+  teamMemberships   TeamMember[]
+  proofSubmissions  ProofSubmission[]
+  activityLogs      ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+
+  name      String?
+  username  String? @unique
+  avatarUrl String?
+  bio       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String @id @default(cuid())
+
+  organizerId String
+  organizer   User   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  title          String
+  slug           String  @unique
+  description    String?
+  activityType   String
+
+  status     EventStatus     @default(DRAFT)
+  visibility EventVisibility @default(PUBLIC)
+  format     EventFormat     @default(OPEN_MEETUP)
+
+  locationName String?
+  address      String?
+  city         String?
+  state        String?
+  country      String?
+
+  startsAt DateTime
+  endsAt   DateTime?
+
+  maxTeams       Int?
+  maxSoloPlayers Int?
+  maxWatchers    Int?
+  maxVolunteers  Int?
+
+  entryFeeCents Int?
+  currency      String @default("USD")
+
+  allowTeams       Boolean @default(true)
+  allowSoloPlayers Boolean @default(true)
+  allowWatchers    Boolean @default(true)
+  allowVolunteers  Boolean @default(true)
+
+  participants     EventParticipant[]
+  teams            Team[]
+  brackets         Bracket[]
+  matches          Match[]
+  proofPrompts     ProofPrompt[]
+  proofSubmissions ProofSubmission[]
+  stakes           Stake[]
+  activityLogs     ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([startsAt])
+  @@index([activityType])
+  /// Covers filter by status and sort by startsAt (left-prefix includes status-only lookups)
+  @@index([status, startsAt])
+}
+
+model EventParticipant {
+  id String @id @default(cuid())
+
+  eventId String
+  userId  String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role   EventParticipantRole
+  status RegistrationStatus @default(PENDING)
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId, role])
+  @@index([eventId])
+  @@index([userId])
+  @@index([eventId, userId])
+  @@index([role])
+  @@index([status])
+}
+
+model Team {
+  id String @id @default(cuid())
+
+  eventId   String
+  captainId String
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  captain User  @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  logoUrl     String?
+
+  members TeamMember[]
+
+  homeMatches  Match[] @relation("HomeTeam")
+  awayMatches  Match[] @relation("AwayTeam")
+  wonMatches   Match[] @relation("WinningTeam")
+
+  seed Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, name])
+  @@index([eventId])
+  @@index([captainId])
+}
+
+model TeamMember {
+  id String @id @default(cuid())
+
+  teamId String
+  userId String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role TeamMemberRole @default(MEMBER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model Bracket {
+  id String @id @default(cuid())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name   String
+  format EventFormat
+
+  matches Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model Match {
+  id String @id @default(cuid())
+
+  eventId   String
+  bracketId String?
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bracket Bracket? @relation(fields: [bracketId], references: [id], onDelete: SetNull)
+
+  round       Int?
+  matchNumber Int?
+  scheduledAt DateTime?
+
+  homeTeamId   String?
+  awayTeamId   String?
+  winnerTeamId String?
+
+  homeTeam   Team? @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: SetNull)
+  awayTeam   Team? @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: SetNull)
+  winnerTeam Team? @relation("WinningTeam", fields: [winnerTeamId], references: [id], onDelete: SetNull)
+
+  homeScore Int?
+  awayScore Int?
+
+  status MatchStatus @default(SCHEDULED)
+
+  proofSubmissions ProofSubmission[]
+  stakes           Stake[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([bracketId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([winnerTeamId])
+  @@index([status])
+}
+
+model ProofPrompt {
+  id String @id @default(cuid())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  proofType   ProofType @default(PHOTO)
+
+  isRequired Boolean @default(false)
+
+  submissions ProofSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model ProofSubmission {
+  id String @id @default(cuid())
+
+  eventId  String
+  matchId  String?
+  promptId String?
+  userId   String
+
+  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  match  Match?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  prompt ProofPrompt? @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type ProofType
+  url  String?
+  text String?
+
+  status ProofStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([matchId])
+  @@index([promptId])
+  @@index([userId])
+  @@index([status])
+  @@index([eventId, status])
+}
+
+model Stake {
+  id String @id @default(cuid())
+
+  eventId String
+  matchId String?
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  match Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  type        StakeType @default(TASK)
+  title       String
+  description String?
+
+  amountCents Int?
+  currency    String @default("USD")
+
+  status StakeStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([matchId])
+  @@index([type])
+  @@index([status])
+  @@index([eventId, status])
+}
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  eventId String?
+  userId  String?
+
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action   String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
