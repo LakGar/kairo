@@ -151,7 +151,7 @@ In Progress:
 - **Handlers:** `console.log` for Submit proof / Review inbox stubs + `TODO`s; `router.push` for View event + commitment rows with mock ids; notifications → `/(tabs)/notifications`.
 - **Commands:** `npm run typecheck`, `npm run lint` (mobile) — pass (same unrelated onboarding warnings).
 - **Commit:** `d231cbd` — `mobile: refine home dashboard UI`
-- **Push:** (pending)
+- **Push:** `git push origin main` — succeeded (`76cd75b..d231cbd`); follow-up `4776083` — `docs: record home dashboard UI push`.
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
