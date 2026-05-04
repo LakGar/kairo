@@ -29,6 +29,7 @@ export {
   type ApiMeEventsPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
+  type ApiProofMediaUploadInstructions,
   type ApiProofPrompt,
   type ApiBillingPurchase,
   type ApiProofReviewResult,

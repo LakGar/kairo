@@ -11,6 +11,7 @@ import {
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,
+  type ApiProofMediaUploadInstructions,
   type ApiProofReviewResult,
   type ApiProofSubmission,
   type ApiStake,
@@ -125,6 +126,9 @@ export interface KairoApi {
   createProofPrompt: (eventId: string, body: unknown) => Promise<ApiProofPrompt>;
   listProofSubmissions: (eventId: string) => Promise<ApiProofSubmission[]>;
   submitProof: (eventId: string, body: unknown) => Promise<ApiProofSubmission>;
+  createProofMediaUploadUrl: (
+    body: unknown,
+  ) => Promise<ApiProofMediaUploadInstructions>;
   listStakes: (eventId: string) => Promise<ApiStake[]>;
   createStake: (eventId: string, body: unknown) => Promise<ApiStake>;
   joinTeam: (teamId: string) => Promise<ApiTeamPublic>;
@@ -186,6 +190,8 @@ export function createKairoApi(config: {
         method: "POST",
         json: body,
       }),
+    createProofMediaUploadUrl: (body) =>
+      req("/api/proof-media/upload-url", { method: "POST", json: body }),
     listStakes: (eventId) => req(`/api/events/${encodeURIComponent(eventId)}/stakes`),
     createStake: (eventId, body) =>
       req(`/api/events/${encodeURIComponent(eventId)}/stakes`, {

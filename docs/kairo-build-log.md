@@ -291,6 +291,24 @@ Done:
 - **Commit:** `0533762` — `mobile: add in-app proof capture`; `5f64cee` — `docs: record proof capture PR6 commit`
 - **Push:** `git push origin main` — succeeded
 
+#### Work session — 2026-05-03 (Mobile + Website) — Durable proof media upload (S3 presigned PUT)
+
+- **Task:** Replace `file:` proof submissions from capture with **HTTPS object URLs** — `POST /api/proof-media/upload-url` returns presigned **PUT** + `publicUrl`; mobile uploads via `expo-file-system` `File` + `fetch`, then `submitProof` with `publicUrl`; S3-compatible env (`PROOF_STORAGE_*`); server rejects `file:` for PHOTO/VIDEO unless `PROOF_ALLOW_FILE_URL=1`.
+- **Before:** No object storage in repo; **intended commit scope:** website proof-media service + route + deps, `proof.service` guard, `@kairo/shared` request/response types, mobile client + capture upload helper + screen, env examples, this log.
+
+**After (2026-05-03):**
+
+- **Storage approach:** **AWS SDK v3** `S3Client` + `getSignedUrl(PutObjectCommand)` — works with **AWS S3**, **Cloudflare R2** (`PROOF_STORAGE_ENDPOINT` + `forcePathStyle`), **MinIO**, etc. No Supabase in tree.
+- **API:** `POST /api/proof-media/upload-url` — Zod `proofMediaUploadRequestSchema`; keys `proof/{eventId}/{userId}/{ts}-{rand}.{ext}`; content types: `image/jpeg`, `image/png`, `video/mp4`, `video/quicktime`; size limits enforced on request body.
+- **Mobile:** `createProofMediaUploadUrl` on API client; `proof-capture-upload.ts` — presign then **PUT** body; statuses “Uploading proof…” / “Submitting proof…”; upload failure does not call `submitProof`; **TODO** orphan object if submit fails after upload.
+- **Deps:** website `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`; mobile `expo-file-system` (already added in PR6 path).
+- **Env:** `website/.env.example` documents `PROOF_STORAGE_*` + `PROOF_ALLOW_FILE_URL`; `mobile/.env.example` points to website config.
+- **Real storage test:** **Not run** in agent (no bucket/credentials in environment).
+- **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
+- **TODOs left:** Orphan upload cleanup; tighten `http:` disallow in production; optional deep participant check on presign; virus scan / moderation.
+- **Commit:** (recorded after `git commit`)
+- **Push:** (recorded after `git push`)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

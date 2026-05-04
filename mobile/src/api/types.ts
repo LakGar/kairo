@@ -257,6 +257,14 @@ export interface ApiProofReviewResult {
   status: string;
 }
 
+/** `POST /api/proof-media/upload-url` — presigned PUT + public URL for proof media. */
+export interface ApiProofMediaUploadInstructions {
+  uploadUrl: string;
+  publicUrl: string;
+  method: "PUT";
+  headers: Record<string, string>;
+}
+
 /** Stripe charge–backed row from `GET /api/billing/purchases`. */
 export interface ApiBillingPurchase {
   id: string;

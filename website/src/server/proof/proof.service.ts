@@ -114,6 +114,28 @@ export async function submitProof(
     if (!pr) return err("Proof prompt not found for this event", "NOT_FOUND");
   }
 
+  const urlTrim = d.url?.trim() ?? "";
+  if (d.type === "PHOTO" || d.type === "VIDEO") {
+    if (urlTrim.startsWith("file:")) {
+      if (process.env.PROOF_ALLOW_FILE_URL !== "1") {
+        return err(
+          "PHOTO and VIDEO proof must use an HTTPS URL from the upload flow. Set PROOF_ALLOW_FILE_URL=1 only for trusted local development.",
+          "VALIDATION_ERROR",
+        );
+      }
+    } else if (urlTrim) {
+      try {
+        const u = new URL(urlTrim);
+        if (u.protocol !== "https:" && u.protocol !== "http:") {
+          return err("Proof media URL must be http(s).", "VALIDATION_ERROR");
+        }
+      } catch {
+        return err("Invalid proof media URL.", "VALIDATION_ERROR");
+      }
+    }
+    // TODO: disallow http: outside development; disallow file: outside PROOF_ALLOW_FILE_URL.
+  }
+
   const submission = await prisma.proofSubmission.create({
     data: {
       eventId,

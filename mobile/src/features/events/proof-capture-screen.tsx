@@ -28,6 +28,7 @@ import {
 } from "@/src/api";
 import { buildEventDetailFocusHref } from "@/src/features/home/event-proof-nav";
 
+import { uploadCapturedProofToStorage } from "./proof-capture-upload";
 import type { ProofCaptureMode } from "./proof-capture.types";
 
 const BG = "#0B0F14";
@@ -81,6 +82,7 @@ export function ProofCaptureScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   const cameraRef = useRef<InstanceType<typeof CameraView>>(null);
   const recordingPromiseRef = useRef<Promise<{ uri: string } | undefined> | null>(null);
@@ -159,36 +161,59 @@ export function ProofCaptureScreen() {
     if (!capturedUri || !proofType || !eventId) return;
     setSubmitting(true);
     setError(null);
-    const body: SubmitProofInput = {
-      eventId,
-      matchId,
-      promptId,
-      type: proofType,
-      // TODO: Replace temporary `file:` URI with CDN/storage URL after upload pipeline exists.
-      url: capturedUri,
-      text: "Captured in Kairo",
-    };
-    const parsed = submitProofSchema.safeParse(body);
-    if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      const first =
-        Object.values(flat.fieldErrors).flat()[0] ??
-        flat.formErrors[0] ??
-        parsed.error.message;
-      setError(first ?? "Invalid proof payload.");
-      setSubmitting(false);
-      return;
-    }
+    setUploadStatus(null);
     try {
       const api = createKairoApiFromEnv({ userId: linkedUserId });
+      setUploadStatus("Uploading proof…");
+      const publicUrl = await uploadCapturedProofToStorage({
+        api,
+        eventId,
+        localUri: capturedUri,
+        proofType,
+        promptId,
+        matchId,
+      });
+
+      setUploadStatus("Submitting proof…");
+      const body: SubmitProofInput = {
+        eventId,
+        matchId,
+        promptId,
+        type: proofType,
+        url: publicUrl,
+        text: "Captured in Kairo",
+      };
+      const parsed = submitProofSchema.safeParse(body);
+      if (!parsed.success) {
+        const flat = parsed.error.flatten();
+        const first =
+          Object.values(flat.fieldErrors).flat()[0] ??
+          flat.formErrors[0] ??
+          parsed.error.message;
+        setError(first ?? "Invalid proof payload.");
+        // TODO: publicUrl may point at an orphan object if validation failed before submit; add cleanup.
+        return;
+      }
       await api.submitProof(eventId, parsed.data);
       router.replace(buildEventDetailFocusHref(eventId, { focus: "proof" }));
     } catch (e) {
-      if (e instanceof KairoApiError) setError(e.message);
-      else if (e instanceof KairoApiConfigurationError) setError(e.message);
-      else setError(e instanceof Error ? e.message : "Could not submit proof.");
+      if (e instanceof KairoApiError) {
+        if (e.code === "NOT_CONFIGURED") {
+          setError(
+            `${e.message} Set proof storage env vars on the website (see website/.env.example), then retry.`,
+          );
+        } else {
+          setError(e.message);
+        }
+        // TODO: If upload succeeded but submitProof failed, delete orphan object (lifecycle rule or API).
+      } else if (e instanceof KairoApiConfigurationError) {
+        setError(e.message);
+      } else {
+        setError(e instanceof Error ? e.message : "Could not upload or submit proof.");
+      }
     } finally {
       setSubmitting(false);
+      setUploadStatus(null);
     }
   }, [capturedUri, eventId, linkedUserId, matchId, promptId, proofType, router]);
 
@@ -312,7 +337,11 @@ export function ProofCaptureScreen() {
             )}
           </>
         ) : (
-          <View style={styles.previewActions}>
+          <View style={styles.previewActionsCol}>
+            {uploadStatus ? (
+              <Text style={styles.uploadStatus}>{uploadStatus}</Text>
+            ) : null}
+            <View style={styles.previewActions}>
             <Pressable style={styles.secondaryBtn} onPress={() => { setCapturedUri(null); setPhase("camera"); setCameraReady(false); }} disabled={submitting}>
               <Text style={styles.secondaryBtnLabel}>Retake</Text>
             </Pressable>
@@ -327,6 +356,7 @@ export function ProofCaptureScreen() {
                 <Text style={styles.primaryBtnLabel}>Submit proof</Text>
               )}
             </Pressable>
+            </View>
           </View>
         )}
       </View>
@@ -472,6 +502,16 @@ const styles = StyleSheet.create({
   },
   videoControls: {
     alignItems: "stretch",
+  },
+  previewActionsCol: {
+    gap: 8,
+    alignSelf: "stretch",
+  },
+  uploadStatus: {
+    color: MUTED,
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "600",
   },
   previewActions: {
     flexDirection: "row",
