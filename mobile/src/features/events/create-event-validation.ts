@@ -6,6 +6,7 @@ export type CreateEventValidationResult =
 
 export function validateCreateEventForm(
   form: CreateEventForm,
+  options?: { skipStartLabel?: boolean },
 ): CreateEventValidationResult {
   const errors: CreateEventFormErrors = {};
 
@@ -17,7 +18,7 @@ export function validateCreateEventForm(
     errors.location = "Location is required.";
   }
 
-  if (!form.startsAtLabel.trim()) {
+  if (!options?.skipStartLabel && !form.startsAtLabel.trim()) {
     errors.start = "Start time is required.";
   }
 

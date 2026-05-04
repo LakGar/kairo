@@ -178,6 +178,21 @@ Done:
 - **Commit:** `41984c7` — `mobile: build premium create event screen`; `94d223f` — `docs: align create event session with commit hash`.
 - **Push:** `git push origin main` — succeeded (`b3bde7e..94d223f`).
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Wire premium create event to API
+
+- **Task:** Wire premium Create Event screen to `POST /api/events` (loading, config + API errors, navigate to event detail on success; map form + schedule `Date`s to `createEventSchema`; keep stake/proof UI local with TODO for follow-up API calls).
+- **Before:** `git status` — large unrelated dirty tree across mobile/website; **intended commit scope:** `premium-create-event-screen.tsx`, `premium-create-event-map-api.ts` (new), `create-event-validation.ts`, and this log only.
+
+**After (2026-05-03):**
+
+- **Done:** Premium create submits through `createKairoApiFromEnv` + `createEvent` (`POST /api/events`); default schedule uses real `Date` (+7d noon, +1h end) with display labels from `Intl`; payload aligned via `createEventSchema.safeParse` (`premium-create-event-map-api.ts`); `validateCreateEventForm(..., { skipStartLabel: true })` + `validatePremiumScheduleDates`; missing `EXPO_PUBLIC_API_URL` or acting user id shows the requested configuration message; loading disables header check + primary CTA; `apiError` banner for Zod/API failures; success → `router.replace(\`/(tabs)/events/${id}\`)`; TODO comment for stake/proof/image picker/payments.
+- **Files added:** `mobile/src/features/events/premium-create-event-map-api.ts`
+- **Files changed:** `mobile/src/features/events/premium-create-event-screen.tsx`, `mobile/src/features/events/create-event-validation.ts`, `docs/kairo-build-log.md`
+- **Commands run:** `cd mobile && npm run typecheck` — pass; `cd mobile && npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` — pass
+- **Device / app:** Not run in agent (API wiring verified by typecheck + lint only).
+- **Create event API:** Wired for premium screen (draft on server; same as `CreateEventForm`).
+- **TODOs left:** Date/time picker to mutate `schedule`; image picker; entry fee UI → cents; chain `createStake` / `createProofPrompt` after create when field mapping is complete.
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
