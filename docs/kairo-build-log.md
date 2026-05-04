@@ -301,13 +301,13 @@ Done:
 - **Storage approach:** **AWS SDK v3** `S3Client` + `getSignedUrl(PutObjectCommand)` — works with **AWS S3**, **Cloudflare R2** (`PROOF_STORAGE_ENDPOINT` + `forcePathStyle`), **MinIO**, etc. No Supabase in tree.
 - **API:** `POST /api/proof-media/upload-url` — Zod `proofMediaUploadRequestSchema`; keys `proof/{eventId}/{userId}/{ts}-{rand}.{ext}`; content types: `image/jpeg`, `image/png`, `video/mp4`, `video/quicktime`; size limits enforced on request body.
 - **Mobile:** `createProofMediaUploadUrl` on API client; `proof-capture-upload.ts` — presign then **PUT** body; statuses “Uploading proof…” / “Submitting proof…”; upload failure does not call `submitProof`; **TODO** orphan object if submit fails after upload.
-- **Deps:** website `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`; mobile `expo-file-system` (already added in PR6 path).
+- **Deps:** website `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`; mobile `expo-file-system` (for reading captured file as upload body).
 - **Env:** `website/.env.example` documents `PROOF_STORAGE_*` + `PROOF_ALLOW_FILE_URL`; `mobile/.env.example` points to website config.
 - **Real storage test:** **Not run** in agent (no bucket/credentials in environment).
 - **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
 - **TODOs left:** Orphan upload cleanup; tighten `http:` disallow in production; optional deep participant check on presign; virus scan / moderation.
-- **Commit:** (recorded after `git commit`)
-- **Push:** (recorded after `git push`)
+- **Commit:** `d650fe5` — `proof: add durable media upload pipeline`
+- **Push:** `git push origin main` — succeeded (`ab6e774..d650fe5`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
