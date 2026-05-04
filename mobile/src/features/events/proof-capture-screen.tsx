@@ -7,7 +7,7 @@ import {
 } from "expo-camera";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -73,7 +73,9 @@ export function ProofCaptureScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
-  const [phase, setPhase] = useState<"camera" | "preview" | "unsupported">("camera");
+  const [phase, setPhase] = useState<"camera" | "preview" | "unsupported">(
+    Platform.OS === "web" ? "unsupported" : "camera",
+  );
   const [cameraReady, setCameraReady] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -82,12 +84,6 @@ export function ProofCaptureScreen() {
 
   const cameraRef = useRef<InstanceType<typeof CameraView>>(null);
   const recordingPromiseRef = useRef<Promise<{ uri: string } | undefined> | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      setPhase("unsupported");
-    }
-  }, []);
 
   const cameraGranted = cameraPermission?.granted === true;
   const micGranted = micPermission?.granted === true;
