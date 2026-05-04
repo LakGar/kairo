@@ -512,7 +512,7 @@ Done:
 
 **Commit:** `abf2dca` — `docs: add staging setup and MVP e2e checklist`
 
-**Push:** _(after `git push`)_
+**Push:** `git push origin main` — succeeded (`b68da50..7edbbba`; feature `abf2dca`, log follow-up `7edbbba`).
 
 In Progress:
 
