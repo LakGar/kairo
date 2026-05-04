@@ -97,6 +97,7 @@ export interface ApiHomeEventSummary {
 
 export interface ApiHomeAction {
   id: string;
+  /** `SUBMIT_PROOF` | `REVIEW_PROOF` | `TEAM_RESULT_REVIEW` | … */
   type: string;
   title: string;
   subtitle: string;

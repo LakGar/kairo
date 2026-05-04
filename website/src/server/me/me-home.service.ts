@@ -1,8 +1,10 @@
 import {
   EventParticipantRole,
   EventStatus,
+  MatchResultStatus,
   ProofStatus,
   RegistrationStatus,
+  ResultVerificationMode,
 } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
@@ -96,6 +98,17 @@ type EventRow = {
 
 function iso(d: Date) {
   return d.toISOString();
+}
+
+function userOnTeam(
+  team: {
+    captainId: string;
+    members: { userId: string }[];
+  },
+  userId: string,
+): boolean {
+  if (team.captainId === userId) return true;
+  return team.members.some((m) => m.userId === userId);
 }
 
 function toSummary(e: EventRow, role: string): MeHomeEventSummary {
@@ -246,7 +259,64 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
     take: 8,
   });
 
-  const actions: MeHomeAction[] = [];
+  const teamResultReviewActions: MeHomeAction[] = [];
+  const seenTeamResultMatches = new Set<string>();
+
+  const pendingOpponentConfirmMatches = await prisma.match.findMany({
+    where: {
+      resultVerificationMode: ResultVerificationMode.TEAM_AGREEMENT,
+      resultStatus: MatchResultStatus.WAITING_CONFIRMATION,
+      submittedByTeamId: { not: null },
+      homeTeamId: { not: null },
+      awayTeamId: { not: null },
+    },
+    include: {
+      event: { select: { id: true, title: true } },
+      homeTeam: {
+        select: {
+          id: true,
+          name: true,
+          captainId: true,
+          members: { select: { userId: true } },
+        },
+      },
+      awayTeam: {
+        select: {
+          id: true,
+          name: true,
+          captainId: true,
+          members: { select: { userId: true } },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 24,
+  });
+
+  for (const m of pendingOpponentConfirmMatches) {
+    if (!m.submittedByTeamId || !m.homeTeam || !m.awayTeam) continue;
+    const submitter =
+      m.submittedByTeamId === m.homeTeamId ? m.homeTeam : m.awayTeam;
+    const opponent = m.submittedByTeamId === m.homeTeamId ? m.awayTeam : m.homeTeam;
+    if (userOnTeam(submitter, userId)) continue;
+    if (!userOnTeam(opponent, userId)) continue;
+    if (seenTeamResultMatches.has(m.id)) continue;
+    seenTeamResultMatches.add(m.id);
+
+    const homeLabel = m.homeTeam.name;
+    const awayLabel = m.awayTeam.name;
+    teamResultReviewActions.push({
+      id: `team-result-review-${m.id}`,
+      type: "TEAM_RESULT_REVIEW",
+      title: "Confirm match result",
+      subtitle: `Your opponent submitted a result. Review it before it becomes official. · ${m.event.title} · ${homeLabel} vs ${awayLabel}`,
+      eventId: m.eventId,
+      matchId: m.id,
+      ctaLabel: "Review Result",
+    });
+  }
+
+  const actions: MeHomeAction[] = [...teamResultReviewActions];
   const seenSubmitEvents = new Set<string>();
 
   for (const p of promptsByEvent) {
@@ -334,7 +404,7 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
     invited: [],
     watching,
     volunteering,
-    actions: actions.slice(0, 6),
+    actions: actions.slice(0, 8),
     proofInbox,
     stats,
     recentActivity,

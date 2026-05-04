@@ -94,7 +94,8 @@ export default function EventDetailScreen() {
   const params = useLocalSearchParams();
   const eventId = pickSearchParam(params.eventId as string | string[] | undefined);
   const focus = pickSearchParam(params.focus as string | string[] | undefined);
-  // TODO: use proofSubmissionId / matchId query params to highlight a specific row when UI supports it.
+  const focusMatchId = pickSearchParam(params.matchId as string | string[] | undefined);
+  // TODO: use proofSubmissionId to highlight a specific proof row when UI supports it.
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -105,7 +106,7 @@ export default function EventDetailScreen() {
   const [joinWithinLowerY, setJoinWithinLowerY] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   /** Y of proof-related blocks within `lowerPanel` (for Home deep links). */
-  const [focusSectionYs, setFocusSectionYs] = useState({ organizer: 0, proof: 0 });
+  const [focusSectionYs, setFocusSectionYs] = useState({ organizer: 0, proof: 0, result: 0 });
 
   const { event, loading, error, reload } = useEventDetail(eventId);
   const {
@@ -121,9 +122,14 @@ export default function EventDetailScreen() {
 
   useEffect(() => {
     if (!event || loading) return;
-    if (focus !== "organizer" && focus !== "proof") return;
+    if (focus !== "organizer" && focus !== "proof" && focus !== "result") return;
     if (didAutoScrollToFocus.current) return;
-    const relY = focus === "organizer" ? focusSectionYs.organizer : focusSectionYs.proof;
+    const relY =
+      focus === "organizer"
+        ? focusSectionYs.organizer
+        : focus === "proof"
+          ? focusSectionYs.proof
+          : focusSectionYs.result;
     if (relY <= 0) return;
     const y = lowerPanelTopY + relY - 20;
     if (y < 12) return;
@@ -132,7 +138,15 @@ export default function EventDetailScreen() {
       scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
     }, 280);
     return () => clearTimeout(timer);
-  }, [event, loading, focus, lowerPanelTopY, focusSectionYs.organizer, focusSectionYs.proof]);
+  }, [
+    event,
+    loading,
+    focus,
+    lowerPanelTopY,
+    focusSectionYs.organizer,
+    focusSectionYs.proof,
+    focusSectionYs.result,
+  ]);
 
   const scrollToParticipate = useCallback(() => {
     const joinAbsY = lowerPanelTopY + joinWithinLowerY;
@@ -322,15 +336,28 @@ export default function EventDetailScreen() {
               onEventChanged={() => void reload()}
             />
 
-            <EventTeamAgreementResultsSection
-              eventId={event.id}
-              teams={teams}
-              linkedUserId={linkedUserId}
-              onChanged={() => {
-                void refreshTeams();
-                void reload();
+            <View
+              onLayout={(e) => {
+                setFocusSectionYs((s) => ({ ...s, result: e.nativeEvent.layout.y }));
               }}
-            />
+            >
+              {focus === "result" ? (
+                <ProofFocusBanner
+                  icon="trophy-outline"
+                  text="Review the submitted match result below."
+                />
+              ) : null}
+              <EventTeamAgreementResultsSection
+                eventId={event.id}
+                teams={teams}
+                linkedUserId={linkedUserId}
+                highlightMatchId={focusMatchId?.trim() || null}
+                onChanged={() => {
+                  void refreshTeams();
+                  void reload();
+                }}
+              />
+            </View>
 
             <View
               onLayout={(e) => {

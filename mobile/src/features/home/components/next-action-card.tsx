@@ -17,9 +17,16 @@ type Props = {
 export function NextActionCard({ action, onSubmitProof, onViewEvent }: Props) {
   const c = useHomeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const isTeamResult = action.apiActionType === "TEAM_RESULT_REVIEW";
   const isReview = action.apiActionType === "REVIEW_PROOF";
-  const primaryLabel = isReview ? "Review proof" : "Submit proof";
-  const primaryIcon = (isReview ? "clipboard-outline" : "camera-outline") as keyof typeof Ionicons.glyphMap;
+  const primaryLabel = isTeamResult
+    ? "Review Result"
+    : isReview
+      ? "Review proof"
+      : "Submit proof";
+  const primaryIcon = (
+    isTeamResult ? "trophy-outline" : isReview ? "clipboard-outline" : "camera-outline"
+  ) as keyof typeof Ionicons.glyphMap;
   const primaryDisabled = !action.eventIdPlaceholder?.trim();
   const overlayColors = useMemo(
     () =>

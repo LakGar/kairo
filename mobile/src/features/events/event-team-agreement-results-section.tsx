@@ -50,6 +50,8 @@ type Props = {
   teams: ApiTeamPublic[];
   linkedUserId: string | undefined;
   onChanged: () => void;
+  /** When set (e.g. Home deep link), emphasize this match row. */
+  highlightMatchId?: string | null;
 };
 
 export function EventTeamAgreementResultsSection({
@@ -57,6 +59,7 @@ export function EventTeamAgreementResultsSection({
   teams,
   linkedUserId,
   onChanged,
+  highlightMatchId,
 }: Props) {
   const [matches, setMatches] = useState<ApiMatchPublic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +102,7 @@ export function EventTeamAgreementResultsSection({
           m={m}
           teams={teams}
           linkedUserId={linkedUserId}
+          highlight={Boolean(highlightMatchId && highlightMatchId === m.id)}
           onChanged={() => {
             void load();
             onChanged();
@@ -113,11 +117,13 @@ function TeamAgreementMatchRow({
   m,
   teams,
   linkedUserId,
+  highlight,
   onChanged,
 }: {
   m: ApiMatchPublic;
   teams: ApiTeamPublic[];
   linkedUserId: string | undefined;
+  highlight?: boolean;
   onChanged: () => void;
 }) {
   const [homeScoreStr, setHomeScoreStr] = useState("");
@@ -215,7 +221,7 @@ function TeamAgreementMatchRow({
   else if (m.resultStatus === "CONFIRMED") statusLine = "Result confirmed";
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, highlight && styles.cardHighlight]}>
       <Text style={styles.cardTitle}>{label}</Text>
       <Text style={styles.names}>
         {homeName} vs {awayName}
@@ -342,6 +348,10 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     backgroundColor: HomeColors.bg,
+  },
+  cardHighlight: {
+    borderWidth: 2,
+    borderColor: HomeColors.accent,
   },
   cardTitle: {
     color: HomeColors.textPrimary,

@@ -155,7 +155,7 @@ export function HomeDashboard({
   const navigateToProofOnEvent = useCallback(
     (
       eventId: string,
-      focus: "proof" | "organizer",
+      focus: "proof" | "organizer" | "result",
       opts?: { proofSubmissionId?: string; matchId?: string },
     ) => {
       const id = eventId.trim();
@@ -267,6 +267,12 @@ export function HomeDashboard({
               const eid = nextActionMock.eventIdPlaceholder?.trim();
               if (!eid) {
                 if (__DEV__) console.log("[Home] next action missing eventId for proof navigation");
+                return;
+              }
+              if (nextActionMock.apiActionType === "TEAM_RESULT_REVIEW") {
+                navigateToProofOnEvent(eid, "result", {
+                  matchId: nextActionMock.matchId,
+                });
                 return;
               }
               const focus =

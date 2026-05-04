@@ -342,9 +342,19 @@ Done:
 - **Website:** `submitTeamAgreementResult`, `confirmTeamAgreementResult`, `disputeTeamAgreementResult`; activity `MATCH_TEAM_RESULT_*`; `markMatchWinner` guard for team-agreement waiting state.
 - **Mobile:** `EventTeamAgreementResultsSection` on event detail; API client methods; organizer **“Team agreement results”** switch on new match.
 - **Commands run:** `npx tsc --noEmit` (`packages/shared`); `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). **`db:push` not run** (no schema change).
-- **TODOs:** `Event.resultVerificationMode` by format; Home “next action” for pending confirm/dispute; Kairo Score / commitment AND rule.
+- **TODOs:** `Event.resultVerificationMode` by format; ~~Home “next action” for pending confirm/dispute~~ (PR11); Kairo Score / commitment AND rule.
 - **Commit:** `254bc20` — `matches: add team agreement result flow`
 - **Push:** `git push origin main` — succeeded
+
+#### Work session — 2026-05-03 (Website + Mobile) — Home team-result review actions
+
+- **Task:** Surface **`TEAM_RESULT_REVIEW`** on **`GET /api/me/events`** when the user is on the **opposing** team of a **`TEAM_AGREEMENT`** match in **`WAITING_CONFIRMATION`**. Home primary CTA routes to **`focus=result`** (+ optional **`matchId`**) on event detail; banner + scroll to team agreement block; **highlight** matching match card (accent border). No confirm/dispute on Home (PR10 event detail only).
+- **Backend:** `me-home.service.ts` — query waiting matches with team includes; actions prepended so they can win **`actions[0]`**; payload slice **`0..8`**. New action **`type: TEAM_RESULT_REVIEW`**, title **“Confirm match result”**, **`ctaLabel`: “Review Result”**.
+- **Mobile:** `event-proof-nav.ts` — `focus` union includes **`result`**; `home-dashboard.tsx` navigation; `next-action-card.tsx` labels/icon for team result; **`[eventId].tsx`** focus scroll + banner; **`EventTeamAgreementResultsSection`** **`highlightMatchId`**.
+- **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
+- **TODOs:** Home action priority tuning vs proof inbox; proof row highlight by `proofSubmissionId`; Kairo Score AND rule; `Event.resultVerificationMode` defaults.
+- **Commit:** `66e30e9` — `home: add team result review actions`
+- **Push:** `git push origin main` — (record range after push)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 

@@ -1,8 +1,8 @@
 import type { Href } from "expo-router";
 
-export type EventProofFocus = "proof" | "organizer";
+export type EventProofFocus = "proof" | "organizer" | "result";
 
-/** Query params consumed by `/(tabs)/events/[eventId]` for Home → proof flows. */
+/** Query params consumed by `/(tabs)/events/[eventId]` for Home → proof / team-result flows. */
 export function buildEventDetailFocusHref(
   eventId: string,
   opts: {
