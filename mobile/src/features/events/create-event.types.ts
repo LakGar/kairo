@@ -9,12 +9,8 @@ export type EventFormat =
 
 export type StakeType = "NONE" | "TASK" | "DONATION" | "PRIZE";
 
-export type ProofType =
-  | "NONE"
-  | "PHOTO"
-  | "SCORE_CONFIRMATION"
-  | "FRIEND_VERIFICATION"
-  | "ORGANIZER_APPROVAL";
+/** Premium Create Event proof choices — map to API `PHOTO` / `VIDEO` (or PHOTO for combined until multi-type exists). */
+export type ProofType = "NONE" | "PHOTO" | "VIDEO" | "PHOTO_OR_VIDEO";
 
 /** Local-only create event form (mock phase). */
 export type CreateEventForm = {

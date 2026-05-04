@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { type Href, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -57,6 +57,7 @@ import {
   safeParseCreateEventForPremium,
   validatePremiumScheduleDates,
 } from "./premium-create-event-map-api";
+import { suggestPremiumProofPromptContent } from "./premium-proof-prompt-templates";
 
 const H_PAD = 24;
 
@@ -255,6 +256,19 @@ function makePremiumStyles(c: CreateEventScreenColors) {
       lineHeight: 20,
       marginTop: 4,
     },
+    promptActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+    secondaryBtn: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.panel,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 10,
+    },
+    secondaryBtnText: { color: c.textPrimary, fontSize: 14, fontWeight: "600", textAlign: "center" },
   });
 }
 
@@ -303,9 +317,8 @@ const STAKE_OPTIONS: { value: StakeType; label: string }[] = [
 const PROOF_OPTIONS: { value: ProofType; label: string }[] = [
   { value: "NONE", label: "No proof required" },
   { value: "PHOTO", label: "Photo proof" },
-  { value: "SCORE_CONFIRMATION", label: "Score confirmation" },
-  { value: "FRIEND_VERIFICATION", label: "Friend verification" },
-  { value: "ORGANIZER_APPROVAL", label: "Organizer approval" },
+  { value: "VIDEO", label: "Video proof" },
+  { value: "PHOTO_OR_VIDEO", label: "Photo or video proof" },
 ];
 
 function IconPillRow({
@@ -439,6 +452,7 @@ export function PremiumCreateEventScreen() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [proofPromptTemplateVariant, setProofPromptTemplateVariant] = useState(0);
 
   const bottomPad = useMemo(() => Math.max(insets.bottom, 20) + 100, [insets.bottom]);
 
@@ -466,6 +480,26 @@ export function PremiumCreateEventScreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    setProofPromptTemplateVariant(0);
+  }, [form.proofType]);
+
+  const handleGenerateProofPrompt = useCallback(() => {
+    if (form.proofType === "NONE") return;
+    const next = 0;
+    const { title } = suggestPremiumProofPromptContent(form, next);
+    patchForm("proofPrompt", title);
+    setProofPromptTemplateVariant(next);
+  }, [form, patchForm]);
+
+  const handleRegenerateProofPrompt = useCallback(() => {
+    if (form.proofType === "NONE") return;
+    const next = proofPromptTemplateVariant + 1;
+    const { title } = suggestPremiumProofPromptContent(form, next);
+    patchForm("proofPrompt", title);
+    setProofPromptTemplateVariant(next);
+  }, [form, patchForm, proofPromptTemplateVariant]);
 
   const showErr = useCallback(
     (key: keyof CreateEventFormErrors) =>
@@ -818,7 +852,10 @@ export function PremiumCreateEventScreen() {
           </View>
 
           <View style={styles.block}>
-            <CreateEventSection title="Proof">
+            <CreateEventSection
+              title="Proof"
+              helperText="Proof should be captured in Kairo with a photo or video. Camera capture is coming next."
+            >
               <View style={styles.cardStack}>
                 {PROOF_OPTIONS.map((opt) => (
                   <CreateEventOptionCard
@@ -829,13 +866,37 @@ export function PremiumCreateEventScreen() {
                   />
                 ))}
               </View>
+              <Text style={styles.mutedNote}>
+                Suggested prompts use local templates from your event title, description, and format — no
+                network calls.
+              </Text>
               {form.proofType !== "NONE" ? (
-                <CreateEventPillInput
-                  value={form.proofPrompt}
-                  onChangeText={(t) => patchForm("proofPrompt", t)}
-                  placeholder="Example: Take a team photo before the match"
-                  accessibilityLabel="Proof prompt"
-                />
+                <>
+                  <View style={styles.promptActions}>
+                    <Pressable
+                      style={styles.secondaryBtn}
+                      onPress={handleGenerateProofPrompt}
+                      accessibilityRole="button"
+                      accessibilityLabel="Generate proof prompt"
+                    >
+                      <Text style={styles.secondaryBtnText}>Generate prompt</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.secondaryBtn}
+                      onPress={handleRegenerateProofPrompt}
+                      accessibilityRole="button"
+                      accessibilityLabel="Regenerate proof prompt"
+                    >
+                      <Text style={styles.secondaryBtnText}>Regenerate</Text>
+                    </Pressable>
+                  </View>
+                  <CreateEventPillInput
+                    value={form.proofPrompt}
+                    onChangeText={(t) => patchForm("proofPrompt", t)}
+                    placeholder="Proof prompt title shown to participants"
+                    accessibilityLabel="Proof prompt"
+                  />
+                </>
               ) : null}
             </CreateEventSection>
           </View>

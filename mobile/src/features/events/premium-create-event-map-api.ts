@@ -8,6 +8,10 @@ import {
 } from "@kairo/shared";
 
 import type { CreateEventForm, EventFormat, ProofType, StakeType } from "./create-event.types";
+import {
+  defaultProofTitleForApi,
+  suggestPremiumProofPromptContent,
+} from "./premium-proof-prompt-templates";
 
 export function defaultPremiumSchedule(): { startsAt: Date; endsAt: Date } {
   const startsAt = new Date();
@@ -158,8 +162,8 @@ export function safeParseCreateEventForPremium(
   return { ok: true, data: parsed.data };
 }
 
-/** Prisma / API `ProofType` — premium UI maps into this subset. */
-type ApiProofType = "PHOTO" | "TEXT" | "VIDEO" | "LINK";
+/** Prisma / API `ProofType` for ProofPrompt — premium create uses PHOTO / VIDEO only. */
+type ApiProofType = "PHOTO" | "VIDEO" | "TEXT" | "LINK";
 
 function mapPremiumProofTypeToApi(proofType: ProofType): ApiProofType | null {
   switch (proofType) {
@@ -167,42 +171,13 @@ function mapPremiumProofTypeToApi(proofType: ProofType): ApiProofType | null {
       return null;
     case "PHOTO":
       return "PHOTO";
-    case "SCORE_CONFIRMATION":
-    case "FRIEND_VERIFICATION":
-    case "ORGANIZER_APPROVAL":
-      return "TEXT";
+    case "VIDEO":
+      return "VIDEO";
+    case "PHOTO_OR_VIDEO":
+      // TODO: ProofPrompt is single-type today; store as PHOTO until multi-type / dual-accept prompts exist.
+      return "PHOTO";
     default:
       return null;
-  }
-}
-
-function defaultProofPromptTitle(proofType: ProofType): string {
-  switch (proofType) {
-    case "PHOTO":
-      return "Submit a proof photo";
-    case "SCORE_CONFIRMATION":
-      return "Confirm the final score";
-    case "FRIEND_VERIFICATION":
-      return "Ask a friend to verify";
-    case "ORGANIZER_APPROVAL":
-      return "Submit proof for organizer approval";
-    default:
-      return "Proof";
-  }
-}
-
-function defaultProofPromptDescription(proofType: ProofType): string {
-  switch (proofType) {
-    case "PHOTO":
-      return "Add a clear photo showing you took part.";
-    case "SCORE_CONFIRMATION":
-      return "Write the final score everyone agrees on.";
-    case "FRIEND_VERIFICATION":
-      return "Someone who was there confirms in a short note.";
-    case "ORGANIZER_APPROVAL":
-      return "Add details the organizer can review.";
-    default:
-      return "";
   }
 }
 
@@ -212,19 +187,35 @@ function clampTitle(raw: string): string {
   return t.slice(0, 200);
 }
 
+function composeProofPromptDescription(form: CreateEventForm, templateDescription: string): string {
+  const parts: string[] = [];
+  const t = templateDescription.trim();
+  if (t) parts.push(t);
+  if (form.proofType === "PHOTO_OR_VIDEO") {
+    parts.push(
+      "Participants may submit either a photo or a short video; this prompt is stored as PHOTO until the API supports a combined type (TODO).",
+    );
+  }
+  parts.push(
+    "Proof should be captured in Kairo with a photo or video once in-app capture is available.",
+  );
+  return parts.join(" ").slice(0, 4000);
+}
+
 /**
  * Builds a body for `POST /api/events/:id/proof-prompts`, or `null` when proof is disabled.
  * Validates with `createProofPromptSchema`; returns `null` if validation fails (caller should skip and log).
  */
-export function premiumProofPromptPayloadForApi(
-  form: CreateEventForm,
-): CreateProofPromptInput | null {
+export function premiumProofPromptPayloadForApi(form: CreateEventForm): CreateProofPromptInput | null {
   const apiProofType = mapPremiumProofTypeToApi(form.proofType);
   if (!apiProofType) return null;
 
   const custom = form.proofPrompt.trim();
-  const title = custom ? clampTitle(custom) : defaultProofPromptTitle(form.proofType);
-  const description = defaultProofPromptDescription(form.proofType);
+  const suggested = suggestPremiumProofPromptContent(form, 0);
+  const title = custom
+    ? clampTitle(custom)
+    : clampTitle(suggested.title.trim() || defaultProofTitleForApi(form.proofType));
+  const description = composeProofPromptDescription(form, suggested.description);
 
   const parsed = createProofPromptSchema.safeParse({
     title,

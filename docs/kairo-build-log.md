@@ -259,6 +259,22 @@ Done:
 - **Commit:** `9939822` — `mobile: persist create event proof and stake`; `9fd6f07` — `docs: record PR5 commit hash`
 - **Push:** `git push origin main` — succeeded (`origin/main` advanced to include PR5 commits)
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Proof cleanup: photo/video premium prompts + persist
+
+- **Task:** Tighten premium Create Event proof to **photo/video-only** options; remove text/score/friend/organizer proof paths from that UI; persist **ProofPrompt** after `POST /api/events` with `PHOTO` / `VIDEO` (combined **Photo or video** → store **`PHOTO`** until multi-type prompts); local template “Generate / Regenerate” (no AI API); keep `TEXT`/`LINK` in shared/Prisma for existing flows.
+- **Before:** `git status` — mixed dirty tree; **intended commit scope:** `create-event.types.ts`, `premium-create-event-map-api.ts`, `premium-create-event-screen.tsx`, `premium-proof-prompt-templates.ts` (new), this log.
+
+**After (2026-05-03):**
+
+- **UI:** Proof section options — None, Photo, Video, Photo or video; helper copy about Kairo capture + “no network” for templates; **Generate prompt** / **Regenerate** fill the prompt title field from `suggestPremiumProofPromptContent` (keywords: basketball, pickleball, running + format/title/description haystack).
+- **API payload:** `premiumProofPromptPayloadForApi` — title from user field or template; description = template capture text + `PHOTO_OR_VIDEO` TODO sentence + capture expectation; `isRequired: true`; `PHOTO_OR_VIDEO` → `proofType: PHOTO` with code TODO.
+- **Backend/schema:** Unchanged (no enum removal; submit proof + organizer TEXT/LINK unchanged).
+- **Files:** `mobile/src/features/events/create-event.types.ts`, `premium-create-event-map-api.ts`, `premium-create-event-screen.tsx`, `premium-proof-prompt-templates.ts`, `docs/kairo-build-log.md`.
+- **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). Website checks not run (no website edits).
+- **TODOs left:** Event detail banner when proof prompt create fails post-event; in-app camera capture; multi-type ProofPrompt; narrow organizer proof prompt UI to photo/video when product ready.
+- **Commit:** (recorded after `git commit`)
+- **Push:** (recorded after `git push`)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
