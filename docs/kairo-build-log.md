@@ -58,6 +58,7 @@ Done:
 - [x] Prisma client generates from the DB package.
 - [x] **Phase 0 audit (2026-05-02):** On disk, schema includes models `User`, `Profile`, `Event`, `EventParticipant`, `Team`, `TeamMember`, `Bracket`, `Match`, `ProofPrompt`, `ProofSubmission`, `Stake`, `ActivityLog` and enums `UserRole` through `StakeStatus` as required for MVP foundation.
 - [x] **Phase 1 (2026-05-02):** Schema reviewed end-to-end; `ProofSubmission.eventId` ↔ `Event` relation intact; no payments/AI/storage tables added; proof remains `url` + `text` only. Composite indexes added for common lookups: `Event` `[status, startsAt]` (replaces standalone `[status]` to avoid redundancy), `EventParticipant` `[eventId, userId]`, `ProofSubmission` `[eventId, status]`, `Stake` `[eventId, status]`; `ActivityLog` `[createdAt]` for timelines.
+- [x] **2026-05-03 (PR 17):** `NotificationReadState` — one row per user (`userId` unique), optional `lastReadAt` cursor for derived in-app notifications (not a full `Notification` table).
 
 In Progress:
 
@@ -77,6 +78,7 @@ Done:
 - [x] **Phase 3 prep:** `website/package.json` includes `@kairo/shared` + `@prisma/client`; `npm run typecheck` runs `tsc --noEmit`; `website/src/lib/current-user.ts` (`x-kairo-user-id`); `website/src/server/activity/activity-actions.ts`; `website/.env.example` documents `DATABASE_URL` + dev header (removed misplaced Clerk key from example).
 - [x] **Phase 3:** Server layer under `website/src/server/` — `activity` (`logActivity`), `events` (create/update/publish/cancel/join + queries), `teams` (create/join/leave + queries), `matches` (create/score/winner + queries), `proof` (prompts/submit/approve/reject + queries), `stakes` (create/complete/fail + queries); `website/src/lib/result.ts`, `slug.ts`; path aliases `@/server/*`, `@/src/*` in `website/tsconfig.json`.
 - [x] **Phase 4:** `website/app/api/**` REST handlers — JSON `{ success, data | error }`, HTTP status from service codes; mutating routes use `requireUserId` → `x-kairo-user-id` (TODO Clerk); `website/src/lib/api-http.ts` (`fromServiceResult`, `parseJsonBody`, `requireUserId`); public reads: `GET /api/events` (upcoming), `GET /api/events/[eventId]`, lists for teams/matches/proof/stakes/prompts.
+- [x] **2026-05-03:** `GET /api/me/notifications` + `PATCH /api/me/notifications/read` (`me-notifications.service.ts`, read cursor `NotificationReadState`).
 
 In Progress:
 
@@ -442,6 +444,29 @@ Done:
 **Commit:** `2a42ba8` — `notifications: add in-app notifications center`
 
 **Push:** `git push origin main` — succeeded (`0ffca97..2a42ba8`).
+
+#### Work session — 2026-05-03 (Database + Website + Mobile) — Persist notification read state
+
+- **Task:** PR 17 — Persisted read cursor for in-app notifications (clear Home badge without a full `Notification` table).
+- **Before:** `git status` (mixed dirty tree); read `me-notifications.service.ts`, `schema.prisma`, mobile notifications screen.
+
+**After:**
+
+- **Schema:** `NotificationReadState` (`userId` @unique → `User`, `lastReadAt` optional, timestamps). `User.notificationReadState` optional 1:1.
+- **GET `/api/me/notifications`:** Loads read state; sets each row `readAt` from `lastReadAt` vs row `createdAt` (`<=` cursor ⇒ read); with **no** row yet, actionable types (`TEAM_RESULT_REVIEW`, `REVIEW_PROOF`) stay unread, other rows synthetic-read for badge. **`unreadCount`** = count of rows with `readAt === null`.
+- **PATCH `/api/me/notifications/read`:** `requireUserId`, upsert cursor, optional body `{ before?: ISO string }` (default `now`); returns `{ lastReadAt }`.
+- **Mobile:** `markNotificationsRead()`; **Mark all read** in notifications header → PATCH → refresh list; primary CTAs unchanged (decoupled from `readAt` for result/proof types). Home badge unchanged (still `unreadCount` on focus / gate).
+- **TODOs (later):** Full `Notification` table; per-notification read; push pipeline.
+
+**Files:** `packages/db/prisma/schema.prisma`, `website/src/server/me/me-notifications.service.ts`, `website/app/api/me/notifications/read/route.ts`, `mobile/src/api/types.ts`, `kairo-client.ts`, `index.ts`, `mobile/app/(tabs)/notifications.tsx`, `docs/kairo-build-log.md`.
+
+**Checks:** `npm run db:generate` (root); `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint` — passed (mobile 4 pre-existing onboarding warnings).
+
+**DB migrate/push:** Not run in this session (schema change requires intentional `db:push` / migrate when `DATABASE_URL` is set).
+
+**Commit:** _(after commit)_
+
+**Push:** _(after push)_
 
 In Progress:
 

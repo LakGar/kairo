@@ -159,6 +159,11 @@ export interface ApiMeNotificationsPayload {
   notifications: ApiNotificationItem[];
 }
 
+/** `PATCH /api/me/notifications/read` — updates read cursor. */
+export interface ApiMarkNotificationsReadPayload {
+  lastReadAt: JsonDateString;
+}
+
 /** `GET /api/me/events` — grouped summaries + Home dashboard blocks. */
 export interface ApiMeEventsPayload {
   hosting: ApiHomeEventSummary[];

@@ -116,9 +116,20 @@ model User {
   proofSubmissions  ProofSubmission[]
   activityLogs      ActivityLog[]
   matchResultsResolved Match[] @relation("MatchResultResolvedBy")
+  notificationReadState NotificationReadState?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/** Single cursor per user for derived in-app notifications (not per-row reads). */
+model NotificationReadState {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Profile {

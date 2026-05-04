@@ -28,6 +28,7 @@ export {
   type ApiHomeStats,
   type ApiMeEventsPayload,
   type ApiMeNotificationsPayload,
+  type ApiMarkNotificationsReadPayload,
   type ApiNotificationFocus,
   type ApiNotificationItem,
   type ApiLeaveTeamResult,

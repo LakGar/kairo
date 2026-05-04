@@ -1,7 +1,9 @@
 /**
  * In-app notifications feed (MVP) — derived from matches, proof, and activity log.
  *
- * TODO: `Notification` table + per-user read state + push delivery (see product plan).
+ * Read badge: `NotificationReadState.lastReadAt` cursor (not per-notification rows).
+ *
+ * TODO: full `Notification` table; per-notification read state; push delivery.
  */
 import {
   MatchResultStatus,
@@ -35,8 +37,24 @@ export type MeNotificationsPayload = {
   notifications: NotificationItem[];
 };
 
+export type MarkNotificationsReadPayload = {
+  lastReadAt: string;
+};
+
 function iso(d: Date) {
   return d.toISOString();
+}
+
+/** Badge/read line: rows at or before cursor are "read"; actionable CTAs stay client-side regardless. */
+function readAtForRow(rowCreatedAt: Date, lastReadAt: Date | null, type: string): string | null {
+  const t = rowCreatedAt.getTime();
+  if (!lastReadAt) {
+    const actionable = type === "TEAM_RESULT_REVIEW" || type === "REVIEW_PROOF";
+    if (actionable) return null;
+    return iso(rowCreatedAt);
+  }
+  if (t <= lastReadAt.getTime()) return iso(rowCreatedAt);
+  return null;
 }
 
 function userOnTeam(
@@ -92,7 +110,7 @@ function activityTitle(action: string): string {
 export async function getMeNotificationsPayload(
   userId: string,
 ): Promise<Result<MeNotificationsPayload>> {
-  const [allWaitingConfirmMatches, pendingHostReviews, recentProofDecisions, logs] =
+  const [allWaitingConfirmMatches, pendingHostReviews, recentProofDecisions, logs, readState] =
     await Promise.all([
       prisma.match.findMany({
         where: {
@@ -156,7 +174,10 @@ export async function getMeNotificationsPayload(
         take: 10,
         include: { event: { select: { id: true, title: true } } },
       }),
+      prisma.notificationReadState.findUnique({ where: { userId } }),
     ]);
+
+  const lastReadAt = readState?.lastReadAt ?? null;
 
   const notifications: NotificationItem[] = [];
   const seenTeamResultMatches = new Set<string>();
@@ -180,7 +201,7 @@ export async function getMeNotificationsPayload(
       title: "Confirm match result",
       body: `Your opponent submitted a result. Review it before it becomes official. · ${m.event.title} · ${homeLabel} vs ${awayLabel}`,
       createdAt: iso(m.updatedAt),
-      readAt: null,
+      readAt: readAtForRow(m.updatedAt, lastReadAt, "TEAM_RESULT_REVIEW"),
       eventId: m.eventId,
       matchId: m.id,
       proofSubmissionId: null,
@@ -200,7 +221,7 @@ export async function getMeNotificationsPayload(
       title: "Proof needs review",
       body: `${submitter} · ${s.event.title}`,
       createdAt: iso(s.updatedAt),
-      readAt: null,
+      readAt: readAtForRow(s.updatedAt, lastReadAt, "REVIEW_PROOF"),
       eventId: s.eventId,
       matchId: s.matchId,
       proofSubmissionId: s.id,
@@ -211,13 +232,14 @@ export async function getMeNotificationsPayload(
 
   for (const s of recentProofDecisions) {
     const approved = s.status === ProofStatus.APPROVED;
+    const ownType = approved ? "PROOF_APPROVED" : "PROOF_REJECTED";
     notifications.push({
       id: `proof-own-${s.id}`,
-      type: approved ? "PROOF_APPROVED" : "PROOF_REJECTED",
+      type: ownType,
       title: approved ? "Proof approved" : "Proof rejected",
       body: s.event.title,
       createdAt: iso(s.updatedAt),
-      readAt: null,
+      readAt: readAtForRow(s.updatedAt, lastReadAt, ownType),
       eventId: s.eventId,
       matchId: s.matchId,
       proofSubmissionId: s.id,
@@ -234,7 +256,7 @@ export async function getMeNotificationsPayload(
       title: activityTitle(l.action),
       body: formatActivityText(l.action, l.metadata),
       createdAt: created,
-      readAt: created,
+      readAt: readAtForRow(l.createdAt, lastReadAt, l.action),
       eventId: l.eventId,
       matchId: null,
       proofSubmissionId: null,
@@ -247,10 +269,20 @@ export async function getMeNotificationsPayload(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  const actionableTypes = new Set(["TEAM_RESULT_REVIEW", "REVIEW_PROOF"]);
-  const unreadCount = notifications.filter(
-    (n) => actionableTypes.has(n.type) && n.readAt === null,
-  ).length;
+  const unreadCount = notifications.filter((n) => n.readAt === null).length;
 
   return ok({ unreadCount, notifications });
+}
+
+export async function markMeNotificationsRead(
+  userId: string,
+  before?: Date,
+): Promise<Result<MarkNotificationsReadPayload>> {
+  const at = before ?? new Date();
+  await prisma.notificationReadState.upsert({
+    where: { userId },
+    create: { userId, lastReadAt: at },
+    update: { lastReadAt: at },
+  });
+  return ok({ lastReadAt: iso(at) });
 }

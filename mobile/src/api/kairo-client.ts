@@ -9,6 +9,7 @@ import {
   type ApiEventPublic,
   type ApiMeEventsPayload,
   type ApiMeNotificationsPayload,
+  type ApiMarkNotificationsReadPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,
@@ -146,6 +147,7 @@ export interface KairoApi {
   }) => Promise<{ url: string }>;
   listBillingPurchases: () => Promise<ApiBillingPurchase[]>;
   getMyNotifications: () => Promise<ApiMeNotificationsPayload>;
+  markNotificationsRead: (body?: { before?: string }) => Promise<ApiMarkNotificationsReadPayload>;
 }
 
 export function createKairoApi(config: {
@@ -247,6 +249,11 @@ export function createKairoApi(config: {
       req("/api/billing/portal/session", { method: "POST", json: body }),
     listBillingPurchases: () => req("/api/billing/purchases"),
     getMyNotifications: () => req("/api/me/notifications"),
+    markNotificationsRead: (body) =>
+      req("/api/me/notifications/read", {
+        method: "PATCH",
+        json: body && Object.keys(body).length > 0 ? body : {},
+      }),
   };
 }
 

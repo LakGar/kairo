@@ -102,8 +102,17 @@ function NotificationCard({
         : pill === "Score"
           ? "rgba(16,185,129,0.22)"
           : "rgba(255,255,255,0.12)";
-  const showPrimaryCta = item.readAt === null && Boolean(item.actionLabel?.trim());
-  const showGhostEventLink = Boolean(item.eventId?.trim()) && !showPrimaryCta;
+  /** Keep primary CTAs visible after “mark all read”; badge/read line uses `readAt` from the API. */
+  const PRIMARY_CTA_TYPES = new Set([
+    "TEAM_RESULT_REVIEW",
+    "REVIEW_PROOF",
+    "PROOF_APPROVED",
+    "PROOF_REJECTED",
+  ]);
+  const showPrimaryCta =
+    Boolean(item.actionLabel?.trim()) && PRIMARY_CTA_TYPES.has(item.type);
+  const showGhostEventLink =
+    Boolean(item.eventId?.trim()) && !showPrimaryCta && Boolean(item.actionLabel?.trim());
 
   return (
     <View style={styles.card}>
@@ -153,6 +162,7 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -186,10 +196,25 @@ export default function NotificationsScreen() {
   const subtitle = useMemo(
     () =>
       unreadCount > 0
-        ? `${unreadCount} action${unreadCount === 1 ? "" : "s"} need your attention`
+        ? `${unreadCount} unread`
         : "Proof, results, and event updates",
     [unreadCount],
   );
+
+  const onMarkAllRead = useCallback(async () => {
+    if (markingRead) return;
+    setMarkingRead(true);
+    try {
+      const api = createKairoApiFromEnv();
+      await api.markNotificationsRead();
+      await load();
+    } catch (e) {
+      const msg = e instanceof KairoApiError ? e.message : "Could not mark read.";
+      setError(msg);
+    } finally {
+      setMarkingRead(false);
+    }
+  }, [load, markingRead]);
 
   const onNavigate = useCallback(
     (item: ApiNotificationItem) => {
@@ -281,7 +306,25 @@ export default function NotificationsScreen() {
               {subtitle}
             </Text>
           </View>
-          <View style={styles.headerRightSpacer} />
+          {!loading && !error ? (
+            <Pressable
+              hitSlop={8}
+              onPress={() => void onMarkAllRead()}
+              disabled={markingRead}
+              style={({ pressed }) => [
+                styles.markReadBtn,
+                (pressed || markingRead) && { opacity: 0.65 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Mark all read"
+            >
+              <Text style={styles.markReadText} numberOfLines={2}>
+                Mark all read
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.headerRightSpacer} />
+          )}
         </View>
       </View>
     </View>
@@ -438,6 +481,20 @@ const styles = StyleSheet.create({
   },
   headerRightSpacer: {
     width: 40,
+  },
+  markReadBtn: {
+    maxWidth: 100,
+    minWidth: 88,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  markReadText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: LABEL,
+    textAlign: "right",
   },
   ghostLinkWrap: {
     marginTop: 12,
