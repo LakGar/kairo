@@ -321,6 +321,19 @@ Done:
 - **Commit:** `f5585d0` — `proof: harden media upload validation`; `cb2a658` — `docs: fix PR8 build log commit hash`; `32f8e48` — `docs: record PR8 push range`
 - **Push:** `git push origin main` — succeeded (`0f9d666..32f8e48`)
 
+#### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
+
+- **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.
+- **Schema:** `packages/db/prisma/schema.prisma` — new enums; `Match` columns + `submittedByTeam` / `confirmedByTeam` / `resolvedByUser` relations; indexes on FKs + `resultStatus`.
+- **Shared:** `enums.ts` — `resultVerificationModeSchema`, `matchResultStatusSchema`; `matches.ts` — optional `resultVerificationMode` + superRefine.
+- **Website:** `match.service.ts`, `activity-actions.ts`.
+- **Mobile:** `ApiMatchPublic` extended; organizer match cards show **result status** line + helper copy “Proof approval is separate from the match result.”
+- **Commands run:** `npm run db:generate` (root) — pass. **`db:push` / migrate not run** (no intentional `DATABASE_URL` apply in this session). `prisma validate` not run (requires `DATABASE_URL` in this environment).
+- **Checks:** `npx tsc --noEmit` in `packages/shared`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
+- **TODOs (next):** Team agreement submit / confirm / dispute APIs + mobile CTAs; optional `Event.resultVerificationMode` default by format; commitment scoring using confirmed result ∧ proof approved.
+- **Commit:** `9fc9ea0` — `matches: add organizer decided result verification`
+- **Push:** (record after `git push`)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

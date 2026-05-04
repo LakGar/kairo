@@ -23,6 +23,20 @@ export const matchStatusSchema = z.enum([
   "CANCELLED",
 ]);
 
+/** Mirrors `ResultVerificationMode` in Prisma. */
+export const resultVerificationModeSchema = z.enum([
+  "TEAM_AGREEMENT",
+  "ORGANIZER_DECIDES",
+]);
+
+/** Mirrors `MatchResultStatus` in Prisma. */
+export const matchResultStatusSchema = z.enum([
+  "PENDING",
+  "WAITING_CONFIRMATION",
+  "CONFIRMED",
+  "DISPUTED",
+]);
+
 /** Mirrors `ProofType` in Prisma. */
 export const proofTypeSchema = z.enum(["PHOTO", "VIDEO", "TEXT", "LINK"]);
 

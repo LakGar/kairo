@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/expo";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,10 +18,11 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { FeatureEmptyState } from "@/src/components/feature-empty-state";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
   createKairoApiFromEnv,
-  getDevUserId,
+  getLinkedKairoUserId,
   KairoApiConfigurationError,
   KairoApiError,
   type ApiEventPublic,
@@ -36,6 +38,21 @@ function userLabel(u: ApiUserSnippet): string {
   return u.profile?.name ?? u.profile?.username ?? u.email;
 }
 
+function matchResultStatusLabel(status: string): string {
+  switch (status) {
+    case "PENDING":
+      return "Pending result";
+    case "WAITING_CONFIRMATION":
+      return "Waiting confirmation";
+    case "CONFIRMED":
+      return "Result confirmed";
+    case "DISPUTED":
+      return "Disputed";
+    default:
+      return status.replaceAll("_", " ");
+  }
+}
+
 type Props = {
   event: ApiEventPublic;
   teams: ApiTeamPublic[];
@@ -43,8 +60,9 @@ type Props = {
 };
 
 export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
-  const devUserId = getDevUserId();
-  const isOrganizer = Boolean(devUserId && devUserId === event.organizerId);
+  const { user } = useUser();
+  const linkedUserId = getLinkedKairoUserId(user);
+  const isOrganizer = Boolean(linkedUserId && linkedUserId === event.organizerId);
 
   const { matches, prompts, submissions, loading, error, refresh } = useEventOrganizerData(
     event.id,
@@ -54,6 +72,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
   const borderColor = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
   const surface = useThemeColor({ light: "#F2F2F7", dark: "#1C1C1E" }, "background");
   const textColor = useThemeColor({}, "text");
+  const textMuted = useThemeColor({}, "tabIconDefault");
   const tint = useThemeColor({}, "tint");
 
   const [banner, setBanner] = useState<string | null>(null);
@@ -94,7 +113,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setLifecycleBusy(true);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.publishEvent(event.id);
       setBanner("Event published.");
       onRefreshAll();
@@ -111,7 +130,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setLifecycleBusy(true);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.cancelEvent(event.id);
       setBanner("Event cancelled.");
       onRefreshAll();
@@ -163,7 +182,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setCreateMatchBusy(true);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.createMatch(event.id, parsed.data);
       setRoundStr("");
       setMatchNumStr("");
@@ -197,7 +216,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setCreatePromptBusy(true);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.createProofPrompt(event.id, parsed.data);
       setPromptTitle("");
       setPromptDesc("");
@@ -230,7 +249,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setScoreBusyId(m.id);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.updateMatchScore(m.id, { homeScore, awayScore });
       setBanner("Scores updated.");
       void refresh();
@@ -248,9 +267,9 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setWinnerBusyId(m.id);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.markMatchWinner(m.id, { winnerTeamId });
-      setBanner("Winner recorded.");
+      setBanner("Match result confirmed.");
       void refresh();
       onEventChanged();
     } catch (e) {
@@ -266,7 +285,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
     setReviewBusyId(submissionId);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       if (approve) await api.approveProof(submissionId);
       else await api.rejectProof(submissionId);
       setBanner(approve ? "Proof approved." : "Proof rejected.");
@@ -285,12 +304,6 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
   return (
     <ThemedView style={styles.block}>
       <ThemedText type="subtitle">Organizer tools</ThemedText>
-      {!devUserId ? (
-        <ThemedText type="muted" style={styles.gapTop}>
-          Set EXPO_PUBLIC_KAIRO_DEV_USER_ID to your user id so requests are attributed to
-          you as the host.
-        </ThemedText>
-      ) : null}
 
       {banner ? (
         <ThemedText type="default" style={styles.banner}>
@@ -306,7 +319,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
         {event.status === "DRAFT" ? (
           <Pressable
             style={[styles.button, { backgroundColor: tint }]}
-            disabled={lifecycleBusy || !devUserId}
+            disabled={lifecycleBusy}
             onPress={() => void onPublish()}
           >
             {lifecycleBusy ? (
@@ -319,7 +332,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
         {event.status !== "CANCELLED" ? (
           <Pressable
             style={[styles.button, styles.dangerButton]}
-            disabled={lifecycleBusy || !devUserId}
+            disabled={lifecycleBusy}
             onPress={onCancelPress}
           >
             <ThemedText style={styles.buttonLabel}>Cancel event</ThemedText>
@@ -337,6 +350,9 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
 
       <ThemedText type="subtitle" style={styles.sectionTitle}>
         Matches ({matches.length})
+      </ThemedText>
+      <ThemedText type="small" style={styles.proofSeparateNote}>
+        Proof approval is separate from the match result.
       </ThemedText>
       {matches.map((m) => (
         <MatchOrganizerRow
@@ -410,7 +426,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       />
       <Pressable
         style={[styles.button, { backgroundColor: tint, marginTop: 10 }]}
-        disabled={createMatchBusy || !devUserId}
+        disabled={createMatchBusy}
         onPress={() => void onCreateMatch()}
       >
         {createMatchBusy ? (
@@ -480,7 +496,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       </View>
       <Pressable
         style={[styles.button, { backgroundColor: tint, marginTop: 10 }]}
-        disabled={createPromptBusy || !devUserId}
+        disabled={createPromptBusy}
         onPress={() => void onCreatePrompt()}
       >
         {createPromptBusy ? (
@@ -494,7 +510,17 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
         Proof inbox ({pendingProof.length} pending)
       </ThemedText>
       {pendingProof.length === 0 ? (
-        <ThemedText type="muted">No pending submissions.</ThemedText>
+        <FeatureEmptyState
+          colors={{
+            textPrimary: textColor,
+            textMuted,
+            icon: borderColor,
+          }}
+          icon="document-text-outline"
+          title="Inbox is clear"
+          subtitle="No pending proof submissions right now. Players will show up here when they submit."
+          compact
+        />
       ) : (
         pendingProof.map((s) => (
           <ProofInboxRow
@@ -601,7 +627,7 @@ function MatchOrganizerRow({
   useEffect(() => {
     setHomeStr(m.homeScore != null ? String(m.homeScore) : "");
     setAwayStr(m.awayScore != null ? String(m.awayScore) : "");
-  }, [m.homeScore, m.awayScore, m.id]);
+  }, [m.homeScore, m.awayScore, m.id, m.resultStatus]);
 
   const label =
     m.matchNumber != null
@@ -617,6 +643,9 @@ function MatchOrganizerRow({
         {(m.homeTeam?.name ?? "TBD") + " vs " + (m.awayTeam?.name ?? "TBD")}
       </ThemedText>
       <ThemedText type="muted">{m.status.replaceAll("_", " ")}</ThemedText>
+      <ThemedText type="small" style={styles.resultStatusLine}>
+        {matchResultStatusLabel(m.resultStatus ?? "PENDING")}
+      </ThemedText>
       <View style={styles.scoreRow}>
         <TextInput
           value={homeStr}
@@ -737,6 +766,14 @@ const styles = StyleSheet.create({
   },
   gapTop: {
     marginTop: 8,
+  },
+  proofSeparateNote: {
+    marginTop: 4,
+    opacity: 0.85,
+  },
+  resultStatusLine: {
+    marginTop: 4,
+    fontWeight: "600",
   },
   banner: {
     marginTop: 8,

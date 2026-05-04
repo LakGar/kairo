@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { matchStatusSchema } from "./enums";
+import { matchStatusSchema, resultVerificationModeSchema } from "./enums";
 
 export const createManualMatchSchema = z
   .object({
@@ -11,6 +11,8 @@ export const createManualMatchSchema = z
     homeTeamId: z.string().cuid().optional().nullable(),
     awayTeamId: z.string().cuid().optional().nullable(),
     status: matchStatusSchema.optional(),
+    /** Defaults to ORGANIZER_DECIDES on the server. TEAM_AGREEMENT reserved for a later PR. */
+    resultVerificationMode: resultVerificationModeSchema.optional(),
   })
   .refine(
     (v) =>
@@ -18,7 +20,16 @@ export const createManualMatchSchema = z
       !v.awayTeamId ||
       v.homeTeamId !== v.awayTeamId,
     { message: "Home and away teams must differ", path: ["awayTeamId"] },
-  );
+  )
+  .superRefine((val, ctx) => {
+    if (val.resultVerificationMode === "TEAM_AGREEMENT") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "TEAM_AGREEMENT is not available yet; omit or use ORGANIZER_DECIDES",
+        path: ["resultVerificationMode"],
+      });
+    }
+  });
 
 export type CreateManualMatchInput = z.infer<typeof createManualMatchSchema>;
 

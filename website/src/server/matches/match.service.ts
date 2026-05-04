@@ -1,4 +1,8 @@
-import { MatchStatus } from "@prisma/client";
+import {
+  MatchResultStatus,
+  MatchStatus,
+  ResultVerificationMode,
+} from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { err, ok, type Result } from "@/src/lib/result";
@@ -70,6 +74,9 @@ export async function createManualMatch(
   );
   if (!teams.success) return teams;
 
+  const verificationMode =
+    d.resultVerificationMode ?? ResultVerificationMode.ORGANIZER_DECIDES;
+
   const match = await prisma.match.create({
     data: {
       eventId,
@@ -80,6 +87,8 @@ export async function createManualMatch(
       homeTeamId: d.homeTeamId ?? undefined,
       awayTeamId: d.awayTeamId ?? undefined,
       status: d.status ?? MatchStatus.SCHEDULED,
+      resultVerificationMode: verificationMode,
+      resultStatus: MatchResultStatus.PENDING,
     },
   });
 
@@ -169,6 +178,8 @@ export async function markMatchWinner(
     data: {
       winnerTeamId,
       status: MatchStatus.COMPLETED,
+      resultStatus: MatchResultStatus.CONFIRMED,
+      resolvedByUserId: currentUserId,
     },
   });
 
@@ -177,6 +188,17 @@ export async function markMatchWinner(
     userId: currentUserId,
     action: ActivityAction.MATCH_WINNER_MARKED,
     metadata: { matchId, winnerTeamId: updated.winnerTeamId },
+  });
+
+  await logActivity({
+    eventId: existing.eventId,
+    userId: currentUserId,
+    action: ActivityAction.MATCH_RESULT_CONFIRMED,
+    metadata: {
+      matchId,
+      winnerTeamId: updated.winnerTeamId,
+      resultVerificationMode: existing.resultVerificationMode,
+    },
   });
 
   const full = await queryMatchById(matchId);

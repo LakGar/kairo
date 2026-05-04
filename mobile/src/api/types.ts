@@ -190,6 +190,12 @@ export interface ApiMatchPublic {
   homeScore: number | null;
   awayScore: number | null;
   status: string;
+  /** Result verification track (orthogonal to proof). */
+  resultVerificationMode: string;
+  resultStatus: string;
+  submittedByTeamId: string | null;
+  confirmedByTeamId: string | null;
+  resolvedByUserId: string | null;
   createdAt: JsonDateString;
   updatedAt: JsonDateString;
   homeTeam: ApiTeamCore | null;

@@ -14,6 +14,8 @@ export const ActivityAction = {
   MATCH_CREATED: "MATCH_CREATED",
   MATCH_SCORE_UPDATED: "MATCH_SCORE_UPDATED",
   MATCH_WINNER_MARKED: "MATCH_WINNER_MARKED",
+  /** Official match result confirmed (organizer-decides or post-dispute); orthogonal to proof review. */
+  MATCH_RESULT_CONFIRMED: "MATCH_RESULT_CONFIRMED",
   PROOF_PROMPT_CREATED: "PROOF_PROMPT_CREATED",
   PROOF_SUBMITTED: "PROOF_SUBMITTED",
   PROOF_APPROVED: "PROOF_APPROVED",
