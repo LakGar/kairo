@@ -334,6 +334,18 @@ Done:
 - **Commit:** `719c30d` — `matches: add organizer decided result verification`; `b109b32` — `docs: fix PR9 build log commit hash`
 - **Push:** `git push origin main` — succeeded (`118f067..b109b32`)
 
+#### Work session — 2026-05-03 (Shared + Website + Mobile) — Team agreement result flow
+
+- **Task:** **`TEAM_AGREEMENT`** matches: member submits winner (+ optional scores) → **`WAITING_CONFIRMATION`** (`MatchStatus.LIVE`, not `COMPLETED` until confirmed); opponent **confirm** (`CONFIRMED`, `COMPLETED`) or **dispute** (`DISPUTED`, stays `LIVE`); organizer **`markMatchWinner`** resolves `DISPUTED` (or `PENDING` / `ORGANIZER_DECIDES`) and is **blocked** while `WAITING_CONFIRMATION`. Proof unchanged.
+- **API:** `POST /api/matches/[matchId]/team-result`, `.../team-result/confirm`, `.../team-result/dispute` (`requireUserId`).
+- **Shared:** `submitTeamAgreementResultSchema`, `confirmTeamAgreementResultSchema`, `disputeTeamAgreementResultSchema`; `createManualMatchSchema` allows **`TEAM_AGREEMENT`** when both teams set.
+- **Website:** `submitTeamAgreementResult`, `confirmTeamAgreementResult`, `disputeTeamAgreementResult`; activity `MATCH_TEAM_RESULT_*`; `markMatchWinner` guard for team-agreement waiting state.
+- **Mobile:** `EventTeamAgreementResultsSection` on event detail; API client methods; organizer **“Team agreement results”** switch on new match.
+- **Commands run:** `npx tsc --noEmit` (`packages/shared`); `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). **`db:push` not run** (no schema change).
+- **TODOs:** `Event.resultVerificationMode` by format; Home “next action” for pending confirm/dispute; Kairo Score / commitment AND rule.
+- **Commit:** `7e2c4fb` — `matches: add team agreement result flow`
+- **Push:** `git push origin main` — succeeded
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

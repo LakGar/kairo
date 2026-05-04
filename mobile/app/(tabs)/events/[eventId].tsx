@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { pickSearchParam } from "@/src/features/home/event-proof-nav";
 
-import type { ApiEventPublic } from "@/src/api";
+import { getLinkedKairoUserId, type ApiEventPublic } from "@/src/api";
 import {
   categoryIconForActivity,
   formatEventEntryFeeLine,
@@ -28,6 +29,7 @@ import {
 import { EventJoinSection } from "@/src/features/events/event-join-section";
 import { EventOrganizerSection } from "@/src/features/events/event-organizer-section";
 import { EventProofSubmitSection } from "@/src/features/events/event-proof-submit-section";
+import { EventTeamAgreementResultsSection } from "@/src/features/events/event-team-agreement-results-section";
 import { EventTeamsSection } from "@/src/features/events/event-teams-section";
 import { formatEventDetailWhenLine } from "@/src/features/events/format-event-range";
 import { useEventDetail } from "@/src/features/events/use-event-detail";
@@ -87,6 +89,8 @@ function ProofFocusBanner({ icon, text }: { icon: keyof typeof Ionicons.glyphMap
 }
 
 export default function EventDetailScreen() {
+  const { user } = useUser();
+  const linkedUserId = getLinkedKairoUserId(user);
   const params = useLocalSearchParams();
   const eventId = pickSearchParam(params.eventId as string | string[] | undefined);
   const focus = pickSearchParam(params.focus as string | string[] | undefined);
@@ -316,6 +320,16 @@ export default function EventDetailScreen() {
               teamsError={teamsError}
               onTeamsChanged={() => void refreshTeams()}
               onEventChanged={() => void reload()}
+            />
+
+            <EventTeamAgreementResultsSection
+              eventId={event.id}
+              teams={teams}
+              linkedUserId={linkedUserId}
+              onChanged={() => {
+                void refreshTeams();
+                void reload();
+              }}
             />
 
             <View

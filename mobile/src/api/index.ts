@@ -53,6 +53,7 @@ export type {
   JoinTeamInput,
   MarkMatchWinnerInput,
   SubmitProofInput,
+  SubmitTeamAgreementResultInput,
   UpdateEventInput,
   UpdateMatchScoreInput,
 } from "@kairo/shared";

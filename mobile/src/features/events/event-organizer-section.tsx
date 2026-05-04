@@ -84,6 +84,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
   const [matchNumStr, setMatchNumStr] = useState("");
   const [scheduledStr, setScheduledStr] = useState("");
   const [createMatchBusy, setCreateMatchBusy] = useState(false);
+  const [teamAgreementResult, setTeamAgreementResult] = useState(false);
 
   const [promptTitle, setPromptTitle] = useState("");
   const [promptDesc, setPromptDesc] = useState("");
@@ -168,7 +169,13 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       round: Number.isFinite(round) ? round : null,
       matchNumber: Number.isFinite(matchNumber) ? matchNumber : null,
       scheduledAt: scheduledAt && !Number.isNaN(scheduledAt.getTime()) ? scheduledAt : null,
+      ...(teamAgreementResult ? { resultVerificationMode: "TEAM_AGREEMENT" as const } : {}),
     };
+
+    if (teamAgreementResult && (!homeTeamId || !awayTeamId)) {
+      setBanner("Team agreement requires both home and away teams.");
+      return;
+    }
 
     const parsed = createManualMatchSchema.safeParse(body);
     if (!parsed.success) {
@@ -189,6 +196,7 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       setScheduledStr("");
       setHomeTeamId(null);
       setAwayTeamId(null);
+      setTeamAgreementResult(false);
       setBanner("Match created.");
       void refresh();
       onEventChanged();
@@ -424,6 +432,13 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
         placeholderTextColor={textColor + "99"}
         style={[styles.input, { borderColor, color: textColor, backgroundColor: surface }]}
       />
+      <View style={styles.switchRow}>
+        <ThemedText type="default">Team agreement results</ThemedText>
+        <Switch value={teamAgreementResult} onValueChange={setTeamAgreementResult} />
+      </View>
+      <ThemedText type="small" style={styles.fieldLabel}>
+        When on, both teams must confirm the submitted result (opponent can dispute; organizer resolves).
+      </ThemedText>
       <Pressable
         style={[styles.button, { backgroundColor: tint, marginTop: 10 }]}
         disabled={createMatchBusy}

@@ -135,6 +135,9 @@ export interface KairoApi {
   leaveTeam: (teamId: string) => Promise<ApiLeaveTeamResult>;
   updateMatchScore: (matchId: string, body: unknown) => Promise<ApiMatchPublic>;
   markMatchWinner: (matchId: string, body: unknown) => Promise<ApiMatchPublic>;
+  submitTeamAgreementResult: (matchId: string, body: unknown) => Promise<ApiMatchPublic>;
+  confirmTeamAgreementResult: (matchId: string) => Promise<ApiMatchPublic>;
+  disputeTeamAgreementResult: (matchId: string) => Promise<ApiMatchPublic>;
   approveProof: (proofSubmissionId: string) => Promise<ApiProofReviewResult>;
   rejectProof: (proofSubmissionId: string) => Promise<ApiProofReviewResult>;
   createBillingPortalSession: (body: {
@@ -214,6 +217,21 @@ export function createKairoApi(config: {
       req(`/api/matches/${encodeURIComponent(matchId)}/winner`, {
         method: "PATCH",
         json: body,
+      }),
+    submitTeamAgreementResult: (matchId, body) =>
+      req(`/api/matches/${encodeURIComponent(matchId)}/team-result`, {
+        method: "POST",
+        json: body,
+      }),
+    confirmTeamAgreementResult: (matchId) =>
+      req(`/api/matches/${encodeURIComponent(matchId)}/team-result/confirm`, {
+        method: "POST",
+        json: {},
+      }),
+    disputeTeamAgreementResult: (matchId) =>
+      req(`/api/matches/${encodeURIComponent(matchId)}/team-result/dispute`, {
+        method: "POST",
+        json: {},
       }),
     approveProof: (proofSubmissionId) =>
       req(`/api/proof/${encodeURIComponent(proofSubmissionId)}/approve`, {

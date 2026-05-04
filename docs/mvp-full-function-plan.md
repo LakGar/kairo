@@ -67,7 +67,7 @@ Hosts may override later in settings UI once the field exists.
 
 | Field | Role |
 |-------|------|
-| **`resultVerificationMode`** | `ORGANIZER_DECIDES` (default for new matches) or `TEAM_AGREEMENT` (schema present; submit/confirm/dispute flow **not** wired yet). |
+| **`resultVerificationMode`** | `ORGANIZER_DECIDES` (default) or `TEAM_AGREEMENT` (**submit / confirm / dispute** implemented on `Match`; see `POST .../team-result` routes). |
 | **`resultStatus`** | `PENDING` → optional `WAITING_CONFIRMATION` (opponent must act) → `CONFIRMED` or `DISPUTED` (then organizer resolves to `CONFIRMED`). Organizer marking a winner sets **`CONFIRMED`** and **`resolvedByUserId`**. |
 | **`submittedByTeamId`** | Which team proposed the result (agreement mode). |
 | **`confirmedByTeamId`** | Which team confirmed the proposal (agreement mode). |
@@ -80,22 +80,19 @@ Exact state machine naming can be refined in Prisma, but **`WAITING_CONFIRMATION
 - **`ProofSubmission`** (or current MVP equivalent) stays **separate** from match result fields.
 - Proof has its **own** lifecycle, e.g. **`PENDING` → `APPROVED` | `REJECTED`** (already aligned with much of the codebase).
 
-### Later implementation changes (checklist — not executed in this doc)
+### Implementation backlog (remaining after team-agreement MVP slice)
 
-When you are ready to **build schema and APIs**, plan roughly:
+| Layer | Status / next |
+|-------|----------------|
+| **Prisma / DB** | `Match` result fields shipped; **`Event.resultVerificationMode`** still optional/future. |
+| **`@kairo/shared`** | Team-agreement submit/confirm/dispute Zod schemas shipped. |
+| **Website + REST** | Team agreement **POST** routes + services shipped; organizer resolves disputes via existing **`PATCH .../winner`**. |
+| **Mobile** | Event detail **Team agreement results** section + organizer toggle for new matches shipped. |
+| **Home / “next action”** | Drive cards from **both** pipelines (e.g. “Confirm result” vs “Submit proof”) — still to do. |
+| **Commitments / Kairo Score** | **AND** rule (confirmed result ∧ proof approved) — still to do. |
+| **Copy / compliance** | Keep participate-first language. |
 
-| Layer | Work |
-|-------|------|
-| **Prisma / DB** | `Match` now has `resultVerificationMode`, `resultStatus`, `submittedByTeamId`, `confirmedByTeamId`, `resolvedByUserId` (+ relations). **`Event.resultVerificationMode`** still optional/future. Run `db:push` or migrate when applying schema. |
-| **`@kairo/shared`** | Zod for new enums/fields; create/update match result payloads; validation rules (e.g. agreement mode only when two teams, etc.). |
-| **Website services** | Split “record score” from “confirm result” vs “organizer sets result”; enforce mode per event; dispute → organizer resolution; activity log entries for each transition. |
-| **REST API** | New or extended routes: e.g. submit result, confirm result, dispute, organizer resolve; document idempotency and permissions (team captain vs any member—product decision). |
-| **Mobile** | Event detail + match rows: show **result state** vs **proof state** separately; CTAs for confirm/dispute in agreement mode; organizer tools for organizer-decides and dispute resolution. |
-| **Home / “next action”** | Drive cards from **both** pipelines (e.g. “Confirm result” vs “Submit proof” vs “Approve proof”) without merging them into one status. |
-| **Commitments / score** | Any “Kairo Score” or commitment completion metric must use the **AND** rule above (confirmed result ∧ proof approved if required). |
-| **Copy / compliance** | Keep participate-first language; describe “agree on outcome” not wagering. |
-
-Until the above ships, MVP can keep the **current simpler match scoring** but this document is the **source of truth** for the **intended** split between **result verification** and **proof**.
+MVP can still use **organizer-decides** for most events; this document remains the **source of truth** for **result vs proof** separation.
 
 ---
 

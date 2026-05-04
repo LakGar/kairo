@@ -11,7 +11,7 @@ export const createManualMatchSchema = z
     homeTeamId: z.string().cuid().optional().nullable(),
     awayTeamId: z.string().cuid().optional().nullable(),
     status: matchStatusSchema.optional(),
-    /** Defaults to ORGANIZER_DECIDES on the server. TEAM_AGREEMENT reserved for a later PR. */
+    /** Defaults to ORGANIZER_DECIDES on the server. TEAM_AGREEMENT requires both home and away teams. */
     resultVerificationMode: resultVerificationModeSchema.optional(),
   })
   .refine(
@@ -23,11 +23,13 @@ export const createManualMatchSchema = z
   )
   .superRefine((val, ctx) => {
     if (val.resultVerificationMode === "TEAM_AGREEMENT") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "TEAM_AGREEMENT is not available yet; omit or use ORGANIZER_DECIDES",
-        path: ["resultVerificationMode"],
-      });
+      if (!val.homeTeamId || !val.awayTeamId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "TEAM_AGREEMENT requires both home and away teams",
+          path: ["resultVerificationMode"],
+        });
+      }
     }
   });
 
@@ -54,3 +56,16 @@ export const markMatchWinnerSchema = z.object({
 });
 
 export type MarkMatchWinnerInput = z.infer<typeof markMatchWinnerSchema>;
+
+/** Team proposes score + winner; opponent must confirm or dispute. */
+export const submitTeamAgreementResultSchema = z.object({
+  winnerTeamId: z.string().cuid(),
+  homeScore: z.number().int().min(0).optional(),
+  awayScore: z.number().int().min(0).optional(),
+});
+
+export type SubmitTeamAgreementResultInput = z.infer<typeof submitTeamAgreementResultSchema>;
+
+export const confirmTeamAgreementResultSchema = z.object({});
+
+export const disputeTeamAgreementResultSchema = z.object({});
