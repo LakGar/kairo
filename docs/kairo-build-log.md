@@ -306,8 +306,8 @@ Done:
 - **Real storage test:** **Not run** in agent (no bucket/credentials in environment).
 - **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
 - **TODOs left:** Orphan upload cleanup; tighten `http:` disallow in production; optional deep participant check on presign; virus scan / moderation.
-- **Commit:** `d650fe5` — `proof: add durable media upload pipeline`
-- **Push:** `git push origin main` — succeeded (`ab6e774..d650fe5`)
+- **Commit:** `d650fe5` — `proof: add durable media upload pipeline`; `9e33f1b` — `docs: record proof upload PR7 commit hash`
+- **Push:** `git push origin main` — succeeded (`ab6e774..d650fe5`, then `d650fe5..9e33f1b`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
