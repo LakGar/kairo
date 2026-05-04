@@ -1,6 +1,13 @@
-import { createEventSchema, type CreateEventInput } from "@kairo/shared";
+import {
+  createEventSchema,
+  createProofPromptSchema,
+  createStakeSchema,
+  type CreateEventInput,
+  type CreateProofPromptInput,
+  type CreateStakeInput,
+} from "@kairo/shared";
 
-import type { CreateEventForm, EventFormat } from "./create-event.types";
+import type { CreateEventForm, EventFormat, ProofType, StakeType } from "./create-event.types";
 
 export function defaultPremiumSchedule(): { startsAt: Date; endsAt: Date } {
   const startsAt = new Date();
@@ -149,4 +156,126 @@ export function safeParseCreateEventForPremium(
     return { ok: false, message: fieldMsgs || parsed.error.message };
   }
   return { ok: true, data: parsed.data };
+}
+
+/** Prisma / API `ProofType` — premium UI maps into this subset. */
+type ApiProofType = "PHOTO" | "TEXT" | "VIDEO" | "LINK";
+
+function mapPremiumProofTypeToApi(proofType: ProofType): ApiProofType | null {
+  switch (proofType) {
+    case "NONE":
+      return null;
+    case "PHOTO":
+      return "PHOTO";
+    case "SCORE_CONFIRMATION":
+    case "FRIEND_VERIFICATION":
+    case "ORGANIZER_APPROVAL":
+      return "TEXT";
+    default:
+      return null;
+  }
+}
+
+function defaultProofPromptTitle(proofType: ProofType): string {
+  switch (proofType) {
+    case "PHOTO":
+      return "Submit a proof photo";
+    case "SCORE_CONFIRMATION":
+      return "Confirm the final score";
+    case "FRIEND_VERIFICATION":
+      return "Ask a friend to verify";
+    case "ORGANIZER_APPROVAL":
+      return "Submit proof for organizer approval";
+    default:
+      return "Proof";
+  }
+}
+
+function defaultProofPromptDescription(proofType: ProofType): string {
+  switch (proofType) {
+    case "PHOTO":
+      return "Add a clear photo showing you took part.";
+    case "SCORE_CONFIRMATION":
+      return "Write the final score everyone agrees on.";
+    case "FRIEND_VERIFICATION":
+      return "Someone who was there confirms in a short note.";
+    case "ORGANIZER_APPROVAL":
+      return "Add details the organizer can review.";
+    default:
+      return "";
+  }
+}
+
+function clampTitle(raw: string): string {
+  const t = raw.trim();
+  if (t.length <= 200) return t;
+  return t.slice(0, 200);
+}
+
+/**
+ * Builds a body for `POST /api/events/:id/proof-prompts`, or `null` when proof is disabled.
+ * Validates with `createProofPromptSchema`; returns `null` if validation fails (caller should skip and log).
+ */
+export function premiumProofPromptPayloadForApi(
+  form: CreateEventForm,
+): CreateProofPromptInput | null {
+  const apiProofType = mapPremiumProofTypeToApi(form.proofType);
+  if (!apiProofType) return null;
+
+  const custom = form.proofPrompt.trim();
+  const title = custom ? clampTitle(custom) : defaultProofPromptTitle(form.proofType);
+  const description = defaultProofPromptDescription(form.proofType);
+
+  const parsed = createProofPromptSchema.safeParse({
+    title,
+    description,
+    proofType: apiProofType,
+    isRequired: true,
+  });
+  return parsed.success ? parsed.data : null;
+}
+
+function defaultStakeTitle(stakeType: StakeType): string {
+  switch (stakeType) {
+    case "TASK":
+      return "Loser task";
+    case "DONATION":
+      return "Donation challenge";
+    case "PRIZE":
+      return "Prize/reward challenge";
+    default:
+      return "Challenge";
+  }
+}
+
+function defaultStakeDescription(stakeType: StakeType): string {
+  switch (stakeType) {
+    case "TASK":
+      return "Complete the agreed task if you lose.";
+    case "DONATION":
+      return "Complete the donation commitment after the event.";
+    case "PRIZE":
+      return "Winner receives the listed reward.";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Builds a body for `POST /api/events/:id/stakes`, or `null` when stakes are disabled.
+ */
+export function premiumStakePayloadForApi(form: CreateEventForm): CreateStakeInput | null {
+  if (form.stakeType === "NONE") return null;
+
+  const note = form.stakeNote.trim();
+  const title = defaultStakeTitle(form.stakeType);
+  const description = note || defaultStakeDescription(form.stakeType);
+
+  const parsed = createStakeSchema.safeParse({
+    type: form.stakeType,
+    title,
+    description,
+    currency: "USD",
+  });
+  return parsed.success ? parsed.data : null;
 }

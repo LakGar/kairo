@@ -52,6 +52,8 @@ import {
   defaultPremiumSchedule,
   formatPremiumEndLabel,
   formatPremiumStartLabel,
+  premiumProofPromptPayloadForApi,
+  premiumStakePayloadForApi,
   safeParseCreateEventForPremium,
   validatePremiumScheduleDates,
 } from "./premium-create-event-map-api";
@@ -506,7 +508,51 @@ export function PremiumCreateEventScreen() {
     try {
       const api = createKairoApiFromEnv({ userId: getLinkedKairoUserId(user) });
       const event = await api.createEvent(parsed.data);
-      // TODO: After event creation, wire `createStake` / `createProofPrompt` when premium fields map cleanly to shared schemas (see `create-event-form.tsx`); image picker + payments remain out of scope.
+
+      const proofPayload = premiumProofPromptPayloadForApi(form);
+      if (form.proofType !== "NONE" && proofPayload === null && __DEV__) {
+        console.warn(
+          "[PremiumCreateEvent] Proof prompt fields failed validation; skipping proof prompt create.",
+        );
+      }
+
+      const stakePayload = premiumStakePayloadForApi(form);
+      if (form.stakeType !== "NONE" && stakePayload === null && __DEV__) {
+        console.warn(
+          "[PremiumCreateEvent] Stake fields failed validation; skipping stake create.",
+        );
+      }
+
+      const partialFailures: string[] = [];
+
+      if (proofPayload) {
+        try {
+          await api.createProofPrompt(event.id, proofPayload);
+        } catch (e) {
+          if (__DEV__) {
+            console.warn("[PremiumCreateEvent] Proof prompt API error after event create", e);
+          }
+          partialFailures.push("proof prompt");
+        }
+      }
+
+      if (stakePayload) {
+        try {
+          await api.createStake(event.id, stakePayload);
+        } catch (e) {
+          if (__DEV__) {
+            console.warn("[PremiumCreateEvent] Stake API error after event create", e);
+          }
+          partialFailures.push("stake");
+        }
+      }
+
+      if (__DEV__ && partialFailures.length > 0) {
+        console.warn(
+          `[PremiumCreateEvent] Event ${event.id} was created, but could not persist: ${partialFailures.join(", ")}. TODO: show a non-blocking banner on event detail.`,
+        );
+      }
+
       router.replace(`/(tabs)/events/${event.id}` as Href);
     } catch (e) {
       if (e instanceof KairoApiConfigurationError) {

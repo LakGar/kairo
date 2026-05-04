@@ -244,6 +244,21 @@ Done:
 - **Commit:** `d430245` — `mobile: wire home proof actions to events`; follow-up doc-only commits on `main` for this session log
 - **Push:** `git push origin main` — succeeded (branch up to date with `origin/main`)
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Persist premium create event stake and proof prompt
+
+- **Task:** After `POST /api/events` from premium Create Event, chain `POST .../proof-prompts` and `POST .../stakes` when the user selected non-NONE proof/stake types; keep loading until chained calls finish; navigate to event detail on success; on partial failure warn in `__DEV__` and still navigate (TODO: event detail banner).
+- **Before:** `git status` — mixed dirty tree; **intended commit scope:** `premium-create-event-screen.tsx`, `premium-create-event-map-api.ts`, this log only.
+
+**After (2026-05-03):**
+
+- **Persisted:** `premiumProofPromptPayloadForApi` / `premiumStakePayloadForApi` (`premium-create-event-map-api.ts`) map UI choices to `@kairo/shared` `createProofPromptSchema` / `createStakeSchema` bodies — proof API type `PHOTO` or `TEXT` (score / friend / organizer paths use `TEXT`); default titles and short descriptions; custom `proofPrompt` trims to title when non-empty; `isRequired: true` when proof is enabled; stake titles (“Loser task”, “Donation challenge”, “Prize/reward challenge”) and descriptions from `stakeNote` or defaults (no betting copy).
+- **Flow:** `createEvent` → optional `createProofPrompt` + `createStake` (separate try/catch); `submitting` stays true for the full chain; `router.replace` to new event always after successful event create unless an error is thrown before navigation; partial failures → `console.warn` in `__DEV__` + TODO for event detail banner.
+- **Files changed:** `mobile/src/features/events/premium-create-event-map-api.ts`, `mobile/src/features/events/premium-create-event-screen.tsx`, `docs/kairo-build-log.md`.
+- **Commands run:** `cd mobile && npm run typecheck` — pass; `cd mobile && npm run lint` — pass (4 pre-existing onboarding warnings). Website typecheck not required (no website/shared edits).
+- **TODOs left:** Event detail banner when proof/stake chain fails after event create; optional parallel `Promise.allSettled` if latency matters.
+- **Commit:** (recorded after `git commit`)
+- **Push:** (recorded after `git push`)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
