@@ -241,8 +241,8 @@ Done:
 - **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` — pass.
 - **Device / app:** Not run in agent.
 - **TODOs:** Highlight a specific proof submission using query ids; tune auto-scroll vs keyboard.
-- **Commit:** `d430245` — `mobile: wire home proof actions to events`
-- **Push:** (recorded after `git push`)
+- **Commit:** `d430245` — `mobile: wire home proof actions to events`; `bc37e53` — `docs: record home proof navigation session`
+- **Push:** `git push origin main` — succeeded (`e2d5aa4..bc37e53`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
