@@ -343,7 +343,7 @@ Done:
 - **Mobile:** `EventTeamAgreementResultsSection` on event detail; API client methods; organizer **“Team agreement results”** switch on new match.
 - **Commands run:** `npx tsc --noEmit` (`packages/shared`); `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). **`db:push` not run** (no schema change).
 - **TODOs:** `Event.resultVerificationMode` by format; Home “next action” for pending confirm/dispute; Kairo Score / commitment AND rule.
-- **Commit:** `7e2c4fb` — `matches: add team agreement result flow`
+- **Commit:** `254bc20` — `matches: add team agreement result flow`
 - **Push:** `git push origin main` — succeeded
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
