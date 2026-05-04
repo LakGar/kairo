@@ -331,8 +331,8 @@ Done:
 - **Commands run:** `npm run db:generate` (root) — pass. **`db:push` / migrate not run** (no intentional `DATABASE_URL` apply in this session). `prisma validate` not run (requires `DATABASE_URL` in this environment).
 - **Checks:** `npx tsc --noEmit` in `packages/shared`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
 - **TODOs (next):** Team agreement submit / confirm / dispute APIs + mobile CTAs; optional `Event.resultVerificationMode` default by format; commitment scoring using confirmed result ∧ proof approved.
-- **Commit:** `719c30d` — `matches: add organizer decided result verification`
-- **Push:** (record after `git push`)
+- **Commit:** `719c30d` — `matches: add organizer decided result verification`; `b109b32` — `docs: fix PR9 build log commit hash`
+- **Push:** `git push origin main` — succeeded (`118f067..b109b32`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
