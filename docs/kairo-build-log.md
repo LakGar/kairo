@@ -543,7 +543,7 @@ Done:
 
 **Commit:** `441691e` — `test: apply staging schema and run MVP e2e checklist`
 
-**Push:** _(after `git push`)_
+**Push:** `git push origin main` — succeeded (`85cc9a3..27742c4`; feature `441691e`, log `27742c4`).
 
 In Progress:
 
