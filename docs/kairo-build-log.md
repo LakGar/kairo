@@ -209,8 +209,8 @@ Done:
 - **Commands run:** `npm run db:generate` (root) — pass; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
 - **Device / app:** Not run in agent.
 - **TODOs:** Production Clerk JWT verification on bootstrap; optional `db:push` for new column; wire website mutating routes off raw header when ready.
-- **Commit:** `487fe4a` — `auth: add Clerk Prisma user bootstrap`
-- **Push:** (recorded after `git push`)
+- **Commit:** `487fe4a` — `auth: add Clerk Prisma user bootstrap`; `8342c11` — `docs: record Clerk bootstrap session`
+- **Push:** `git push origin main` — succeeded (`5badf0f..8342c11`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
