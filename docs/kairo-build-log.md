@@ -360,8 +360,8 @@ Done:
 - **Mobile:** **`KairoProfileSettingsScreen`** (`settings/kairo-profile.tsx`) — load/save, success/error banners, username conflict line error, **Save** disabled when not dirty / while saving; **Preferences** read-only section; **Kairo** text + sparkles header; Settings home row **“Kairo profile”**; stack screen registered; **`updateMyProfile`** on API client.
 - **Brand TODOs (docs):** Ship final **app icon**, **splash**, and **master logo** assets (vector or high-res PNG) when brand is locked; today header remains **text “kairo”** + sparkles consistent with home tab header.
 - **Commands run:** `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint`; `npm run typecheck:shared` — pass (4 pre-existing onboarding lint warnings).
-- **Commit:** `6cda5ab` — `profile: add settings and profile editing`
-- **Push:** (filled after push)
+- **Commit:** `a296cc1` — `profile: add settings and profile editing`
+- **Push:** `git push origin main` — succeeded (`1c5e9b2..a296cc1`)
 
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
