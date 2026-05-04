@@ -39,6 +39,12 @@ export function mapSummaryToMockCommitment(s: ApiHomeEventSummary): MockCommitme
       : s.status === "COMPLETED"
         ? "Completed"
         : "Upcoming");
+  const trimmedLabel = s.scoreImpactLabel?.trim();
+  const impact =
+    trimmedLabel ||
+    (s.scoreImpactValue != null && s.scoreImpactValue !== 0
+      ? `Score impact: ${s.scoreImpactValue > 0 ? "+" : ""}${s.scoreImpactValue}`
+      : "No score impact");
   return {
     id: `api-${s.id}-${s.role}`,
     title: s.title,
@@ -48,8 +54,8 @@ export function mapSummaryToMockCommitment(s: ApiHomeEventSummary): MockCommitme
     timeLabel: formatEventStartsAt(s.startsAt),
     locationLabel: locationLine(s),
     status: statusLine,
-    scoreImpact: s.scoreImpactLabel?.trim() || "No score impact",
-    commitmentStatus: s.commitmentStatus,
+    scoreImpact: impact,
+    commitmentStatus: s.commitmentStatus ?? "NO_SCORE_IMPACT",
     eventIdPlaceholder: s.id,
   };
 }

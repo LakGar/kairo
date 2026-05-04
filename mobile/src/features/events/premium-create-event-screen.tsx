@@ -541,7 +541,7 @@ export function PremiumCreateEventScreen() {
     const acting = resolveActingUserId(getLinkedKairoUserId(user));
     if (!base || !acting) {
       setApiError(
-        "Missing API configuration. Set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_KAIRO_DEV_USER_ID.",
+        "Missing API user or URL. Set EXPO_PUBLIC_API_URL, complete sign-in bootstrap, or set EXPO_PUBLIC_KAIRO_DEV_USER_ID (see mobile/.env.example).",
       );
       return;
     }

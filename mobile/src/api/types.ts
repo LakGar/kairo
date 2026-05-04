@@ -91,10 +91,10 @@ export interface ApiHomeEventSummary {
   state: string | null;
   imageUrl: string | null;
   proofStatus?: string | null;
-  /** e.g. `UPCOMING` | `FULLY_VERIFIED` | `PROOF_PENDING` | … */
-  commitmentStatus: string;
-  commitmentStatusLine: string;
-  scoreImpactLabel: string;
+  /** e.g. `UPCOMING` | `FULLY_VERIFIED` | `PROOF_PENDING` | … (optional for older API responses). */
+  commitmentStatus?: string;
+  commitmentStatusLine?: string;
+  scoreImpactLabel?: string;
   scoreImpactValue?: number | null;
   completionReason?: string | null;
   participantCount: number;

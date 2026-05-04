@@ -387,6 +387,19 @@ Done:
 - **TODOs:** Surface **stale team-result review (-2)** on commitment copy if desired; i18n for status strings.
 - **Commit / push:** Message `home: explain commitment score impact` on `main`; `git push origin main` (verify tip with `git log -1 --oneline`).
 
+#### Work session — 2026-05-03 (Mobile + Website + Database) — E2E MVP test pass and blocking bug fixes
+
+- **Task:** Run documented MVP flow checks; fix only **blocking** issues found; no new product features, paywall, leaderboard, or AI.
+- **Environment (agent shell):** **`DATABASE_URL`** unset — **`db:push` / `db:seed` not run** (would need intentional local Postgres). **`npm run db:generate`** — **passed** (Prisma client generated).
+- **Automated checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — **passed** (**4** pre-existing onboarding warnings on mobile). **`packages/shared`** unchanged this commit.
+- **Flows not executed in agent:** Clerk sign-in/sign-up, device/simulator, **S3/R2** presigned upload (requires **`PROOF_STORAGE_*`**); second-user **team-agreement** opponent path not exercised. **`POST /api/proof-media/upload-url`** **503 NOT_CONFIGURED** path is expected when storage env is unset — documented in **`website/.env.example`** / **`mobile/.env.example`**.
+- **Bugs fixed (resilience / copy):**
+  - **`ApiHomeEventSummary`** — **`commitmentStatus`**, **`commitmentStatusLine`**, **`scoreImpactLabel`** optional so older or partial JSON cannot break typing; **`me-home-map.ts`** normalizes defaults + fallback impact line from **`scoreImpactValue`** when label absent.
+  - **`premium-create-event-screen.tsx`** — clearer submit error when API URL or acting user id is missing (bootstrap / dev id).
+- **Deferred (non-blocking / needs real env):** Full multi-user team result confirm; proof **PUT** to bucket; production Clerk server verification on website; onboarding server persistence.
+- **Checks (this session):** `npm run db:generate` (root); website + mobile typecheck + lint as above.
+- **Commit / push:** Message `test: run MVP e2e pass and fix blockers` on `main`; `git push origin main` (verify tip with `git log -1 --oneline`).
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
