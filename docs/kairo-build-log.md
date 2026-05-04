@@ -489,9 +489,9 @@ Done:
 
 **DB migrate/push:** Not run (intentional).
 
-**Commit:** _(after commit)_
+**Commit:** `8b16976` — `onboarding: persist profile completion`
 
-**Push:** _(after push)_
+**Push:** `git push origin main` — succeeded (`2fa4c55..8b16976`).
 
 In Progress:
 
