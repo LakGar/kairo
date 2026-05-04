@@ -192,6 +192,9 @@ export interface ApiMeProfilePayload {
   profile: ApiMeProfileDto;
 }
 
+/** `PATCH /api/me/profile` — partial profile update; response matches `GET /api/me/profile`. */
+export type ApiUpdateMyProfilePayload = ApiMeProfilePayload;
+
 /** `PATCH /api/me/profile/onboarding` — persist onboarding + mark complete. */
 export interface ApiCompleteOnboardingPayload {
   profile: ApiMeProfileDto;

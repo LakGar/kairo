@@ -1,7 +1,10 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
-import { profileOnboardingCompleteRequestSchema } from "@kairo/shared";
+import {
+  profileOnboardingCompleteRequestSchema,
+  updateMyProfileRequestSchema,
+} from "@kairo/shared";
 import { err, ok, type Result } from "@/src/lib/result";
 
 export type MeProfileDto = {
@@ -123,6 +126,91 @@ export async function getMeProfilePayload(userId: string): Promise<Result<MeProf
     onboardingCompleted: profile.onboardingCompleted,
     profile: mapProfile(profile),
   });
+}
+
+export async function patchMeProfile(
+  userId: string,
+  input: unknown,
+): Promise<Result<MeProfilePayload>> {
+  const parsed = updateMyProfileRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    const msg =
+      Object.entries(flat.fieldErrors)
+        .flatMap(([, msgs]) => msgs ?? [])
+        .join("; ") ||
+      flat.formErrors.join("; ") ||
+      "Invalid profile update";
+    return err(msg, "VALIDATION_ERROR");
+  }
+  const d = parsed.data;
+
+  const existing = await getMeProfilePayload(userId);
+  if (!existing.success) return existing;
+
+  const data: Prisma.ProfileUpdateInput = {};
+
+  if (d.name !== undefined) {
+    const t = d.name.trim();
+    data.name = t === "" ? null : t;
+  }
+  if (d.username !== undefined) {
+    const other = await prisma.profile.findFirst({
+      where: { username: d.username, NOT: { userId } },
+      select: { id: true },
+    });
+    if (other) {
+      return err("That username is already taken. Pick another.", "USERNAME_CONFLICT");
+    }
+    data.username = d.username;
+  }
+  if (d.bio !== undefined) {
+    const t = d.bio.trim();
+    data.bio = t === "" ? null : t;
+  }
+  if (d.primaryGoal !== undefined) data.primaryGoal = d.primaryGoal;
+  if (d.accountabilityStyle !== undefined) {
+    data.accountabilityStyle = d.accountabilityStyle;
+  }
+  if (d.participationModes !== undefined) {
+    data.participationModes = d.participationModes as unknown as Prisma.InputJsonValue;
+  }
+  if (d.activityInterests !== undefined) {
+    data.activityInterests = d.activityInterests as unknown as Prisma.InputJsonValue;
+  }
+  if (d.preferredEventTypes !== undefined) {
+    data.preferredEventTypes = d.preferredEventTypes as unknown as Prisma.InputJsonValue;
+  }
+  if (d.stakePreference !== undefined) data.stakePreference = d.stakePreference;
+  if (d.proofPreference !== undefined) data.proofPreference = d.proofPreference;
+  if (d.socialCirclePreference !== undefined) {
+    data.socialCirclePreference = d.socialCirclePreference;
+  }
+  if (d.notificationPreference !== undefined) {
+    data.notificationPreference = d.notificationPreference;
+  }
+  if (d.locationPreference !== undefined) {
+    data.locationPreference = d.locationPreference;
+  }
+
+  try {
+    await prisma.profile.update({
+      where: { userId },
+      data,
+    });
+  } catch (e) {
+    const code =
+      typeof e === "object" && e !== null && "code" in e
+        ? (e as { code?: string }).code
+        : "";
+    if (code === "P2002") {
+      return err("That username is already taken. Pick another.", "USERNAME_CONFLICT");
+    }
+    const msg = e instanceof Error ? e.message : "Failed to update profile";
+    return err(msg, "BAD_STATE");
+  }
+
+  return getMeProfilePayload(userId);
 }
 
 export async function completeMeProfileOnboarding(

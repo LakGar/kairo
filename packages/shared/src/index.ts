@@ -1,5 +1,6 @@
 export * from "./auth-bootstrap";
 export * from "./profile-onboarding";
+export * from "./profile-update";
 export * from "./enums";
 export * from "./events";
 export * from "./matches";

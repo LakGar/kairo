@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Username: lowercase letters, digits, underscore; min 3. */
-const usernameSchema = z
+export const profileUsernameSchema = z
   .string()
   .trim()
   .transform((s) => s.toLowerCase())
@@ -22,7 +22,7 @@ const stringArray = z.array(z.string()).default([]);
  */
 export const profileOnboardingCompleteRequestSchema = z.object({
   displayName: z.string().trim().min(1, "Display name is required").max(200),
-  username: usernameSchema,
+  username: profileUsernameSchema,
   shortBio: z.string().trim().max(2000).optional().default(""),
   primaryGoal: nullableString,
   accountabilityStyle: nullableString,

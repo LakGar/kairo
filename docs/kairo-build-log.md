@@ -346,6 +346,23 @@ Done:
 - **Commit:** `961e63e` — `proof: switch media storage to Supabase`
 - **Push:** `git push origin main` — succeeded (`3682a80..961e63e`)
 
+#### Work session — 2026-05-03 (PR 21 · Website + Mobile + Shared) — Profile settings and brand personalization polish
+
+- **Area:** Website + Mobile + Shared  
+- **Task:** Profile settings and brand polish — server-backed **name / username / bio** editing, read-only onboarding preferences, **Kairo** wordmark on profile screen; no avatar upload to Kairo storage, no proof/result/payment changes.
+- **Before:** `git status` — mixed dirty tree; **commit scope:** `PATCH /api/me/profile`, `me-profile.service` + shared `updateMyProfileRequestSchema`, mobile `updateMyProfile`, new **`settings/kairo-profile`** screen + settings stack files that were previously local-only (so `main` can compile: `settings/*`, `src/settings/*`, `settings-stack-header`, `linked-kairo-user-id`, profile metadata helpers, `feature-empty-state`, `hooks/useColorScheme*`), `kairo-client` / types / re-exports, this log.
+
+**After (2026-05-03):**
+
+- **API:** **`PATCH /api/me/profile`** — `requireUserId`, Zod **`updateMyProfileRequestSchema`** (partial `name`, `username` via shared **`profileUsernameSchema`**, `bio`, optional preference fields); **409 `USERNAME_CONFLICT`** on duplicate username; returns same payload shape as **`GET /api/me/profile`**.
+- **Website:** `patchMeProfile` in **`me-profile.service.ts`** (reuse conflict checks aligned with onboarding); **`website/app/api/me/profile/route.ts`** exports **PATCH**.
+- **Shared:** **`packages/shared/src/profile-update.ts`**; **`profileUsernameSchema`** exported from **`profile-onboarding.ts`** for reuse.
+- **Mobile:** **`KairoProfileSettingsScreen`** (`settings/kairo-profile.tsx`) — load/save, success/error banners, username conflict line error, **Save** disabled when not dirty / while saving; **Preferences** read-only section; **Kairo** text + sparkles header; Settings home row **“Kairo profile”**; stack screen registered; **`updateMyProfile`** on API client.
+- **Brand TODOs (docs):** Ship final **app icon**, **splash**, and **master logo** assets (vector or high-res PNG) when brand is locked; today header remains **text “kairo”** + sparkles consistent with home tab header.
+- **Commands run:** `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint`; `npm run typecheck:shared` — pass (4 pre-existing onboarding lint warnings).
+- **Commit:** `6cda5ab` — `profile: add settings and profile editing`
+- **Push:** (filled after push)
+
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
 - **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.

@@ -2,7 +2,10 @@ import Constants from "expo-constants";
 
 import { getBootstrappedUserIdSync } from "./bootstrap-user-id";
 import { getApiBaseUrl } from "./config";
-import type { ProfileOnboardingCompleteRequestInput } from "@kairo/shared";
+import type {
+  ProfileOnboardingCompleteRequestInput,
+  UpdateMyProfileRequestInput,
+} from "@kairo/shared";
 
 import {
   KairoApiConfigurationError,
@@ -153,6 +156,7 @@ export interface KairoApi {
   getMyNotifications: () => Promise<ApiMeNotificationsPayload>;
   markNotificationsRead: (body?: { before?: string }) => Promise<ApiMarkNotificationsReadPayload>;
   getMyProfile: () => Promise<ApiMeProfilePayload>;
+  updateMyProfile: (body: UpdateMyProfileRequestInput) => Promise<ApiMeProfilePayload>;
   completeOnboarding: (body: ProfileOnboardingCompleteRequestInput) => Promise<ApiCompleteOnboardingPayload>;
 }
 
@@ -261,6 +265,8 @@ export function createKairoApi(config: {
         json: body && Object.keys(body).length > 0 ? body : {},
       }),
     getMyProfile: () => req("/api/me/profile"),
+    updateMyProfile: (body) =>
+      req("/api/me/profile", { method: "PATCH", json: body }),
     completeOnboarding: (body) =>
       req("/api/me/profile/onboarding", { method: "PATCH", json: body }),
   };
