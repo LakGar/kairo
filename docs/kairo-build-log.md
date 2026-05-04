@@ -256,8 +256,8 @@ Done:
 - **Files changed:** `mobile/src/features/events/premium-create-event-map-api.ts`, `mobile/src/features/events/premium-create-event-screen.tsx`, `docs/kairo-build-log.md`.
 - **Commands run:** `cd mobile && npm run typecheck` — pass; `cd mobile && npm run lint` — pass (4 pre-existing onboarding warnings). Website typecheck not required (no website/shared edits).
 - **TODOs left:** Event detail banner when proof/stake chain fails after event create; optional parallel `Promise.allSettled` if latency matters.
-- **Commit:** `9939822` — `mobile: persist create event proof and stake`
-- **Push:** (recorded after `git push`)
+- **Commit:** `9939822` — `mobile: persist create event proof and stake`; `9fd6f07` — `docs: record PR5 commit hash`
+- **Push:** `git push origin main` — succeeded (`origin/main` advanced to include PR5 commits)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
