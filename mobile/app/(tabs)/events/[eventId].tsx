@@ -301,12 +301,14 @@ export default function EventDetailScreen() {
           <View
             style={styles.lowerPanel}
             onLayout={(e) => {
-              setLowerPanelTopY(e.nativeEvent.layout.y);
+              const y = e.nativeEvent.layout.y;
+              setLowerPanelTopY(y);
             }}
           >
             <View
               onLayout={(e) => {
-                setFocusSectionYs((s) => ({ ...s, organizer: e.nativeEvent.layout.y }));
+                const y = e.nativeEvent.layout.y;
+                setFocusSectionYs((s) => ({ ...s, organizer: y }));
               }}
             >
               {focus === "organizer" ? (
@@ -321,7 +323,8 @@ export default function EventDetailScreen() {
 
             <View
               onLayout={(e) => {
-                setJoinWithinLowerY(e.nativeEvent.layout.y);
+                const y = e.nativeEvent.layout.y;
+                setJoinWithinLowerY(y);
               }}
             >
               <EventJoinSection event={event} onJoined={() => void reload()} />
@@ -338,7 +341,8 @@ export default function EventDetailScreen() {
 
             <View
               onLayout={(e) => {
-                setFocusSectionYs((s) => ({ ...s, result: e.nativeEvent.layout.y }));
+                const y = e.nativeEvent.layout.y;
+                setFocusSectionYs((s) => ({ ...s, result: y }));
               }}
             >
               {focus === "result" ? (
@@ -361,7 +365,8 @@ export default function EventDetailScreen() {
 
             <View
               onLayout={(e) => {
-                setFocusSectionYs((s) => ({ ...s, proof: e.nativeEvent.layout.y }));
+                const y = e.nativeEvent.layout.y;
+                setFocusSectionYs((s) => ({ ...s, proof: y }));
               }}
             >
               {focus === "proof" ? (
