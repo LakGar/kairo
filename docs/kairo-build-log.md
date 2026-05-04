@@ -392,6 +392,17 @@ Done:
 - **Commit:** `a97bbb8` — `notifications: send push for proof and result actions`
 - **Push:** `git push origin main` — succeeded (verify with `git log -1 --oneline` on `main`)
 
+#### Work session — 2026-05-03 (PR 24 · Website + Database) — Expo push ticket receipt handling and batching
+
+- **Area:** Website + Database  
+- **Task:** Batch **`/push/send`** (up to **100** messages per request); parse **push tickets** (`ok` / `error`, `details.error` e.g. **`DeviceNotRegistered`**); **`enabled: false`** on matching **`PushToken`** for **`DeviceNotRegistered`** (immediate ticket or receipt); **`checkExpoPushReceipts`** → **`/push/getReceipts`** in chunks of **1000** ids; persist **`PushTicket`** (`ticketId` **unique**, optional **`pushTokenId`**, `status`, `message` JSON) so receipts map to tokens. **No** mobile / email / SMS / paywall; **no** change to **`push-triggers`** product logic.
+- **Schema:** New **`PushTicket`** model + **`PushToken.pushTickets`**; **`npm run db:generate`** run — apply **`db:push` / migrate** when `DATABASE_URL` is set.
+- **Dispatch:** **`sendExpoPushMessagesWithMeta`** + **`sendPushToUser`** (batched per user token list); **`checkExpoPushReceipts`** updates **`PushTicket`** and disables tokens on receipt errors when mapped.
+- **TODOs (next):** **Scheduled** receipt job (~15 min after send per Expo guidance); prune **24h** stale **`PushTicket`** rows; rate limits / retries on **429** / **5xx**.
+- **Commands run:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint` — pass.
+- **Commit / message:** `notifications: add push batching and receipt handling` (verify hash with `git log -1 --oneline`).
+- **Push:** `git push origin main` — verify tip after push.
+
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
 - **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.

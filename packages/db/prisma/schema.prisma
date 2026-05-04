@@ -133,10 +133,27 @@ model PushToken {
   deviceId String?
   enabled  Boolean @default(true)
 
+  pushTickets PushTicket[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/** Expo push ticket id from `/push/send` (ok tickets) for later `/push/getReceipts` correlation. */
+model PushTicket {
+  id          String     @id @default(cuid())
+  pushTokenId String?
+  pushToken   PushToken? @relation(fields: [pushTokenId], references: [id], onDelete: SetNull)
+  ticketId    String     @unique
+  status      String
+  message     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pushTokenId])
 }
 
 /** Single cursor per user for derived in-app notifications (not per-row reads). */
