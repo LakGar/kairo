@@ -80,6 +80,22 @@ Exact state machine naming can be refined in Prisma, but **`WAITING_CONFIRMATION
 - **`ProofSubmission`** (or current MVP equivalent) stays **separate** from match result fields.
 - Proof has its **own** lifecycle, e.g. **`PENDING` → `APPROVED` | `REJECTED`** (already aligned with much of the codebase).
 
+### MVP Kairo Score (`GET /api/me/events` → `stats`)
+
+Implemented as **MVP heuristics** in `website/src/server/me/me-home-scoring.ts` (not a competitive integrity engine).
+
+**Who counts:** commitments are derived from events the user **hosts**, events where they are an **APPROVED** `EventParticipant` with role **PLAYER**, and events where they are **team captain or `TeamMember`**. **Watcher / volunteer** participation is **excluded** from score for now (optional lower weight later — TODO).
+
+**Units:** **Host** → one **event-level** unit (all matches on that event). **Team player** → one unit **per match** they are on (home/away captain or member). **Approved player not on a match roster** → one **event-level** unit.
+
+**“Fully complete” (AND rule):** **`Match.resultStatus === CONFIRMED`** on the unit (for event-level: every **non-cancelled** match is **CONFIRMED**; if there are **no** active matches, **result** is treated complete once **`startsAt` ≤ now** — **attendance assumed** for open meetups; TODO check-in). **Proof:** if the event has **any** **`ProofPrompt` with `isRequired: true`**, the user must have at least one **`ProofSubmission`** with **`APPROVED`** for that **`eventId`**, and for **match** units **`matchId` is null or equals that match** (event-wide approved proof satisfies match units).
+
+**Score adjustments (from 100, clamped 0–100):** **+2** per fully completed unit in the **recent window** (`startsAt` within last **30 days** or upcoming within **30 days**; **upcoming** units incur **no** positive/negative deltas). **−3** if result is complete but required proof is still not approved. **−8** if the user has a **REJECTED** submission in scope for that unit. **−6** if the event **`COMPLETED` or `CANCELLED`**, proof is required, not approved, and **result is not** complete. **−2** per **`TEAM_AGREEMENT`** match in **`WAITING_CONFIRMATION`** where the user must review the opponent submission and the match **`updatedAt`** is older than **24 hours**.
+
+**Other `stats` fields:** **`sevenDayTrend`** — difference between full score and score using only units whose event **`startsAt` &lt; now − 7d** ( **`0`** if there is no older baseline). **`streakDays`** — consecutive UTC calendar days ending today with a completion-like **`ActivityLog`** action (`PROOF_APPROVED`, `MATCH_TEAM_RESULT_CONFIRMED`, `MATCH_RESULT_CONFIRMED`, `MATCH_WINNER_MARKED`). **`weeklyRank`** — **`null`**. **`completedRecent` / `totalRecent`** — full completes vs units in the recent window.
+
+**Labels:** 95–100 **Locked In**; 85–94 **Reliable**; 70–84 **Slipping**; 50–69 **At Risk**; below 50 **Ghost Mode**.
+
 ### Implementation backlog (remaining after team-agreement MVP slice)
 
 | Layer | Status / next |
@@ -89,7 +105,7 @@ Exact state machine naming can be refined in Prisma, but **`WAITING_CONFIRMATION
 | **Website + REST** | Team agreement **POST** routes + services shipped; organizer resolves disputes via existing **`PATCH .../winner`**. |
 | **Mobile** | Event detail **Team agreement results** section + organizer toggle for new matches shipped. |
 | **Home / “next action”** | **Team result review** action from `GET /api/me/events` when the user must confirm/dispute (`TEAM_RESULT_REVIEW` → event `focus=result`). Further cards (e.g. richer priority vs inbox) — optional. |
-| **Commitments / Kairo Score** | **AND** rule (confirmed result ∧ proof approved) — still to do. |
+| **Commitments / Kairo Score** | **Shipped (MVP):** `GET /api/me/events` `stats` + `me-home-scoring.ts` (AND rule, penalties, streak proxy). Tuning, watcher weight, richer streak — optional. |
 | **Copy / compliance** | Keep participate-first language. |
 
 MVP can still use **organizer-decides** for most events; this document remains the **source of truth** for **result vs proof** separation.
@@ -123,7 +139,7 @@ MVP can still use **organizer-decides** for most events; this document remains t
 | Event detail, join, teams, organizer tools, proof submit | **Wired to API** per build log Phases 9–11 |
 | **Premium Create Event** (`PremiumCreateEventScreen`, Create tab) | **Not wired** — submit validates locally then `console.log`; **does not** `POST /api/events` |
 | **Legacy/API create** (`CreateEventForm` if still present) | Verify single source of truth: **one** create path should call the API |
-| Home dashboard | **Partially stubbed** after fixture removal: score / next action are placeholders; **personal commitment** is **SecureStore-only** (not server) |
+| Home dashboard | **API-backed** score + commitments from `GET /api/me/events`; **personal commitment** row remains **SecureStore-only** (not server) |
 | Chat / friends / notifications | **No backend** — empty or local-only UX |
 | Onboarding (preferences) | **Local-only** completion — no server persistence |
 

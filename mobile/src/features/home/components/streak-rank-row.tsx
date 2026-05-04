@@ -8,6 +8,9 @@ type Props = {
   streakTrendLabel: string;
   weeklyRank: number | null;
   rankTrendLabel: string;
+  /** MVP: fully complete / total commitments in recent window from `GET /api/me/events`. */
+  completedRecent?: number;
+  totalRecent?: number;
 };
 
 export function StreakRankRow({
@@ -15,7 +18,13 @@ export function StreakRankRow({
   streakTrendLabel,
   weeklyRank,
   rankTrendLabel,
+  completedRecent,
+  totalRecent,
 }: Props) {
+  const completionLine =
+    completedRecent != null && totalRecent != null
+      ? `${completedRecent}/${totalRecent} complete (30d)`
+      : null;
   return (
     <View style={styles.row}>
       <View style={[styles.card, styles.flex]}>
@@ -25,6 +34,7 @@ export function StreakRankRow({
         </View>
         <Text style={styles.big}>{streakDays}-day</Text>
         <Text style={styles.trend}>{streakTrendLabel}</Text>
+        {completionLine ? <Text style={styles.micro}>{completionLine}</Text> : null}
       </View>
       <View style={[styles.card, styles.flex]}>
         <View style={styles.iconRow}>

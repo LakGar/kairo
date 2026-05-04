@@ -255,6 +255,8 @@ export function HomeDashboard({
           streakTrendLabel={stats.sevenDayTrend >= 0 ? "On track" : "Catch up"}
           weeklyRank={stats.weeklyRank}
           rankTrendLabel={stats.weeklyRank == null ? "Unranked (MVP)" : "This week"}
+          completedRecent={stats.completedRecent}
+          totalRecent={stats.totalRecent}
         />
       ) : null}
 

@@ -9,6 +9,15 @@ import {
 
 import { prisma } from "@/lib/db";
 import { ActivityAction } from "@/server/activity/activity-actions";
+import {
+  buildCommitmentUnitsWithProofs,
+  computeKairoScore,
+  computeStreakDaysFromActivity,
+  utcDayKey,
+  MS_24H,
+  type ScoringEventRow,
+  type UserProofLite,
+} from "@/server/me/me-home-scoring";
 import { ok, type Result } from "@/src/lib/result";
 
 const eventPublicInclude = {
@@ -174,36 +183,6 @@ function formatActivityText(action: string, metadata: unknown): string {
   }
 }
 
-/**
- * MVP placeholder score until commitment scoring model exists.
- * Starts at 100, nudges down when proof work is pending (not a real rating formula).
- */
-function buildPlaceholderStats(input: {
-  pendingOwnProofs: number;
-  pendingHostReviews: number;
-  hostingCount: number;
-}): MeHomeStats {
-  const raw =
-    100 -
-    5 * Math.min(input.pendingOwnProofs, 4) -
-    3 * Math.min(input.pendingHostReviews, 4) -
-    Math.max(0, input.hostingCount - 3);
-  const kairoScore = Math.max(55, Math.min(100, raw));
-  const scoreLabel =
-    kairoScore >= 92 ? "Locked In" : kairoScore >= 80 ? "Reliable" : "Building";
-  const sevenDayTrend =
-    input.pendingOwnProofs + input.pendingHostReviews === 0 ? 2 : -1;
-  return {
-    kairoScore,
-    scoreLabel,
-    sevenDayTrend,
-    streakDays: input.hostingCount > 0 || input.pendingOwnProofs > 0 ? 1 : 0,
-    weeklyRank: null,
-    completedRecent: 0,
-    totalRecent: input.hostingCount + input.pendingOwnProofs,
-  };
-}
-
 export async function getMeHomePayload(userId: string): Promise<Result<MeHomePayload>> {
   const hostingRows = await prisma.event.findMany({
     where: { organizerId: userId },
@@ -225,6 +204,174 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
   const volunteering = volunteerEvents.map((e) => toSummary(e, "Volunteer"));
 
   const now = new Date();
+
+  const [approvedPlayerParts, teamMemberRows] = await Promise.all([
+    prisma.eventParticipant.findMany({
+      where: {
+        userId,
+        role: EventParticipantRole.PLAYER,
+        status: RegistrationStatus.APPROVED,
+      },
+      select: { eventId: true },
+    }),
+    prisma.teamMember.findMany({
+      where: { userId },
+      select: { team: { select: { eventId: true } } },
+    }),
+  ]);
+
+  const scoringEventIdSet = new Set<string>();
+  for (const e of hostingRows) scoringEventIdSet.add(e.id);
+  for (const p of approvedPlayerParts) scoringEventIdSet.add(p.eventId);
+  for (const t of teamMemberRows) scoringEventIdSet.add(t.team.eventId);
+  const scoringEventIds = [...scoringEventIdSet];
+
+  const fortyFiveDaysAgo = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
+
+  const [scoringEventsRaw, userProofsRaw, streakLogs, allWaitingConfirmMatches] =
+    await Promise.all([
+      scoringEventIds.length
+        ? prisma.event.findMany({
+            where: { id: { in: scoringEventIds }, status: { not: EventStatus.DRAFT } },
+            select: {
+              id: true,
+              organizerId: true,
+              status: true,
+              startsAt: true,
+              proofPrompts: { select: { id: true, isRequired: true } },
+              matches: {
+                select: {
+                  id: true,
+                  status: true,
+                  resultStatus: true,
+                  resultVerificationMode: true,
+                  submittedByTeamId: true,
+                  homeTeamId: true,
+                  awayTeamId: true,
+                  updatedAt: true,
+                  homeTeam: {
+                    select: {
+                      id: true,
+                      captainId: true,
+                      members: { select: { userId: true } },
+                    },
+                  },
+                  awayTeam: {
+                    select: {
+                      id: true,
+                      captainId: true,
+                      members: { select: { userId: true } },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      scoringEventIds.length
+        ? prisma.proofSubmission.findMany({
+            where: { userId, eventId: { in: scoringEventIds } },
+            select: { eventId: true, matchId: true, status: true },
+          })
+        : Promise.resolve([]),
+      prisma.activityLog.findMany({
+        where: {
+          userId,
+          createdAt: { gte: fortyFiveDaysAgo },
+          action: {
+            in: [
+              ActivityAction.PROOF_APPROVED,
+              ActivityAction.MATCH_TEAM_RESULT_CONFIRMED,
+              ActivityAction.MATCH_RESULT_CONFIRMED,
+              ActivityAction.MATCH_WINNER_MARKED,
+            ],
+          },
+        },
+        select: { createdAt: true },
+      }),
+      prisma.match.findMany({
+        where: {
+          resultVerificationMode: ResultVerificationMode.TEAM_AGREEMENT,
+          resultStatus: MatchResultStatus.WAITING_CONFIRMATION,
+          submittedByTeamId: { not: null },
+          homeTeamId: { not: null },
+          awayTeamId: { not: null },
+        },
+        include: {
+          event: { select: { id: true, title: true } },
+          homeTeam: {
+            select: {
+              id: true,
+              name: true,
+              captainId: true,
+              members: { select: { userId: true } },
+            },
+          },
+          awayTeam: {
+            select: {
+              id: true,
+              name: true,
+              captainId: true,
+              members: { select: { userId: true } },
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+
+  const userProofs: UserProofLite[] = userProofsRaw.map((p) => ({
+    eventId: p.eventId,
+    matchId: p.matchId,
+    status: p.status,
+  }));
+
+  const scoringEvents: ScoringEventRow[] = scoringEventsRaw.map((e) => ({
+    id: e.id,
+    organizerId: e.organizerId,
+    status: e.status,
+    startsAt: e.startsAt,
+    proofPrompts: e.proofPrompts,
+    matches: e.matches,
+  }));
+
+  let staleTeamResultReviewCount = 0;
+  for (const m of allWaitingConfirmMatches) {
+    if (!m.submittedByTeamId || !m.homeTeam || !m.awayTeam) continue;
+    const submitter =
+      m.submittedByTeamId === m.homeTeamId ? m.homeTeam : m.awayTeam;
+    const opponent = m.submittedByTeamId === m.homeTeamId ? m.awayTeam : m.homeTeam;
+    if (userOnTeam(submitter, userId)) continue;
+    if (!userOnTeam(opponent, userId)) continue;
+    if (m.updatedAt.getTime() < now.getTime() - MS_24H) staleTeamResultReviewCount += 1;
+  }
+
+  const commitmentUnits = buildCommitmentUnitsWithProofs(
+    scoringEvents,
+    userId,
+    userProofs,
+    now,
+  );
+
+  const streakActivityDays = new Set(streakLogs.map((l) => utcDayKey(l.createdAt)));
+  const streakDays = computeStreakDaysFromActivity(streakActivityDays, now);
+
+  const scoreBreakdown = computeKairoScore(
+    commitmentUnits,
+    staleTeamResultReviewCount,
+    now,
+    streakDays,
+  );
+
+  const stats: MeHomeStats = {
+    kairoScore: scoreBreakdown.score,
+    scoreLabel: scoreBreakdown.scoreLabel,
+    sevenDayTrend: scoreBreakdown.sevenDayTrend,
+    streakDays: scoreBreakdown.streakDays,
+    weeklyRank: scoreBreakdown.weeklyRank,
+    completedRecent: scoreBreakdown.completedRecent,
+    totalRecent: scoreBreakdown.totalRecent,
+  };
   const upcomingPlayerIds = new Set(
     playerEvents.filter((e) => e.startsAt >= now).map((e) => e.id),
   );
@@ -262,38 +409,8 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
   const teamResultReviewActions: MeHomeAction[] = [];
   const seenTeamResultMatches = new Set<string>();
 
-  const pendingOpponentConfirmMatches = await prisma.match.findMany({
-    where: {
-      resultVerificationMode: ResultVerificationMode.TEAM_AGREEMENT,
-      resultStatus: MatchResultStatus.WAITING_CONFIRMATION,
-      submittedByTeamId: { not: null },
-      homeTeamId: { not: null },
-      awayTeamId: { not: null },
-    },
-    include: {
-      event: { select: { id: true, title: true } },
-      homeTeam: {
-        select: {
-          id: true,
-          name: true,
-          captainId: true,
-          members: { select: { userId: true } },
-        },
-      },
-      awayTeam: {
-        select: {
-          id: true,
-          name: true,
-          captainId: true,
-          members: { select: { userId: true } },
-        },
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 24,
-  });
-
-  for (const m of pendingOpponentConfirmMatches) {
+  for (const m of allWaitingConfirmMatches) {
+    if (teamResultReviewActions.length >= 24) break;
     if (!m.submittedByTeamId || !m.homeTeam || !m.awayTeam) continue;
     const submitter =
       m.submittedByTeamId === m.homeTeamId ? m.homeTeam : m.awayTeam;
@@ -391,12 +508,6 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
     text: formatActivityText(l.action, l.metadata),
     createdAt: iso(l.createdAt),
   }));
-
-  const stats = buildPlaceholderStats({
-    pendingOwnProofs: pendingOwn.length,
-    pendingHostReviews: pendingHostReviews.length,
-    hostingCount: hosting.length,
-  });
 
   return ok({
     hosting,

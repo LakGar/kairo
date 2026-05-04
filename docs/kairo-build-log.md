@@ -342,7 +342,7 @@ Done:
 - **Website:** `submitTeamAgreementResult`, `confirmTeamAgreementResult`, `disputeTeamAgreementResult`; activity `MATCH_TEAM_RESULT_*`; `markMatchWinner` guard for team-agreement waiting state.
 - **Mobile:** `EventTeamAgreementResultsSection` on event detail; API client methods; organizer **“Team agreement results”** switch on new match.
 - **Commands run:** `npx tsc --noEmit` (`packages/shared`); `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). **`db:push` not run** (no schema change).
-- **TODOs:** `Event.resultVerificationMode` by format; ~~Home “next action” for pending confirm/dispute~~ (PR11); Kairo Score / commitment AND rule.
+- **TODOs:** `Event.resultVerificationMode` by format; ~~Home “next action” for pending confirm/dispute~~ (PR11); ~~Kairo Score / commitment AND rule~~ (PR12).
 - **Commit:** `254bc20` — `matches: add team agreement result flow`
 - **Push:** `git push origin main` — succeeded
 
@@ -355,6 +355,16 @@ Done:
 - **TODOs:** Home action priority tuning vs proof inbox; proof row highlight by `proofSubmissionId`; Kairo Score AND rule; `Event.resultVerificationMode` defaults.
 - **Commit:** `19d7e75` — `home: add team result review actions`; `8bc2a87` — `docs: record PR11 commit and push`
 - **Push:** `git push origin main` — succeeded (`b2c08cb..8bc2a87`)
+
+#### Work session — 2026-05-03 (Website + Mobile) — MVP commitment completion + Kairo Score (`GET /api/me/events`)
+
+- **Task:** Replace placeholder Home **`stats`** with real **MVP** commitment completion (**confirmed result ∧ proof when required**) and **Kairo Score** deltas; keep payload shape; no proof upload / auth / discover / chat changes.
+- **Backend:** New **`website/src/server/me/me-home-scoring.ts`** — `buildCommitmentUnitsWithProofs`, `computeKairoScore`, `getScoreLabel`, `computeSevenDayTrend`, `computeStreakDaysFromActivity`, `utcDayKey`. **`me-home.service.ts`** — loads scoring events (host + **APPROVED** player + team membership), user **`ProofSubmission`** rows, **`ActivityLog`** for streak, **`Match`** rows in **`WAITING_CONFIRMATION`** (reused for Home actions + stale opponent count); deduped team-result query (single `findMany` with `orderBy`, cap **24** actions in loop).
+- **Mobile:** **`KairoScoreCard`** — clamp score/trend/streak for safe numbers. **`StreakRankRow`** — optional **`completedRecent` / `totalRecent`** line. **`home-dashboard`** — passes API counts.
+- **Docs:** **`docs/mvp-full-function-plan.md`** — §1.5 **MVP Kairo Score** + backlog/home snapshot updates. This log.
+- **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
+- **TODOs:** Watcher/volunteer lower weight or inclusion; meetup “attendance” without **`startsAt`** heuristic; **7-day trend** when all commitments are newer than 7 days returns **0**; leaderboard for **`weeklyRank`**; optional **`scoreImpactLabel`** per event row from completion state.
+- **Commit / push:** `score: add MVP Kairo Score logic` on `main`; `git push origin main` succeeded (verify tip with `git log -1 --oneline`).
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
