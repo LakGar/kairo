@@ -1,4 +1,6 @@
+import type { ProfileOnboardingCompleteRequestInput } from "@kairo/shared";
 import * as Haptics from "expo-haptics";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import React, {
   createContext,
@@ -8,6 +10,9 @@ import React, {
   useState,
 } from "react";
 
+import { createKairoApiFromEnv } from "@/src/api";
+import { KairoApiError } from "@/src/api/types";
+
 import { ONBOARDING_STEPS } from "../onboarding-steps";
 import {
   createInitialFormData,
@@ -15,6 +20,8 @@ import {
   type OnboardingStepId,
 } from "../onboarding-types";
 import { validateStep } from "../onboarding-validation";
+
+const PROFILE_STEP_ID: OnboardingStepId = "profile";
 
 export type MultiSelectField =
   | "participationModes"
@@ -35,6 +42,8 @@ type OnboardingFlowContextValue = {
   currentStepId: OnboardingStepId;
   formData: OnboardingFormData;
   fieldErrors: Record<string, string>;
+  finishSubmitting: boolean;
+  finishError: string | null;
   updateField: <K extends keyof OnboardingFormData>(
     key: K,
     value: OnboardingFormData[K],
@@ -43,7 +52,8 @@ type OnboardingFlowContextValue = {
   toggleMultiSelect: (field: MultiSelectField, id: string) => void;
   goNext: () => void;
   goBack: () => void;
-  finishOnboarding: () => void;
+  finishOnboarding: () => Promise<void>;
+  jumpToStepId: (id: OnboardingStepId) => void;
   isFirstStep: boolean;
   isLastStep: boolean;
   totalSteps: number;
@@ -65,16 +75,45 @@ function clearFieldError(
   });
 }
 
+function buildOnboardingPayload(formData: OnboardingFormData): ProfileOnboardingCompleteRequestInput {
+  return {
+    displayName: formData.displayName.trim(),
+    username: formData.username.trim(),
+    shortBio: formData.shortBio.trim(),
+    primaryGoal: formData.primaryGoal,
+    accountabilityStyle: formData.accountabilityStyle,
+    participationModes: formData.participationModes,
+    activityInterests: formData.activityInterests,
+    preferredEventTypes: formData.preferredEventTypes,
+    stakePreference: formData.stakePreference,
+    proofPreference: formData.proofPreference,
+    socialCirclePreference: formData.socialCirclePreference,
+    notificationPreference: formData.notificationPreference,
+    locationPreference: formData.locationPreference,
+  };
+}
+
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>(createInitialFormData);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [finishSubmitting, setFinishSubmitting] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
 
   const currentStep = ONBOARDING_STEPS[currentStepIndex];
   const totalSteps = ONBOARDING_STEPS.length;
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === totalSteps - 1;
+
+  const jumpToStepId = useCallback((id: OnboardingStepId) => {
+    const i = ONBOARDING_STEPS.findIndex((s) => s.id === id);
+    if (i >= 0) {
+      setCurrentStepIndex(i);
+      setFieldErrors({});
+      setFinishError(null);
+    }
+  }, []);
 
   const updateField = useCallback(
     <K extends keyof OnboardingFormData>(key: K, value: OnboardingFormData[K]) => {
@@ -108,13 +147,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       return;
     }
     setFieldErrors({});
+    setFinishError(null);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentStepIndex < totalSteps - 1) {
       setCurrentStepIndex((i) => i + 1);
     }
   }, [currentStep, currentStepIndex, formData, totalSteps]);
 
-  const finishOnboarding = useCallback(() => {
+  const finishOnboarding = useCallback(async () => {
     if (!currentStep) return;
     const { isValid, errors } = validateStep(currentStep.id, formData);
     if (!isValid) {
@@ -123,15 +163,34 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       return;
     }
     setFieldErrors({});
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    // MVP: local state only — persist to backend later
-    router.replace("/(tabs)");
-  }, [currentStep, formData, router]);
+    setFinishError(null);
+    setFinishSubmitting(true);
+    try {
+      const api = createKairoApiFromEnv();
+      await api.completeOnboarding(buildOnboardingPayload(formData));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(tabs)/(home)/dashboard" as Href);
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const msg = e instanceof KairoApiError ? e.message : "Could not save. Try again.";
+      setFinishError(msg);
+      if (e instanceof KairoApiError && e.code === "USERNAME_CONFLICT") {
+        setFieldErrors((prev) => ({
+          ...prev,
+          username: msg,
+        }));
+        jumpToStepId(PROFILE_STEP_ID);
+      }
+    } finally {
+      setFinishSubmitting(false);
+    }
+  }, [currentStep, formData, jumpToStepId, router]);
 
   const goBack = useCallback(() => {
     if (currentStepIndex <= 0) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFieldErrors({});
+    setFinishError(null);
     setCurrentStepIndex((i) => i - 1);
   }, [currentStepIndex]);
 
@@ -141,12 +200,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       currentStepId: currentStep?.id ?? "welcome",
       formData,
       fieldErrors,
+      finishSubmitting,
+      finishError,
       updateField,
       setSingleSelect,
       toggleMultiSelect,
       goNext,
       goBack,
       finishOnboarding,
+      jumpToStepId,
       isFirstStep,
       isLastStep,
       totalSteps,
@@ -155,12 +217,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       currentStep?.id,
       currentStepIndex,
       fieldErrors,
+      finishError,
       finishOnboarding,
+      finishSubmitting,
       formData,
       goBack,
       goNext,
       isFirstStep,
       isLastStep,
+      jumpToStepId,
       setSingleSelect,
       toggleMultiSelect,
       totalSteps,

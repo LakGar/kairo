@@ -59,6 +59,7 @@ Done:
 - [x] **Phase 0 audit (2026-05-02):** On disk, schema includes models `User`, `Profile`, `Event`, `EventParticipant`, `Team`, `TeamMember`, `Bracket`, `Match`, `ProofPrompt`, `ProofSubmission`, `Stake`, `ActivityLog` and enums `UserRole` through `StakeStatus` as required for MVP foundation.
 - [x] **Phase 1 (2026-05-02):** Schema reviewed end-to-end; `ProofSubmission.eventId` ↔ `Event` relation intact; no payments/AI/storage tables added; proof remains `url` + `text` only. Composite indexes added for common lookups: `Event` `[status, startsAt]` (replaces standalone `[status]` to avoid redundancy), `EventParticipant` `[eventId, userId]`, `ProofSubmission` `[eventId, status]`, `Stake` `[eventId, status]`; `ActivityLog` `[createdAt]` for timelines.
 - [x] **2026-05-03 (PR 17):** `NotificationReadState` — one row per user (`userId` unique), optional `lastReadAt` cursor for derived in-app notifications (not a full `Notification` table).
+- [x] **2026-05-03 (PR 18):** `Profile` — `onboardingCompleted` / `onboardingCompletedAt`, preference fields (`primaryGoal`, `accountabilityStyle`, JSON arrays for modes/interests/event types, string prefs, optional bio path via existing `bio`).
 
 In Progress:
 
@@ -79,6 +80,7 @@ Done:
 - [x] **Phase 3:** Server layer under `website/src/server/` — `activity` (`logActivity`), `events` (create/update/publish/cancel/join + queries), `teams` (create/join/leave + queries), `matches` (create/score/winner + queries), `proof` (prompts/submit/approve/reject + queries), `stakes` (create/complete/fail + queries); `website/src/lib/result.ts`, `slug.ts`; path aliases `@/server/*`, `@/src/*` in `website/tsconfig.json`.
 - [x] **Phase 4:** `website/app/api/**` REST handlers — JSON `{ success, data | error }`, HTTP status from service codes; mutating routes use `requireUserId` → `x-kairo-user-id` (TODO Clerk); `website/src/lib/api-http.ts` (`fromServiceResult`, `parseJsonBody`, `requireUserId`); public reads: `GET /api/events` (upcoming), `GET /api/events/[eventId]`, lists for teams/matches/proof/stakes/prompts.
 - [x] **2026-05-03:** `GET /api/me/notifications` + `PATCH /api/me/notifications/read` (`me-notifications.service.ts`, read cursor `NotificationReadState`).
+- [x] **2026-05-03:** `GET /api/me/profile` + `PATCH /api/me/profile/onboarding` (`me-profile.service.ts`; Zod in `@kairo/shared`).
 
 In Progress:
 
@@ -468,6 +470,29 @@ Done:
 
 **Push:** `git push origin main` — succeeded (feature `23e35e1`; build-log follow-up `d18fe7e`).
 
+#### Work session — 2026-05-03 (Database + Website + Mobile) — Persist onboarding answers and profile completion
+
+- **Task:** PR 18 — Server-backed onboarding completion + profile prefs (`Profile` fields, no new onboarding steps / no UI redesign).
+- **Before:** `git status` (mixed tree); read onboarding flow, bootstrap, Prisma `Profile`.
+
+**After:**
+
+- **Schema:** `Profile` extended with `onboardingCompleted`, `onboardingCompletedAt`, goal/style/prefs strings, `participationModes` / `activityInterests` / `preferredEventTypes` as `Json` (string arrays on wire). Onboarding “short bio” maps to existing `bio`.
+- **API:** `GET /api/me/profile` — `requireUserId`, ensures a `Profile` row exists, returns `{ userId, onboardingCompleted, profile }`. `PATCH /api/me/profile/onboarding` — Zod `profileOnboardingCompleteRequestSchema`, updates prefs + `name`/`username`/`bio`, sets completed + timestamp; **`USERNAME_CONFLICT`** → 409 (duplicate username for another user).
+- **Shared:** `packages/shared/src/profile-onboarding.ts` + export from `@kairo/shared`.
+- **Mobile:** `getMyProfile()` / `completeOnboarding()`; `useMeProfileOnboardingGate()` (waits for acting user id, polls profile); **`(tabs)/_layout`** redirects incomplete users to `/(onboarding)`; **`(onboarding)/_layout`** redirects completed users to dashboard; finish step calls API with loading + errors (username conflict jumps to **profile** step).
+- **TODOs:** Edit profile screen later; richer personalization later.
+
+**Files:** `packages/db/prisma/schema.prisma`, `packages/shared/src/profile-onboarding.ts`, `packages/shared/src/index.ts`, `website/src/server/me/me-profile.service.ts`, `website/app/api/me/profile/route.ts`, `website/app/api/me/profile/onboarding/route.ts`, `website/src/lib/api-http.ts` (`USERNAME_CONFLICT` → 409), `mobile/src/api/*`, `mobile/src/features/auth/use-me-profile-onboarding-gate.ts`, `mobile/app/(tabs)/_layout.tsx`, `mobile/app/(onboarding)/_layout.tsx`, `mobile/src/features/onboarding/hooks/use-onboarding-flow.tsx`, `mobile/src/features/onboarding/components/onboarding-shell.tsx`, `docs/kairo-build-log.md`, `docs/onboarding-build-log.md`.
+
+**Checks:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint` — passed (mobile 4 pre-existing onboarding-welcome-hero warnings).
+
+**DB migrate/push:** Not run (intentional).
+
+**Commit:** _(after commit)_
+
+**Push:** _(after push)_
+
 In Progress:
 
 - [ ] (none)
@@ -475,7 +500,7 @@ In Progress:
 Left:
 
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
-- [ ] Server-backed onboarding persistence (later).
+- [ ] Edit profile screen + deeper personalization (post-onboarding).
 
 ### Shared / Packages / Types
 
@@ -485,7 +510,7 @@ Done:
 - [x] **Phase 0 audit:** Root `package-lock.json` is the lockfile for workspace installs; `website/` has no nested `package-lock.json` in tree.
 - [x] `origin` → `https://github.com/LakGar/kairo.git` (fetch/push).
 - [x] `docs/kairo-build-log.md` is the **main** build source of truth; `docs/onboarding-build-log.md` exists for onboarding-only notes.
-- [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports).
+- [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`, `profile-onboarding`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports).
 - [x] **Phase 3 prep:** Root `.gitignore` restored/expanded for monorepo (`node_modules`, env files with `!.env.example`, Next/Expo artifacts); `mobile/.gitignore` ignores `.env`.
 
 In Progress:

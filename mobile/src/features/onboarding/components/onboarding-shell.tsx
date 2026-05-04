@@ -1,4 +1,5 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef } from "react";
 import {
@@ -18,8 +19,8 @@ import { useOnboardingFlow } from "../hooks/use-onboarding-flow";
 import { onboardingColors } from "../onboarding-tokens";
 
 import { OnboardingNavigation } from "./onboarding-navigation";
-import { OnboardingProgress } from "./onboarding-progress";
 import { OnboardingStepBody } from "./onboarding-step-body";
+import { OnboardingStepHeroIllustration } from "./onboarding-step-hero-illustration";
 import { OnboardingWelcomeDots } from "./onboarding-welcome-dots";
 import { OnboardingWelcomeHero } from "./onboarding-welcome-hero";
 
@@ -31,6 +32,8 @@ export function OnboardingShell() {
     goBack,
     goNext,
     finishOnboarding,
+    finishSubmitting,
+    finishError,
     isFirstStep,
     isLastStep,
     totalSteps,
@@ -56,8 +59,14 @@ export function OnboardingShell() {
 
   const isProfile = step.kind === "profile";
   const isWelcome = step.kind === "welcome";
-  const primaryLabel = isLastStep ? "Finish setup" : "Next";
-  const onPrimary = isLastStep ? finishOnboarding : goNext;
+  const primaryLabel = isLastStep
+    ? finishSubmitting
+      ? "Saving…"
+      : "Get started"
+    : "Next";
+  const onPrimary = isLastStep ? () => void finishOnboarding() : goNext;
+
+  const footerPad = Math.max(insets.bottom, 20);
 
   const welcomeBody = (
     <>
@@ -77,21 +86,21 @@ export function OnboardingShell() {
           <OnboardingWelcomeHero />
           <Text style={styles.welcomeTitle}>{step.title}</Text>
           <Text style={styles.welcomeSubtitle}>{step.subtitle}</Text>
-          <OnboardingWelcomeDots currentIndex={currentStepIndex} total={totalSteps} />
         </Animated.View>
       </ScrollView>
 
-      <View
-        style={[
-          styles.footer,
-          styles.footerWelcome,
-          { paddingBottom: Math.max(insets.bottom, 20) },
-        ]}
-      >
+      <View style={[styles.footer, { paddingBottom: footerPad }]}>
+        <OnboardingWelcomeDots
+          currentIndex={currentStepIndex}
+          total={totalSteps}
+        />
+        {isLastStep && finishError ? (
+          <Text style={styles.finishError}>{finishError}</Text>
+        ) : null}
         <OnboardingNavigation
           primaryLabel={primaryLabel}
           onPrimary={onPrimary}
-          primaryVisual="gradientPill"
+          primaryDisabled={isLastStep && finishSubmitting}
         />
       </View>
     </>
@@ -121,8 +130,8 @@ export function OnboardingShell() {
           <View style={styles.headerSpacer} />
         )}
         <Text style={styles.logo}>Kairo.</Text>
+        <View style={styles.headerSpacer} />
       </View>
-      <OnboardingProgress currentIndex={currentStepIndex} total={totalSteps} />
 
       <ScrollView
         style={styles.scroll}
@@ -131,21 +140,36 @@ export function OnboardingShell() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity }}>
-          <Text style={styles.eyebrow}>{step.eyebrow}</Text>
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.subtitle}>{step.subtitle}</Text>
-          <View style={styles.stepBody}>
-            <OnboardingStepBody step={step} />
-          </View>
+          {step.heroIllustration ? (
+            <View style={styles.heroSlot}>
+              <OnboardingStepHeroIllustration variant={step.heroIllustration} />
+            </View>
+          ) : null}
+          {step.kind !== "info" ? (
+            <Text style={styles.stepEyebrow}>{step.eyebrow}</Text>
+          ) : null}
+          <Text style={styles.stepTitle}>{step.title}</Text>
+          <Text style={styles.stepSubtitle}>{step.subtitle}</Text>
+          {step.kind !== "info" ? (
+            <View style={styles.stepBody}>
+              <OnboardingStepBody step={step} />
+            </View>
+          ) : null}
         </Animated.View>
       </ScrollView>
 
-      <View
-        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}
-      >
+      <View style={[styles.footer, { paddingBottom: footerPad }]}>
+        <OnboardingWelcomeDots
+          currentIndex={currentStepIndex}
+          total={totalSteps}
+        />
+        {isLastStep && finishError ? (
+          <Text style={styles.finishError}>{finishError}</Text>
+        ) : null}
         <OnboardingNavigation
           primaryLabel={primaryLabel}
           onPrimary={onPrimary}
+          primaryDisabled={isLastStep && finishSubmitting}
           secondaryHint={
             isLastStep
               ? "You can change preferences anytime in settings."
@@ -159,27 +183,35 @@ export function OnboardingShell() {
   const body = isWelcome ? welcomeBody : defaultBody;
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <StatusBar style="light" />
-      {isProfile ? (
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={8}
-        >
-          {body}
-        </KeyboardAvoidingView>
-      ) : (
-        <View style={styles.flex}>{body}</View>
-      )}
+    <View style={styles.screenRoot}>
+      <LinearGradient
+        colors={[onboardingColors.gradientTop, onboardingColors.gradientBottom]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      <StatusBar style="dark" />
+      <View style={[styles.flex, { paddingTop: insets.top }]}>
+        {isProfile ? (
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={8}
+          >
+            {body}
+          </KeyboardAvoidingView>
+        ) : (
+          <View style={styles.flex}>{body}</View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  screenRoot: {
     flex: 1,
-    backgroundColor: onboardingColors.background,
+    backgroundColor: onboardingColors.gradientBottom,
   },
   flex: {
     flex: 1,
@@ -207,11 +239,11 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     color: onboardingColors.textPrimary,
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 38,
     fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: -1.4,
-    marginTop: 4,
+    letterSpacing: -1.2,
+    marginTop: 8,
     textAlign: "center",
   },
   welcomeSubtitle: {
@@ -222,30 +254,29 @@ const styles = StyleSheet.create({
     marginTop: 14,
     textAlign: "center",
   },
-  footerWelcome: {
-    borderTopWidth: 0,
-    paddingTop: 4,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 60,
-    gap: 8,
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   headerSpacer: {
-    width: 36,
+    width: 40,
   },
   backIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: onboardingColors.surface,
+    borderWidth: 1,
+    borderColor: onboardingColors.hairline,
   },
   backIconPressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
   logo: {
     flex: 1,
@@ -254,49 +285,63 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: -0.6,
     textAlign: "center",
-    position: "absolute",
-    left: 20,
-    top: 0,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 22,
+    paddingTop: 4,
+    paddingBottom: 28,
     flexGrow: 1,
   },
-  eyebrow: {
-    color: onboardingColors.accent,
+  heroSlot: {
+    marginBottom: 4,
+  },
+  /** Shared with welcome / follow: calm, centered headline stack. */
+  stepEyebrow: {
+    textAlign: "center",
+    color: onboardingColors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 1.2,
+    letterSpacing: 0.85,
     marginBottom: 10,
   },
-  title: {
+  stepTitle: {
+    textAlign: "center",
     color: onboardingColors.textPrimary,
     fontSize: 30,
-    lineHeight: 36,
+    lineHeight: 38,
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: -1.2,
     marginBottom: 12,
   },
-  subtitle: {
+  stepSubtitle: {
+    textAlign: "center",
+    alignSelf: "center",
+    maxWidth: 340,
     color: onboardingColors.textSecondary,
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 25,
     fontFamily: "Inter_400Regular",
-    marginBottom: 24,
+    marginBottom: 22,
   },
   stepBody: {
     flex: 1,
+    marginTop: 2,
+  },
+  finishError: {
+    textAlign: "center",
+    color: onboardingColors.danger,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 20,
+    marginBottom: 10,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.08)",
-    backgroundColor: onboardingColors.background,
+    paddingHorizontal: 22,
+    paddingTop: 6,
+    backgroundColor: "transparent",
   },
 });

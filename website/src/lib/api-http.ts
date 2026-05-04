@@ -20,7 +20,10 @@ function mapCodeToHttpStatus(code: string): number {
       return 400;
     case "CONFLICT":
     case "CAPACITY":
+    case "USERNAME_CONFLICT":
       return 409;
+    case "NOT_CONFIGURED":
+      return 503;
     default:
       return 500;
   }
@@ -43,10 +46,7 @@ export function fromServiceResult<T>(
   );
 }
 
-/**
- * Dev-only user resolution until Clerk (or similar) is wired for the website.
- * TODO: replace with Clerk `auth()` and remove reliance on `x-kairo-user-id`.
- */
+/** Resolves the acting user from `x-kairo-user-id` (Prisma User.id). */
 export function requireUserId(request: Request):
   | { ok: true; userId: string }
   | { ok: false; response: NextResponse } {
@@ -55,7 +55,7 @@ export function requireUserId(request: Request):
     return {
       ok: false,
       response: jsonError(
-        "Missing identity header. Send x-kairo-user-id with a valid User id (dev). TODO: Clerk session.",
+        "Missing identity. Send header x-kairo-user-id with your Prisma User.id (mobile: Clerk metadata kairoUserId).",
         "UNAUTHORIZED",
         401,
       ),

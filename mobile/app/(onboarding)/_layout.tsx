@@ -1,8 +1,13 @@
 import { useAuth } from "@clerk/expo";
+import type { Href } from "expo-router";
 import { Redirect, Stack } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+
+import { useMeProfileOnboardingGate } from "@/src/features/auth/use-me-profile-onboarding-gate";
 
 export default function OnboardingLayout() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { gate } = useMeProfileOnboardingGate();
 
   if (!isLoaded) {
     return null;
@@ -14,6 +19,18 @@ export default function OnboardingLayout() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
+  if (isSignedIn && (gate === "unknown" || gate === "checking")) {
+    return (
+      <View style={styles.gateLoading}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (isSignedIn && gate === "ready") {
+    return <Redirect href={"/(tabs)/(home)/dashboard" as Href} />;
+  }
+
   return (
     <Stack
       screenOptions={{
@@ -23,3 +40,12 @@ export default function OnboardingLayout() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  gateLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F5F7",
+  },
+});

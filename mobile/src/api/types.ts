@@ -164,6 +164,39 @@ export interface ApiMarkNotificationsReadPayload {
   lastReadAt: JsonDateString;
 }
 
+/** `GET /api/me/profile` — profile + onboarding flags. */
+export interface ApiMeProfileDto {
+  id: string;
+  userId: string;
+  name: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  onboardingCompleted: boolean;
+  onboardingCompletedAt: JsonDateString | null;
+  primaryGoal: string | null;
+  accountabilityStyle: string | null;
+  participationModes: string[];
+  activityInterests: string[];
+  preferredEventTypes: string[];
+  stakePreference: string | null;
+  proofPreference: string | null;
+  socialCirclePreference: string | null;
+  notificationPreference: string | null;
+  locationPreference: string | null;
+}
+
+export interface ApiMeProfilePayload {
+  userId: string;
+  onboardingCompleted: boolean;
+  profile: ApiMeProfileDto;
+}
+
+/** `PATCH /api/me/profile/onboarding` — persist onboarding + mark complete. */
+export interface ApiCompleteOnboardingPayload {
+  profile: ApiMeProfileDto;
+}
+
 /** `GET /api/me/events` — grouped summaries + Home dashboard blocks. */
 export interface ApiMeEventsPayload {
   hosting: ApiHomeEventSummary[];

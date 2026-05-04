@@ -2,13 +2,17 @@ import Constants from "expo-constants";
 
 import { getBootstrappedUserIdSync } from "./bootstrap-user-id";
 import { getApiBaseUrl } from "./config";
+import type { ProfileOnboardingCompleteRequestInput } from "@kairo/shared";
+
 import {
   KairoApiConfigurationError,
   KairoApiError,
   type ApiEnvelope,
   type ApiEventPublic,
+  type ApiCompleteOnboardingPayload,
   type ApiMeEventsPayload,
   type ApiMeNotificationsPayload,
+  type ApiMeProfilePayload,
   type ApiMarkNotificationsReadPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
@@ -148,6 +152,8 @@ export interface KairoApi {
   listBillingPurchases: () => Promise<ApiBillingPurchase[]>;
   getMyNotifications: () => Promise<ApiMeNotificationsPayload>;
   markNotificationsRead: (body?: { before?: string }) => Promise<ApiMarkNotificationsReadPayload>;
+  getMyProfile: () => Promise<ApiMeProfilePayload>;
+  completeOnboarding: (body: ProfileOnboardingCompleteRequestInput) => Promise<ApiCompleteOnboardingPayload>;
 }
 
 export function createKairoApi(config: {
@@ -254,6 +260,9 @@ export function createKairoApi(config: {
         method: "PATCH",
         json: body && Object.keys(body).length > 0 ? body : {},
       }),
+    getMyProfile: () => req("/api/me/profile"),
+    completeOnboarding: (body) =>
+      req("/api/me/profile/onboarding", { method: "PATCH", json: body }),
   };
 }
 

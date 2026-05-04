@@ -141,6 +141,19 @@ model Profile {
   avatarUrl String?
   bio       String?
 
+  onboardingCompleted   Boolean   @default(false)
+  onboardingCompletedAt DateTime?
+  primaryGoal             String?
+  accountabilityStyle     String?
+  participationModes      Json?
+  activityInterests       Json?
+  preferredEventTypes     Json?
+  stakePreference         String?
+  proofPreference         String?
+  socialCirclePreference  String?
+  notificationPreference  String?
+  locationPreference      String?
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

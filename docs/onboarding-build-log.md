@@ -84,3 +84,14 @@ Append-only log for the Expo onboarding flow (`mobile/app/(onboarding)` + `mobil
 - **What worked:** Fonts loaded like auth screens; single route `index.tsx` hosts `OnboardingProvider` + `OnboardingShell`; `finish.tsx` redirects to `/(onboarding)` for legacy links
 - **Issues:** No `git push` (no `origin` remote); Expo lint CLI broken locally (`debug` module)
 - **Next step:** Add GitHub remote and push; persist onboarding payload to API/Prisma when backend exists; optional `expo-router` focus reset on step change
+
+---
+
+## 2026-05-03 — Chunk: persist onboarding to API (PR 18)
+
+- **Date/time (UTC):** 2026-05-03
+- **Files created/changed:** `Profile` Prisma fields; `@kairo/shared` `profile-onboarding` Zod; `website` `me-profile.service.ts` + `GET /api/me/profile` + `PATCH /api/me/profile/onboarding`; mobile `getMyProfile` / `completeOnboarding`; `use-me-profile-onboarding-gate`; `(tabs)/_layout` + `(onboarding)/_layout` redirects; `use-onboarding-flow` + `onboarding-shell` finish loading/errors; build logs.
+- **Route tested:** Recommended on device: new user → onboarding → finish → dashboard; returning user with `onboardingCompleted` → skip onboarding; incomplete signed-in user opening tabs → forced to onboarding; username taken → 409 + jump to profile step.
+- **What worked:** Server is source of truth for completion; gate avoids infinite loops on API failure (`unavailable` allows tabs); Clerk bootstrap unchanged for id.
+- **Issues:** Requires `npm run db:push` / migrate when `DATABASE_URL` is set for new columns.
+- **Next step:** Edit profile screen; load saved prefs into settings later if desired.
