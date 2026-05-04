@@ -464,9 +464,9 @@ Done:
 
 **DB migrate/push:** Not run in this session (schema change requires intentional `db:push` / migrate when `DATABASE_URL` is set).
 
-**Commit:** _(after commit)_
+**Commit:** `23e35e1` — `notifications: persist read state`
 
-**Push:** _(after push)_
+**Push:** `git push origin main` — succeeded (`6240c02..23e35e1`).
 
 In Progress:
 
