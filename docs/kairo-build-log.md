@@ -466,7 +466,7 @@ Done:
 
 **Commit:** `23e35e1` — `notifications: persist read state`
 
-**Push:** `git push origin main` — succeeded (`6240c02..23e35e1`).
+**Push:** `git push origin main` — succeeded (feature `23e35e1`; build-log follow-up `d18fe7e`).
 
 In Progress:
 
