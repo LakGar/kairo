@@ -318,8 +318,8 @@ Done:
 - **Mobile:** `NOT_CONFIGURED` / 503 → “Proof uploads are not configured yet.”; `FORBIDDEN` / 403 → “You must be part of this event to submit proof.”; after successful upload, schema/submit failures → retry copy + TODO orphan delete.
 - **Commands run:** `cd packages/shared && npx tsc --noEmit`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
 - **TODOs left:** Orphan upload deletion; virus scan / moderation; EXIF policy; deep rate limits on presign.
-- **Commit:** `f5585d0` — `proof: harden media upload validation`; `cb2a658` — `docs: fix PR8 build log commit hash`
-- **Push:** `git push origin main` — succeeded (`0f9d666..cb2a658`)
+- **Commit:** `f5585d0` — `proof: harden media upload validation`; `cb2a658` — `docs: fix PR8 build log commit hash`; `32f8e48` — `docs: record PR8 push range`
+- **Push:** `git push origin main` — succeeded (`0f9d666..32f8e48`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
