@@ -377,7 +377,7 @@ Done:
 - **Mobile:** `expo-notifications`; **`registerPushTokenWithBackend`** + SecureStore last token for PATCH disable; **`useRegisterPushTokenSession`** after onboarding **`gate === "ready"`** (no permission prompt); **Settings → Notifications** — status line + **Enable push notifications** button; Push channel toggle registers / disables on backend.
 - **Real device push test:** **Not run** in agent (no physical device / E2E send exercised).
 - **Commands run:** `npm run db:generate`; `npm install` (root); `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint`; `npm run typecheck:shared` — pass (4 pre-existing onboarding warnings).
-- **Commit:** `db2b832` — `notifications: add Expo push token foundation`
+- **Commit:** `25a3df9` — `notifications: add Expo push token foundation`
 - **Push:** (filled after push)
 
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
