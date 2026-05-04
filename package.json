@@ -9,6 +9,7 @@
     "db:push:reset": "npm run push:reset -w @kairo/db",
     "db:dev:fresh": "npm run db:push:reset && npm run db:seed",
     "db:studio": "npm run studio -w @kairo/db",
-    "db:seed": "npm run seed -w @kairo/db"
+    "db:seed": "npm run seed -w @kairo/db",
+    "typecheck:shared": "npm run typecheck -w @kairo/shared"
   }
 }

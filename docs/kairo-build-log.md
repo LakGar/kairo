@@ -60,6 +60,7 @@ Done:
 - [x] **Phase 1 (2026-05-02):** Schema reviewed end-to-end; `ProofSubmission.eventId` ↔ `Event` relation intact; no payments/AI/storage tables added; proof remains `url` + `text` only. Composite indexes added for common lookups: `Event` `[status, startsAt]` (replaces standalone `[status]` to avoid redundancy), `EventParticipant` `[eventId, userId]`, `ProofSubmission` `[eventId, status]`, `Stake` `[eventId, status]`; `ActivityLog` `[createdAt]` for timelines.
 - [x] **2026-05-03 (PR 17):** `NotificationReadState` — one row per user (`userId` unique), optional `lastReadAt` cursor for derived in-app notifications (not a full `Notification` table).
 - [x] **2026-05-03 (PR 18):** `Profile` — `onboardingCompleted` / `onboardingCompletedAt`, preference fields (`primaryGoal`, `accountabilityStyle`, JSON arrays for modes/interests/event types, string prefs, optional bio path via existing `bio`).
+- [x] **2026-05-03 (PR 19):** Staging docs — `docs/staging-setup.md` (env, Prisma, storage, devices), `docs/mvp-e2e-checklist.md` (manual MVP QA); root `typecheck:shared`; `@kairo/shared` `npm run typecheck`.
 
 In Progress:
 
@@ -493,6 +494,26 @@ Done:
 
 **Push:** `git push origin main` — succeeded (`2fa4c55..8b16976`).
 
+#### Work session — 2026-05-03 (Database + Website + Mobile) — Database migration and staging readiness
+
+- **Task:** PR 19 — Migration / staging readiness pass (documentation + script polish only; no new product features, no schema edits).
+- **Before:** `git status`; reviewed `schema.prisma`, root + `packages/db` scripts, `website/.env.example`, `mobile/.env.example`.
+
+**After:**
+
+- **Docs:** `docs/staging-setup.md` — website + mobile env vars (`DATABASE_URL`, Clerk mobile key, `EXPO_PUBLIC_API_URL`, dev user id fallback, `PROOF_STORAGE_*`, `PROOF_ALLOW_FILE_URL`, Stripe), Prisma command matrix (`db:generate` / `db:push` / `db:migrate` / `db:seed`), storage + CORS, device vs localhost notes, pre-flight checklist.
+- **Docs:** `docs/mvp-e2e-checklist.md` — ordered manual MVP pass (bootstrap, onboarding, event, teams, match, result, proof upload/approve, Home, notifications).
+- **Scripts:** Root `typecheck:shared` → `npm run typecheck -w @kairo/shared`; `@kairo/shared` package gains `typecheck` (`tsc --noEmit`). Existing `db:*` root scripts unchanged.
+- **Mobile:** `mobile/.env.example` — commented `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` line for discoverability.
+
+**DB push/migrate in this session:** Not run (`DATABASE_URL` not required for doc-only work).
+
+**Checks:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint`; `npm run typecheck:shared` — all passed (mobile 4 pre-existing `onboarding-welcome-hero` warnings).
+
+**Commit:** _(after commit)_
+
+**Push:** _(after push)_
+
 In Progress:
 
 - [ ] (none)
@@ -501,6 +522,7 @@ Left:
 
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Edit profile screen + deeper personalization (post-onboarding).
+- [ ] Run `db:push` or `db:migrate` against real staging when `DATABASE_URL` is set; verify checklist on device.
 
 ### Shared / Packages / Types
 
@@ -510,7 +532,7 @@ Done:
 - [x] **Phase 0 audit:** Root `package-lock.json` is the lockfile for workspace installs; `website/` has no nested `package-lock.json` in tree.
 - [x] `origin` → `https://github.com/LakGar/kairo.git` (fetch/push).
 - [x] `docs/kairo-build-log.md` is the **main** build source of truth; `docs/onboarding-build-log.md` exists for onboarding-only notes.
-- [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`, `profile-onboarding`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports).
+- [x] **Phase 2:** `@kairo/shared` package at `packages/shared` — Zod validators (`events`, `teams`, `matches`, `proof`, `stakes`, `profile-onboarding`) + `enums.ts` string literals aligned with Prisma (no `@prisma/client` dependency in shared for lighter mobile imports); **`npm run typecheck`** in package; root **`npm run typecheck:shared`**.
 - [x] **Phase 3 prep:** Root `.gitignore` restored/expanded for monorepo (`node_modules`, env files with `!.env.example`, Next/Expo artifacts); `mobile/.gitignore` ignores `.env`.
 
 In Progress:
