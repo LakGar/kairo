@@ -389,8 +389,8 @@ Done:
 - **TODOs (follow-up):** Expo **receipt** / ticket checking; **batching** multi-token sends; full **preference** matrix; **push scheduling** / reminders; cold-start **stale** `getLastNotificationResponseAsync` if product requires it.
 - **Real device push test:** **Not run** in this session (no device E2E).
 - **Commands run:** `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding lint warnings on mobile).
-- **Commit:** `a97bbb8` — `notifications: send push for proof and result actions` (docs-only follow-ups through `7dcd61e`)
-- **Push:** `git push origin main` — succeeded (branch tip `7dcd61e` includes PR23 + log edits)
+- **Commit:** `a97bbb8` — `notifications: send push for proof and result actions`
+- **Push:** `git push origin main` — succeeded (verify with `git log -1 --oneline` on `main`)
 
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
