@@ -18,8 +18,9 @@ import { NextActionCard } from "@/src/features/home/components/next-action-card"
 import { ProofInboxCard } from "@/src/features/home/components/proof-inbox-card";
 import { RecentActivity } from "@/src/features/home/components/recent-activity";
 import { StreakRankRow } from "@/src/features/home/components/streak-rank-row";
+import { buildEventDetailFocusHref } from "@/src/features/home/event-proof-nav";
 import { getMyEventsHome } from "@/src/features/home/get-my-events-home";
-import type { MockCommitment } from "@/src/features/home/home.mock";
+import type { MockCommitment, MockProofTask } from "@/src/features/home/home.mock";
 import type { HomePalette } from "@/src/features/home/home-tokens";
 import { useHomeColors } from "@/src/features/home/home-theme";
 import {
@@ -146,6 +147,47 @@ export function HomeDashboard({
 
   const stats = homeData?.stats;
 
+  const firstProofInboxWithEvent = useMemo(
+    () => homeData?.proofInbox.find((p) => p.eventId?.trim()),
+    [homeData],
+  );
+
+  const navigateToProofOnEvent = useCallback(
+    (
+      eventId: string,
+      focus: "proof" | "organizer",
+      opts?: { proofSubmissionId?: string; matchId?: string },
+    ) => {
+      const id = eventId.trim();
+      if (!id) {
+        if (__DEV__) console.log("[Home] proof navigation skipped: missing eventId");
+        return;
+      }
+      router.push(
+        buildEventDetailFocusHref(id, {
+          focus,
+          proofSubmissionId: opts?.proofSubmissionId,
+          matchId: opts?.matchId,
+        }),
+      );
+    },
+    [router],
+  );
+
+  const onProofInboxTaskPress = useCallback(
+    (task: MockProofTask) => {
+      if (!task.eventId?.trim()) {
+        if (__DEV__) console.log("[Home] proof inbox row missing eventId", task.id);
+        return;
+      }
+      navigateToProofOnEvent(task.eventId, task.focusTarget ?? "organizer", {
+        proofSubmissionId: task.proofSubmissionId,
+        matchId: task.matchId,
+      });
+    },
+    [navigateToProofOnEvent],
+  );
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -222,7 +264,17 @@ export function HomeDashboard({
           <NextActionCard
             action={nextActionMock}
             onSubmitProof={() => {
-              console.log("TODO: navigate to proof submit flow when route exists", nextActionMock);
+              const eid = nextActionMock.eventIdPlaceholder?.trim();
+              if (!eid) {
+                if (__DEV__) console.log("[Home] next action missing eventId for proof navigation");
+                return;
+              }
+              const focus =
+                nextActionMock.apiActionType === "REVIEW_PROOF" ? "organizer" : "proof";
+              navigateToProofOnEvent(eid, focus, {
+                proofSubmissionId: nextActionMock.proofSubmissionId,
+                matchId: nextActionMock.matchId,
+              });
             }}
             onViewEvent={() => {
               if (nextActionMock.eventIdPlaceholder) {
@@ -248,8 +300,17 @@ export function HomeDashboard({
         <ProofInboxCard
           pendingCount={homeData.proofInbox.length}
           tasks={proofTasks}
+          reviewDisabled={!firstProofInboxWithEvent?.eventId}
+          onTaskPress={onProofInboxTaskPress}
           onReview={() => {
-            console.log("TODO: open organizer proof review when route exists");
+            if (firstProofInboxWithEvent?.eventId) {
+              navigateToProofOnEvent(firstProofInboxWithEvent.eventId, "organizer", {
+                proofSubmissionId: firstProofInboxWithEvent.proofSubmissionId,
+                matchId: firstProofInboxWithEvent.matchId,
+              });
+            } else {
+              router.push("/(tabs)/(home)/index" as Href);
+            }
           }}
         />
       ) : null}

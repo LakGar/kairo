@@ -228,6 +228,20 @@ Done:
 - **Commit:** `7539b93` — `home: wire dashboard to my events API`; `4859082` — `docs: record home dashboard API session`
 - **Push:** `git push origin main` — succeeded (`c3f482f..4859082`)
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — Wire Home proof actions to event detail
+
+- **Task:** Replace Home proof `console.log` stubs with navigation to `/(tabs)/events/[eventId]?focus=proof|organizer` (+ optional `proofSubmissionId` / `matchId`); event detail shows small banners and attempts a simple scroll to the proof or organizer block.
+- **Before:** `git status` — large unrelated dirty tree; **intended commit scope:** `home-dashboard`, `event-proof-nav`, `next-action-card`, `proof-inbox-card`, `home.mock` / `me-home-map`, `[eventId]` event screen, `ApiHomeAction` + `MeHomeAction` fields, this log.
+
+**After (2026-05-03):**
+
+- **Routes:** Home next action (Submit / Review), proof inbox **Review** (first item with `eventId`, else Discover), and inbox **row** presses → `buildEventDetailFocusHref`; `__DEV__` `console.log` only when `eventId` missing.
+- **Event detail:** `pickSearchParam` for `eventId` / `focus`; `ProofFocusBanner` above organizer or proof block; delayed `scrollTo` from measured layout + `lowerPanelTopY`; TODO comment for future use of `proofSubmissionId` / `matchId` in UI.
+- **Website:** `REVIEW_PROOF` actions include `proofSubmissionId` and `matchId` from Prisma submission.
+- **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` — pass.
+- **Device / app:** Not run in agent.
+- **TODOs:** Highlight a specific proof submission using query ids; tune auto-scroll vs keyboard.
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

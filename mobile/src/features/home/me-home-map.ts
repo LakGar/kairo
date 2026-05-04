@@ -90,6 +90,9 @@ export function homeActionToMockNextAction(
     actionDetail: a.ctaLabel,
     imageUrl: ev?.imageUrl ?? COMMITMENT_COVER_PLACEHOLDER,
     eventIdPlaceholder: a.eventId ?? "",
+    apiActionType: a.type,
+    proofSubmissionId: a.proofSubmissionId,
+    matchId: a.matchId,
   };
 }
 
@@ -97,6 +100,10 @@ export function proofInboxToMockTasks(items: ApiMeEventsPayload["proofInbox"]): 
   return items.slice(0, 6).map((p) => ({
     id: p.id,
     label: `${p.title} — ${p.subtitle}`,
+    eventId: p.eventId,
+    matchId: p.matchId,
+    proofSubmissionId: p.proofSubmissionId,
+    focusTarget: p.subtitle.includes("Your submission") ? "proof" : "organizer",
   }));
 }
 

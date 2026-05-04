@@ -102,6 +102,8 @@ export interface ApiHomeAction {
   subtitle: string;
   eventId?: string;
   ctaLabel: string;
+  proofSubmissionId?: string;
+  matchId?: string;
 }
 
 export interface ApiHomeProofInboxItem {

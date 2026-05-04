@@ -39,6 +39,8 @@ export type MeHomeAction = {
   subtitle: string;
   eventId?: string;
   ctaLabel: string;
+  proofSubmissionId?: string;
+  matchId?: string;
 };
 
 export type MeHomeProofInboxItem = {
@@ -272,6 +274,8 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
       subtitle: `${submitter} · ${s.event.title}`,
       eventId: s.eventId,
       ctaLabel: "Review",
+      proofSubmissionId: s.id,
+      matchId: s.matchId ?? undefined,
     });
   }
 

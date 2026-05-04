@@ -43,11 +43,20 @@ export interface MockNextAction {
   actionDetail: string;
   imageUrl: string;
   eventIdPlaceholder: string;
+  /** From `GET /api/me/events` `actions[].type` — drives primary CTA label + navigation. */
+  apiActionType?: string;
+  proofSubmissionId?: string;
+  matchId?: string;
 }
 
 export interface MockProofTask {
   id: string;
   label: string;
+  eventId?: string;
+  matchId?: string;
+  proofSubmissionId?: string;
+  /** Where to scroll/hint on event detail — host queue vs your pending submission. */
+  focusTarget?: "proof" | "organizer";
 }
 
 export interface MockInvite {

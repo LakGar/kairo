@@ -8,9 +8,17 @@ type Props = {
   pendingCount: number;
   tasks: MockProofTask[];
   onReview: () => void;
+  onTaskPress?: (task: MockProofTask) => void;
+  reviewDisabled?: boolean;
 };
 
-export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
+export function ProofInboxCard({
+  pendingCount,
+  tasks,
+  onReview,
+  onTaskPress,
+  reviewDisabled,
+}: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.top}>
@@ -23,19 +31,48 @@ export function ProofInboxCard({ pendingCount, tasks, onReview }: Props) {
         </View>
       </View>
       <View style={styles.list}>
-        {tasks.map((t) => (
-          <View key={t.id} style={styles.taskRow}>
-            <View style={styles.bullet} />
-            <Text style={styles.taskText}>{t.label}</Text>
-          </View>
-        ))}
+        {tasks.map((t) => {
+          const row = (
+            <>
+              <View style={styles.bullet} />
+              <Text style={styles.taskText}>{t.label}</Text>
+            </>
+          );
+          if (onTaskPress && t.eventId) {
+            return (
+              <Pressable
+                key={t.id}
+                onPress={() => onTaskPress(t)}
+                style={({ pressed }) => [styles.taskRow, pressed && styles.taskPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t.label}
+              >
+                {row}
+              </Pressable>
+            );
+          }
+          return (
+            <View key={t.id} style={styles.taskRow}>
+              {row}
+            </View>
+          );
+        })}
       </View>
       <Pressable
         onPress={onReview}
-        style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
+        disabled={reviewDisabled}
+        style={({ pressed }) => [
+          styles.btn,
+          pressed && !reviewDisabled && styles.pressed,
+          reviewDisabled && styles.btnDisabled,
+        ]}
       >
-        <Text style={styles.btnLabel}>Review</Text>
-        <Ionicons name="arrow-forward" size={18} color={HomeColors.textPrimary} />
+        <Text style={[styles.btnLabel, reviewDisabled && styles.btnLabelDisabled]}>Review</Text>
+        <Ionicons
+          name="arrow-forward"
+          size={18}
+          color={reviewDisabled ? HomeColors.textMuted : HomeColors.textPrimary}
+        />
       </Pressable>
     </View>
   );
@@ -88,6 +125,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    paddingVertical: 4,
+  },
+  taskPressed: {
+    opacity: 0.85,
   },
   bullet: {
     width: 6,
@@ -117,6 +158,12 @@ const styles = StyleSheet.create({
     color: HomeColors.textPrimary,
     fontSize: 15,
     fontWeight: "800",
+  },
+  btnLabelDisabled: {
+    color: HomeColors.textMuted,
+  },
+  btnDisabled: {
+    opacity: 0.45,
   },
   pressed: {
     opacity: 0.88,
