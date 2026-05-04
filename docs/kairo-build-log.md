@@ -343,8 +343,8 @@ Done:
 - **Real Supabase upload test:** **Not run** in agent (no project credentials / bucket in this environment).
 - **Commands run:** `npm install` (root; pruned AWS SDK from lockfile); `npm run typecheck -w website` — pass; `cd website && npm run lint` — pass; `cd mobile && npm run typecheck` — pass; `cd mobile && npm run lint` — pass (4 pre-existing onboarding warnings); `npm run typecheck:shared` — pass.
 - **TODOs left:** Private bucket + signed GET for proof display; orphan object delete after failed `submitProof`; virus scan / moderation.
-- **Commit:** `af5ac15` — `proof: switch media storage to Supabase`
-- **Push:** (see post-push line below)
+- **Commit:** `961e63e` — `proof: switch media storage to Supabase`
+- **Push:** `git push origin main` — succeeded (`3682a80..961e63e`)
 
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
