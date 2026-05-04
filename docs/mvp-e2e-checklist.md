@@ -29,7 +29,7 @@ Use this list when validating **staging** or a **fresh local stack** (`DATABASE_
 ## Proof
 
 - [ ] **Capture proof** — Participant uses in-app capture flow where enabled.
-- [ ] **Upload proof** — Presigned PUT succeeds (`PROOF_STORAGE_*` configured); proof row appears on event.
+- [ ] **Upload proof** — Signed PUT to Supabase succeeds (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, public bucket); proof row appears on event.
 - [ ] **Approve proof** — Host approves pending submission; status updates in lists.
 
 ## Home and notifications

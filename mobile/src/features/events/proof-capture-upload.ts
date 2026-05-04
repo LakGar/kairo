@@ -18,7 +18,8 @@ export function inferProofMediaContentType(
 }
 
 /**
- * Presigned PUT to object storage, then returns the public HTTPS URL for `submitProof`.
+ * Signed PUT to Supabase Storage (URL from website), then returns the durable HTTPS public URL for `submitProof`.
+ * Uses `File.arrayBuffer()` so the body matches Supabase’s non-FormData upload path (React Native–safe).
  * TODO: If `submitProof` fails after this succeeds, delete the orphan object (lifecycle rule or explicit delete API).
  * Upload errors (403, 503) are surfaced by the API client; map user-facing copy in the capture screen.
  */
@@ -41,7 +42,7 @@ export async function uploadCapturedProofToStorage(params: {
   }
 
   const contentType = inferProofMediaContentType(localUri, proofType);
-  const body: ProofMediaUploadRequestInput = {
+  const requestBody: ProofMediaUploadRequestInput = {
     eventId,
     proofType,
     contentType,
@@ -50,17 +51,19 @@ export async function uploadCapturedProofToStorage(params: {
     matchId,
   };
 
-  const instructions = await api.createProofMediaUploadUrl(body);
+  const instructions = await api.createProofMediaUploadUrl(requestBody);
 
   const headers = new Headers();
   for (const [k, v] of Object.entries(instructions.headers)) {
     headers.set(k, v);
   }
 
+  const uploadBody = await file.arrayBuffer();
+
   const putRes = await fetch(instructions.uploadUrl, {
     method: instructions.method,
     headers,
-    body: file as unknown as Blob,
+    body: uploadBody,
   });
 
   if (!putRes.ok) {

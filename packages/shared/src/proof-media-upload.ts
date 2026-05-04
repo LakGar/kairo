@@ -15,14 +15,14 @@ export const proofMediaUploadRequestSchema = z
     eventId: z.string().cuid(),
     proofType: z.enum(["PHOTO", "VIDEO"]),
     contentType: proofMediaContentTypeSchema,
-    /** Byte size of the file to upload; used for limits and optional presigned Content-Length. */
-    fileSize: z.number().int().positive().optional(),
+    /** Byte size of the file to upload; required for limits and signed upload. */
+    fileSize: z.number().int().positive(),
     promptId: z.string().cuid().optional().nullable(),
     matchId: z.string().cuid().optional().nullable(),
   })
   .superRefine((val, ctx) => {
     const maxBytes = val.proofType === "PHOTO" ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
-    if (val.fileSize !== undefined && val.fileSize > maxBytes) {
+    if (val.fileSize > maxBytes) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
@@ -36,11 +36,12 @@ export const proofMediaUploadRequestSchema = z
 
 export type ProofMediaUploadRequestInput = z.infer<typeof proofMediaUploadRequestSchema>;
 
-/** Response from `POST /api/proof-media/upload-url` (presigned PUT to S3-compatible storage). */
+/** Response from `POST /api/proof-media/upload-url` (signed PUT to Supabase Storage). */
 export const proofMediaUploadInstructionsSchema = z.object({
   uploadUrl: z.string().url(),
   publicUrl: z.string().url(),
   method: z.literal("PUT"),
+  /** Includes Content-Type, cache-control, x-upsert for Supabase signed upload. */
   headers: z.record(z.string(), z.string()),
 });
 

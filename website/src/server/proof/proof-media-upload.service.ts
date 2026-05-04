@@ -1,5 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 
 import { prisma } from "@/lib/db";
@@ -25,53 +24,65 @@ function extensionForContentType(ct: string): string {
   }
 }
 
-type StorageEnv =
+const PHOTO_MAX_BYTES = 10 * 1024 * 1024;
+const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+
+type SupabaseProofEnv =
   | { ok: false; message: string }
   | {
       ok: true;
+      supabaseUrl: string;
+      serviceRoleKey: string;
       bucket: string;
-      region: string;
-      accessKeyId: string;
-      secretAccessKey: string;
-      endpoint: string | undefined;
-      publicBaseUrl: string;
-      forcePathStyle: boolean;
+      publicBaseOverride?: string;
     };
 
-function readProofStorageEnv(): StorageEnv {
-  const bucket = process.env.PROOF_STORAGE_BUCKET?.trim();
-  const accessKeyId = process.env.PROOF_STORAGE_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = process.env.PROOF_STORAGE_SECRET_ACCESS_KEY?.trim();
-  const publicBaseUrl = process.env.PROOF_STORAGE_PUBLIC_BASE_URL?.trim();
-  const endpoint = process.env.PROOF_STORAGE_ENDPOINT?.trim() || undefined;
-  const regionRaw = process.env.PROOF_STORAGE_REGION?.trim();
+function readProofSupabaseEnv(): SupabaseProofEnv {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const bucket =
+    process.env.SUPABASE_PROOF_BUCKET?.trim() || "kairo-proof-media";
+  const publicBaseOverride =
+    process.env.SUPABASE_PROOF_PUBLIC_BASE_URL?.trim() || undefined;
 
-  if (!bucket || !accessKeyId || !secretAccessKey || !publicBaseUrl) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return {
       ok: false,
       message:
-        "Proof object storage is not configured. Set PROOF_STORAGE_BUCKET, PROOF_STORAGE_ACCESS_KEY_ID, PROOF_STORAGE_SECRET_ACCESS_KEY, and PROOF_STORAGE_PUBLIC_BASE_URL (see website/.env.example).",
+        "Proof storage is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (see website/.env.example).",
     };
   }
 
-  const region =
-    regionRaw ||
-    (endpoint ? "auto" : "us-east-1");
-
   return {
     ok: true,
+    supabaseUrl,
+    serviceRoleKey,
     bucket,
-    region,
-    accessKeyId,
-    secretAccessKey,
-    endpoint,
-    publicBaseUrl,
-    forcePathStyle: Boolean(endpoint),
+    publicBaseOverride,
   };
 }
 
+function applyPublicUrlOriginOverride(
+  publicUrl: string,
+  overrideBase: string,
+): Result<string> {
+  try {
+    const parsed = new URL(publicUrl);
+    const trimmed = overrideBase.replace(/\/$/, "");
+    const override = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    return ok(`${override.origin}${parsed.pathname}${parsed.search}`);
+  } catch {
+    return err("Invalid SUPABASE_PROOF_PUBLIC_BASE_URL.", "VALIDATION_ERROR");
+  }
+}
+
 /**
- * Returns a presigned PUT URL and the eventual HTTPS public URL for proof media.
+ * Returns a Supabase Storage signed upload URL and the durable HTTPS public URL for proof media.
+ * Upload uses PUT with raw body (ArrayBuffer) per Supabase Storage signed-upload contract.
+ *
+ * MVP: bucket should allow **public read** for `getPublicUrl` links to work in the app (see docs).
+ * Service role key is server-only; mobile never sees it.
+ *
  * TODO: virus scanning / content moderation before treating uploads as trusted.
  * TODO: EXIF / location metadata policy (strip or document).
  * TODO: delete orphan storage objects when submitProof fails after upload.
@@ -89,9 +100,20 @@ export async function createProofMediaUploadUrl(
   }
   const d = parsed.data;
 
-  const storage = readProofStorageEnv();
-  if (!storage.ok) {
-    return err(storage.message, "NOT_CONFIGURED");
+  const maxBytes =
+    d.proofType === "PHOTO" ? PHOTO_MAX_BYTES : VIDEO_MAX_BYTES;
+  if (d.fileSize > maxBytes) {
+    return err(
+      d.proofType === "PHOTO"
+        ? "Photo must be at most 10 MB."
+        : "Video must be at most 100 MB.",
+      "VALIDATION_ERROR",
+    );
+  }
+
+  const env = readProofSupabaseEnv();
+  if (!env.ok) {
+    return err(env.message, "NOT_CONFIGURED");
   }
 
   const event = await prisma.event.findUnique({
@@ -124,37 +146,49 @@ export async function createProofMediaUploadUrl(
 
   const ext = extensionForContentType(d.contentType);
   const nonce = randomBytes(10).toString("hex");
-  const key = `proof/${d.eventId}/${userId}/${Date.now()}-${nonce}.${ext}`;
+  const objectPath = `proof/${d.eventId}/${userId}/${Date.now()}-${nonce}.${ext}`;
 
-  const client = new S3Client({
-    region: storage.region,
-    endpoint: storage.endpoint,
-    credentials: {
-      accessKeyId: storage.accessKeyId,
-      secretAccessKey: storage.secretAccessKey,
+  const supabase = createClient(env.supabaseUrl, env.serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
-    forcePathStyle: storage.forcePathStyle,
   });
 
-  const command = new PutObjectCommand({
-    Bucket: storage.bucket,
-    Key: key,
-    ContentType: d.contentType,
-    ...(d.fileSize !== undefined ? { ContentLength: d.fileSize } : {}),
-  });
+  const { data: signData, error: signError } = await supabase.storage
+    .from(env.bucket)
+    .createSignedUploadUrl(objectPath, { upsert: false });
 
-  const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
-  const publicUrl = `${storage.publicBaseUrl.replace(/\/$/, "")}/${key}`;
+  if (signError || !signData?.signedUrl) {
+    return err(
+      signError?.message ?? "Could not create signed upload URL.",
+      "STORAGE_ERROR",
+    );
+  }
+
+  const { data: pub } = supabase.storage
+    .from(env.bucket)
+    .getPublicUrl(objectPath);
+  let publicUrl = pub.publicUrl;
+
+  if (env.publicBaseOverride) {
+    const overridden = applyPublicUrlOriginOverride(
+      publicUrl,
+      env.publicBaseOverride,
+    );
+    if (!overridden.success) return overridden;
+    publicUrl = overridden.data;
+  }
 
   const headers: Record<string, string> = {
     "Content-Type": d.contentType,
+    "cache-control": "max-age=3600",
+    "x-upsert": "false",
   };
-  if (d.fileSize !== undefined) {
-    headers["Content-Length"] = String(d.fileSize);
-  }
 
   return ok({
-    uploadUrl,
+    uploadUrl: signData.signedUrl,
     publicUrl,
     method: "PUT",
     headers,

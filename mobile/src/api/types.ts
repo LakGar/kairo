@@ -329,7 +329,7 @@ export interface ApiProofReviewResult {
   status: string;
 }
 
-/** `POST /api/proof-media/upload-url` — presigned PUT + public URL for proof media. */
+/** `POST /api/proof-media/upload-url` — signed PUT + public URL for proof media (Supabase Storage). */
 export interface ApiProofMediaUploadInstructions {
   uploadUrl: string;
   publicUrl: string;

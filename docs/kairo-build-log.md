@@ -327,6 +327,25 @@ Done:
 - **Commit:** `f5585d0` — `proof: harden media upload validation`; `cb2a658` — `docs: fix PR8 build log commit hash`; `32f8e48` — `docs: record PR8 push range`
 - **Push:** `git push origin main` — succeeded (`0f9d666..32f8e48`)
 
+#### Work session — 2026-05-03 (Website + Mobile + Shared) — Replace S3 proof storage with Supabase Storage
+
+- **Area:** Website + Mobile  
+- **Task:** Replace S3-compatible presigned proof upload with **Supabase Storage** signed upload URLs; Postgres/Prisma unchanged; no Supabase keys on mobile; scope limited to proof storage + docs + deps.
+- **Before:** `git status` — mixed dirty tree on `main` (many unrelated mobile/workspace edits); **intended commit scope:** `website/src/server/proof/proof-media-upload.service.ts`, `website/package.json` + lockfile, `packages/shared/src/proof-media-upload.ts`, `mobile/src/features/events/proof-capture-upload.ts`, `mobile/src/api/types.ts`, `website/.env.example`, `mobile/.env.example` (comment line), `docs/staging-setup.md`, `docs/mvp-e2e-checklist.md`, `docs/kairo-build-log.md`, one-line comment in `proof.service.ts`.
+
+**After (2026-05-03):**
+
+- **Storage approach:** Website `createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)` → `storage.from(bucket).createSignedUploadUrl(path)` → mobile **PUT** raw `ArrayBuffer` + headers (`Content-Type`, `cache-control`, `x-upsert`); durable **`publicUrl`** from `getPublicUrl`, optional origin override via **`SUPABASE_PROOF_PUBLIC_BASE_URL`**. Bucket default **`kairo-proof-media`**. Path pattern `proof/{eventId}/{userId}/{timestamp}-{nonce}.{ext}`.
+- **MVP / privacy:** Bucket should be **public read** so stored HTTPS URLs work in the app without per-read signing; **writes** stay gated (signed upload only from API). Documented trade-off in `docs/staging-setup.md`. Service role never exposed to Expo.
+- **Removed:** `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner` from website. **Deprecated env:** `PROOF_STORAGE_*` (noted in staging doc).
+- **Shared:** `fileSize` **required** on upload-url request; response schema unchanged shape (`uploadUrl`, `publicUrl`, `method: PUT`, `headers`).
+- **Mobile:** `proof-capture-upload.ts` uses `file.arrayBuffer()` for PUT body (Supabase non-Blob path).
+- **Real Supabase upload test:** **Not run** in agent (no project credentials / bucket in this environment).
+- **Commands run:** `npm install` (root; pruned AWS SDK from lockfile); `npm run typecheck -w website` — pass; `cd website && npm run lint` — pass; `cd mobile && npm run typecheck` — pass; `cd mobile && npm run lint` — pass (4 pre-existing onboarding warnings); `npm run typecheck:shared` — pass.
+- **TODOs left:** Private bucket + signed GET for proof display; orphan object delete after failed `submitProof`; virus scan / moderation.
+- **Commit:** `af5ac15` — `proof: switch media storage to Supabase`
+- **Push:** (see post-push line below)
+
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
 - **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.

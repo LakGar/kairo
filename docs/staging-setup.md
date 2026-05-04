@@ -18,18 +18,18 @@ Prisma CLI commands in this repo load **`website/.env`** then **`website/.env.lo
 
 Without `DATABASE_URL`, `npm run db:push`, `db:migrate`, and `db:seed` will not apply schema or data.
 
-### Proof media uploads (S3-compatible)
+### Proof media uploads (Supabase Storage)
 
-Used by `POST /api/proof-media/upload-url` and presigned **PUT** from the mobile app. If unset, the route returns **503** `NOT_CONFIGURED`.
+Used by `POST /api/proof-media/upload-url`: the website creates a **Supabase Storage signed upload URL** (service role, server-only); the mobile app **PUT**s bytes to that URL, then submits proof with the returned **public HTTPS URL**. If Supabase env is unset, the route returns **503** `NOT_CONFIGURED`. The mobile app does **not** use a Supabase key.
 
 | Variable | Purpose |
 |----------|---------|
-| **`PROOF_STORAGE_BUCKET`** | Bucket name |
-| **`PROOF_STORAGE_REGION`** | e.g. `us-east-1`; R2 often uses `auto` |
-| **`PROOF_STORAGE_ACCESS_KEY_ID`** | Provider access key |
-| **`PROOF_STORAGE_SECRET_ACCESS_KEY`** | Provider secret |
-| **`PROOF_STORAGE_PUBLIC_BASE_URL`** | HTTPS base for public object URLs (no trailing slash) |
-| **`PROOF_STORAGE_ENDPOINT`** | Optional; set for R2, MinIO, or custom S3-compatible endpoints |
+| **`SUPABASE_URL`** | Project URL, e.g. `https://<ref>.supabase.co` |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | Service role key (**server only**; never ship to Expo) |
+| **`SUPABASE_PROOF_BUCKET`** | Storage bucket name (default **`kairo-proof-media`** if unset) |
+| **`SUPABASE_PROOF_PUBLIC_BASE_URL`** | Optional. If set, replaces the **origin** of `getPublicUrl` output (custom domain / CDN in front of public object paths). |
+
+**Deprecated (removed):** `PROOF_STORAGE_BUCKET`, `PROOF_STORAGE_REGION`, `PROOF_STORAGE_ENDPOINT`, `PROOF_STORAGE_ACCESS_KEY_ID`, `PROOF_STORAGE_SECRET_ACCESS_KEY`, `PROOF_STORAGE_PUBLIC_BASE_URL` — prior S3-compatible presigned PUT approach.
 
 ### Local / non-production only
 
@@ -109,15 +109,14 @@ A fresh process loads `node_modules/@prisma/client` that matches the current `sc
 
 ---
 
-## Object storage (S3 / R2 / MinIO)
+## Supabase Storage (proof media)
 
-1. Create a **private** bucket (or bucket with restricted write via presigned PUT only).
-2. Configure **CORS** on the bucket (or via reverse proxy) so the **mobile app origin** (or `*` for dev only) can:
-   - **PUT** to the presigned URL returned by the API
-   - Optionally **GET** for `PROOF_STORAGE_PUBLIC_BASE_URL` if objects are read directly from the client
-3. Set **`PROOF_STORAGE_PUBLIC_BASE_URL`** to the HTTPS URL clients use to load images (CDN or bucket public hostname).
+1. In the [Supabase dashboard](https://supabase.com/dashboard) → **Storage** → create bucket **`kairo-proof-media`** (or match `SUPABASE_PROOF_BUCKET`).
+2. **MVP trade-off — public read:** For `submitProof` / event UI to load images and videos without a separate “sign every read” API, the bucket should be **public** (Dashboard → bucket → **Make public**), or you must add a follow-up that serves private objects via short-lived signed GET URLs. Writes remain restricted: only the website (service role) mints signed **upload** URLs; clients never receive the service role key.
+3. **CORS:** Allow the **mobile app** to **PUT** to the signed upload URL host (`*.supabase.co` / your storage API origin). For Expo dev, permissive CORS on the project Storage API is often required so `fetch(uploadUrl, { method: "PUT", … })` from the device succeeds. Tighten origins for production.
+4. Set **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** in `website/.env.local` (not in mobile).
 
-MinIO locally: run MinIO, create bucket, set endpoint to `http://localhost:9000` (or LAN IP for phones), and align region/access keys with your MinIO config.
+**Previous approach (deprecated):** S3-compatible presigned PUT via `PROOF_STORAGE_*` and AWS SDK — removed in favor of Supabase for MVP simplicity.
 
 ---
 
@@ -139,6 +138,6 @@ MinIO locally: run MinIO, create bucket, set endpoint to `http://localhost:9000`
 - [ ] `npm run db:seed` run if you need demo users/events (optional).
 - [ ] `EXPO_PUBLIC_API_URL` points at a URL the device can reach.
 - [ ] Clerk keys present on mobile; bootstrap completes (Prisma user id in SecureStore or metadata).
-- [ ] If testing uploads: `PROOF_STORAGE_*` set and CORS verified for PUT.
+- [ ] If testing uploads: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, bucket + public read policy set; CORS verified for PUT to signed upload URLs.
 
 For a step-by-step product pass, use **`docs/mvp-e2e-checklist.md`**.

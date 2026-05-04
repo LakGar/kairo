@@ -27,7 +27,7 @@ async function assertOrganizer(eventId: string, userId: string) {
   return ok(null);
 }
 
-/** Organizer or APPROVED participant may request proof-media presigns and submit proof. */
+/** Organizer or APPROVED participant may request proof-media upload URLs and submit proof. */
 export async function assertUserMaySubmitProofForEvent(
   eventId: string,
   userId: string,
