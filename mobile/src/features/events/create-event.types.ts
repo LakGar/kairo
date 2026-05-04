@@ -20,6 +20,10 @@ export type CreateEventForm = {
   startsAtLabel: string;
   endsAtLabel: string;
   locationName: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
   visibility: EventVisibility;
   format: EventFormat;
   allowSoloPlayers: boolean;

@@ -118,6 +118,19 @@ export function buildPremiumCreateEventPayload(
   if (locationName) {
     raw.locationName = locationName;
   }
+  const address = form.address.trim();
+  const city = form.city.trim();
+  const state = form.state.trim();
+  const country = form.country.trim();
+  if (address) raw.address = address;
+  if (city) raw.city = city;
+  if (state) raw.state = state;
+  if (country) raw.country = country;
+
+  const cover = form.coverImageUrl?.trim();
+  if (cover) {
+    raw.coverImageUrl = cover;
+  }
 
   const maxTeams = form.allowTeams ? parseOptionalPositiveInt(form.maxTeams) : undefined;
   const maxSoloPlayers = form.allowSoloPlayers

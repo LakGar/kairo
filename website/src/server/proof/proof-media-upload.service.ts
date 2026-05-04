@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { err, ok, type Result } from "@/src/lib/result";
 import { assertUserMaySubmitProofForEvent } from "@/server/proof/proof.service";
 import {
+  eventCoverMediaUploadRequestSchema,
   proofMediaUploadRequestSchema,
   type ProofMediaUploadInstructions,
 } from "@kairo/shared";
@@ -179,6 +180,71 @@ export async function createProofMediaUploadUrl(
       publicUrl,
       env.publicBaseOverride,
     );
+    if (!overridden.success) return overridden;
+    publicUrl = overridden.data;
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": d.contentType,
+    "cache-control": "max-age=3600",
+    "x-upsert": "false",
+  };
+
+  return ok({
+    uploadUrl: signData.signedUrl,
+    publicUrl,
+    method: "PUT",
+    headers,
+  });
+}
+
+/** Signed PUT for event hero image (no `eventId` yet) — `event-covers/{userId}/…` in the proof bucket. */
+export async function createEventCoverMediaUploadUrl(
+  input: unknown,
+  userId: string,
+): Promise<Result<ProofMediaUploadInstructions>> {
+  const parsed = eventCoverMediaUploadRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    const msg = parsed.error.flatten().fieldErrors
+      ? JSON.stringify(parsed.error.flatten().fieldErrors)
+      : parsed.error.message;
+    return err(msg, "VALIDATION_ERROR");
+  }
+  const d = parsed.data;
+
+  const env = readProofSupabaseEnv();
+  if (!env.ok) {
+    return err(env.message, "NOT_CONFIGURED");
+  }
+
+  const ext = extensionForContentType(d.contentType);
+  const nonce = randomBytes(10).toString("hex");
+  const objectPath = `event-covers/${userId}/${Date.now()}-${nonce}.${ext}`;
+
+  const supabase = createClient(env.supabaseUrl, env.serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  const { data: signData, error: signError } = await supabase.storage
+    .from(env.bucket)
+    .createSignedUploadUrl(objectPath, { upsert: false });
+
+  if (signError || !signData?.signedUrl) {
+    return err(
+      signError?.message ?? "Could not create signed upload URL.",
+      "STORAGE_ERROR",
+    );
+  }
+
+  const { data: pub } = supabase.storage.from(env.bucket).getPublicUrl(objectPath);
+  let publicUrl = pub.publicUrl;
+
+  if (env.publicBaseOverride) {
+    const overridden = applyPublicUrlOriginOverride(publicUrl, env.publicBaseOverride);
     if (!overridden.success) return overridden;
     publicUrl = overridden.data;
   }

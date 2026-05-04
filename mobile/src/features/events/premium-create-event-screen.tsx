@@ -5,9 +5,13 @@ import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -283,6 +287,10 @@ const INITIAL_FORM: CreateEventForm = {
   startsAtLabel: "Sun, May 3 at 10:00 AM",
   endsAtLabel: "11:00 AM",
   locationName: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "",
   visibility: "PUBLIC",
   format: "OPEN_MEETUP",
   allowSoloPlayers: true,
@@ -454,8 +462,15 @@ export function PremiumCreateEventScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const c = colorScheme === "dark" ? createEventColorsDark : createEventColorsLight;
   const styles = useMemo(() => makePremiumStyles(c), [c]);
-  const [schedule] = useState(defaultPremiumSchedule);
+  const [schedule, setSchedule] = useState(defaultPremiumSchedule);
   const [form, setForm] = useState<CreateEventForm>(INITIAL_FORM);
+  /** iOS: modal + spinner. Android: native dialog via conditional mount. */
+  const [iosScheduleModal, setIosScheduleModal] = useState<null | "start" | "end">(null);
+  const [scheduleDraft, setScheduleDraft] = useState(new Date());
+  const [androidSchedulePicker, setAndroidSchedulePicker] = useState<null | "start" | "end">(null);
+  const [priceModalVisible, setPriceModalVisible] = useState(false);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [coverBusy, setCoverBusy] = useState(false);
   const [errors, setErrors] = useState<CreateEventFormErrors>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -492,6 +507,80 @@ export function PremiumCreateEventScreen() {
   useEffect(() => {
     setProofPromptTemplateVariant(0);
   }, [form.proofType]);
+
+  useEffect(() => {
+    setForm((f) => ({
+      ...f,
+      startsAtLabel: formatPremiumStartLabel(schedule.startsAt),
+      endsAtLabel: formatPremiumEndLabel(schedule.endsAt),
+    }));
+  }, [schedule.startsAt, schedule.endsAt]);
+
+  const openScheduleEditor = useCallback((mode: "start" | "end") => {
+    setScheduleDraft(mode === "start" ? schedule.startsAt : schedule.endsAt);
+    if (Platform.OS === "android") {
+      setAndroidSchedulePicker(mode);
+    } else {
+      setIosScheduleModal(mode);
+    }
+  }, [schedule.endsAt, schedule.startsAt]);
+
+  const handlePickCoverImage = useCallback(async () => {
+    if (coverBusy) return;
+    const acting = resolveActingUserId(getLinkedKairoUserId(user));
+    const base = getApiBaseUrl().trim();
+    if (!acting || !base) {
+      Alert.alert("Sign in required", "Connect your account to upload a cover image.");
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Photos", "Allow photo library access to set a cover image.");
+      return;
+    }
+    setCoverBusy(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+        allowsEditing: true,
+        aspect: [16, 9],
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!asset) return;
+      const uri = asset.uri;
+      const mime =
+        asset.mimeType === "image/png"
+          ? ("image/png" as const)
+          : ("image/jpeg" as const);
+      const fileSize =
+        typeof asset.fileSize === "number" && asset.fileSize > 0 ? asset.fileSize : 1_500_000;
+      const api = createKairoApiFromEnv({ userId: getLinkedKairoUserId(user) });
+      const instr = await api.createEventCoverMediaUploadUrl({
+        contentType: mime,
+        fileSize,
+      });
+      const blob = await (await fetch(uri)).blob();
+      const put = await fetch(instr.uploadUrl, {
+        method: "PUT",
+        body: blob,
+        headers: instr.headers,
+      });
+      if (!put.ok) {
+        const t = await put.text().catch(() => "");
+        throw new Error(t || `Upload failed (${put.status})`);
+      }
+      patchForm("coverImageUrl", instr.publicUrl);
+    } catch (e) {
+      Alert.alert(
+        "Cover image",
+        e instanceof Error ? e.message : "Could not upload cover. Check API and Supabase Storage.",
+      );
+    } finally {
+      setCoverBusy(false);
+    }
+  }, [coverBusy, patchForm, user]);
 
   const handleGenerateProofPrompt = useCallback(() => {
     if (form.proofType === "NONE") return;
@@ -677,14 +766,16 @@ export function PremiumCreateEventScreen() {
             )}
             <Pressable
               style={styles.coverFab}
-              onPress={() => {
-                console.log("Change cover image");
-                // TODO: open image picker when dependency is added.
-              }}
+              onPress={() => void handlePickCoverImage()}
+              disabled={coverBusy}
               accessibilityRole="button"
               accessibilityLabel="Add cover image"
             >
-              <Ionicons name="image-outline" size={20} color={c.textPrimary} />
+              {coverBusy ? (
+                <ActivityIndicator color={c.textPrimary} size="small" />
+              ) : (
+                <Ionicons name="image-outline" size={20} color={c.textPrimary} />
+              )}
             </Pressable>
           </View>
 
@@ -703,12 +794,8 @@ export function PremiumCreateEventScreen() {
               ui={styles}
               startLabel={formatPremiumStartLabel(schedule.startsAt)}
               endLabel={formatPremiumEndLabel(schedule.endsAt)}
-              onPressStart={() => {
-                console.log("TODO: date/time picker for start");
-              }}
-              onPressEnd={() => {
-                console.log("TODO: date/time picker for end");
-              }}
+              onPressStart={() => openScheduleEditor("start")}
+              onPressEnd={() => openScheduleEditor("end")}
               startError={errors.start}
               showStartError={showErr("start")}
             />
@@ -725,6 +812,47 @@ export function PremiumCreateEventScreen() {
               />
             </IconPillRow>
             {showErr("location") ? <Text style={styles.fieldError}>{errors.location}</Text> : null}
+          </View>
+
+          <View style={styles.block}>
+            <CreateEventSection title="Address (optional)">
+              <View style={styles.groupPanel}>
+                <TextInput
+                  value={form.address}
+                  onChangeText={(t) => patchForm("address", t)}
+                  placeholder="Street address"
+                  placeholderTextColor={c.textMuted}
+                  style={styles.inlineInput}
+                />
+                <View style={styles.divider} />
+                <TextInput
+                  value={form.city}
+                  onChangeText={(t) => patchForm("city", t)}
+                  placeholder="City"
+                  placeholderTextColor={c.textMuted}
+                  style={styles.inlineInput}
+                />
+                <View style={styles.divider} />
+                <TextInput
+                  value={form.state}
+                  onChangeText={(t) => patchForm("state", t)}
+                  placeholder="State / region"
+                  placeholderTextColor={c.textMuted}
+                  style={styles.inlineInput}
+                />
+                <View style={styles.divider} />
+                <TextInput
+                  value={form.country}
+                  onChangeText={(t) => patchForm("country", t)}
+                  placeholder="Country"
+                  placeholderTextColor={c.textMuted}
+                  style={styles.inlineInput}
+                />
+              </View>
+              <Text style={[styles.mutedNote, { marginTop: 8 }]}>
+                Shown on the event page. Map search can be added later.
+              </Text>
+            </CreateEventSection>
           </View>
 
           <View style={styles.block}>
@@ -971,7 +1099,8 @@ export function PremiumCreateEventScreen() {
                 onRequireApproval={(v) => patchForm("requireApproval", v)}
                 priceLabel={form.priceLabel}
                 onPricePress={() => {
-                  console.log("TODO: entry fee / price flow when payments exist");
+                  setPriceDraft(form.priceLabel);
+                  setPriceModalVisible(true);
                 }}
               />
             </CreateEventSection>
@@ -993,6 +1122,193 @@ export function PremiumCreateEventScreen() {
             )}
           </Pressable>
         </ScrollView>
+
+        {androidSchedulePicker ? (
+          <DateTimePicker
+            value={
+              androidSchedulePicker === "start" ? schedule.startsAt : schedule.endsAt
+            }
+            mode="datetime"
+            display="default"
+            onChange={(ev, d) => {
+              const mode = androidSchedulePicker;
+              setAndroidSchedulePicker(null);
+              if (ev.type !== "set" || !d) return;
+              if (mode === "start") {
+                setSchedule((prev) => {
+                  const nextStart = d;
+                  let nextEnd = prev.endsAt;
+                  if (nextEnd < nextStart) {
+                    nextEnd = new Date(nextStart.getTime() + 60 * 60 * 1000);
+                  }
+                  return { startsAt: nextStart, endsAt: nextEnd };
+                });
+              } else {
+                setSchedule((prev) => ({ ...prev, endsAt: d }));
+              }
+            }}
+          />
+        ) : null}
+
+        <Modal
+          visible={iosScheduleModal !== null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setIosScheduleModal(null)}
+        >
+          <Pressable
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+              backgroundColor: "rgba(0,0,0,0.45)",
+            }}
+            onPress={() => setIosScheduleModal(null)}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: c.panel,
+                paddingTop: 12,
+                paddingBottom: Math.max(insets.bottom, 16),
+                paddingHorizontal: 16,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+              }}
+            >
+              <DateTimePicker
+                value={scheduleDraft}
+                mode="datetime"
+                display="spinner"
+                onChange={(_, d) => {
+                  if (d) setScheduleDraft(d);
+                }}
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginTop: 8,
+                }}
+              >
+                <Pressable onPress={() => setIosScheduleModal(null)} hitSlop={12}>
+                  <Text style={{ color: c.textSecondary, fontSize: 17, fontWeight: "600" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    const mode = iosScheduleModal;
+                    if (!mode) return;
+                    if (mode === "start") {
+                      setSchedule((prev) => {
+                        const nextStart = scheduleDraft;
+                        let nextEnd = prev.endsAt;
+                        if (nextEnd < nextStart) {
+                          nextEnd = new Date(nextStart.getTime() + 60 * 60 * 1000);
+                        }
+                        return { startsAt: nextStart, endsAt: nextEnd };
+                      });
+                    } else {
+                      setSchedule((prev) => ({ ...prev, endsAt: scheduleDraft }));
+                    }
+                    setIosScheduleModal(null);
+                  }}
+                  hitSlop={12}
+                >
+                  <Text style={{ color: c.textPrimary, fontSize: 17, fontWeight: "700" }}>
+                    Save
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal
+          visible={priceModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPriceModalVisible(false)}
+        >
+          <Pressable
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              padding: 24,
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+            onPress={() => setPriceModalVisible(false)}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: c.panel,
+                borderRadius: 20,
+                padding: 20,
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: c.border,
+              }}
+            >
+              <Text style={{ color: c.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
+                Entry fee
+              </Text>
+              <Text style={[styles.mutedNote, { marginBottom: 12 }]}>
+                Amount in USD (no charge yet — shown on the event). Use Free or a number like 10 or 25.50.
+              </Text>
+              <TextInput
+                value={priceDraft}
+                onChangeText={setPriceDraft}
+                placeholder="Free or 15"
+                placeholderTextColor={c.textMuted}
+                keyboardType="decimal-pad"
+                style={[
+                  styles.inlineInput,
+                  {
+                    borderWidth: StyleSheet.hairlineWidth,
+                    borderColor: c.border,
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                  },
+                ]}
+              />
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                {(["Free", "5", "10", "25"] as const).map((preset) => (
+                  <Pressable
+                    key={preset}
+                    onPress={() => setPriceDraft(preset === "Free" ? "Free" : `$${preset}`)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 999,
+                      backgroundColor: c.panelStrong,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: c.border,
+                    }}
+                  >
+                    <Text style={{ color: c.textPrimary, fontWeight: "600" }}>
+                      {preset === "Free" ? "Free" : `$${preset}`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 16, marginTop: 20 }}>
+                <Pressable onPress={() => setPriceModalVisible(false)} hitSlop={12}>
+                  <Text style={{ color: c.textMuted, fontWeight: "600" }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    const t = priceDraft.trim() || "Free";
+                    patchForm("priceLabel", t);
+                    setPriceModalVisible(false);
+                  }}
+                  hitSlop={12}
+                >
+                  <Text style={{ color: c.textPrimary, fontWeight: "700" }}>Save</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </KeyboardAvoidingView>
     </View>
     </CreateEventColorsProvider>

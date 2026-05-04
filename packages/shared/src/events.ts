@@ -39,6 +39,27 @@ const createEventFieldsSchema = z.object({
   city: optionalTrimmedString(120),
   state: optionalTrimmedString(120),
   country: optionalTrimmedString(120),
+  coverImageUrl: z
+    .preprocess(
+      (val) => (val === null || val === undefined || val === "" ? undefined : String(val).trim()),
+      z
+        .string()
+        .max(2048)
+        .optional()
+        .refine(
+          (v) => {
+            if (v === undefined) return true;
+            if (!/^https:\/\//i.test(v)) return false;
+            try {
+              new URL(v);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: "coverImageUrl must be a valid https URL" },
+        ),
+    ),
   startsAt: z.coerce.date({ invalid_type_error: "startsAt must be a valid date" }),
   endsAt: z.coerce.date().optional().nullable(),
   maxTeams: z.number().int().positive().optional().nullable(),

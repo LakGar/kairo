@@ -215,6 +215,9 @@ model Event {
   state        String?
   country      String?
 
+  /// Public https URL for event hero (e.g. Supabase Storage); optional.
+  coverImageUrl String?
+
   startsAt DateTime
   endsAt   DateTime?
 

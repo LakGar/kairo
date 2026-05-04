@@ -141,6 +141,9 @@ export interface KairoApi {
   createProofMediaUploadUrl: (
     body: unknown,
   ) => Promise<ApiProofMediaUploadInstructions>;
+  createEventCoverMediaUploadUrl: (
+    body: unknown,
+  ) => Promise<ApiProofMediaUploadInstructions>;
   listStakes: (eventId: string) => Promise<ApiStake[]>;
   createStake: (eventId: string, body: unknown) => Promise<ApiStake>;
   joinTeam: (teamId: string) => Promise<ApiTeamPublic>;
@@ -214,6 +217,8 @@ export function createKairoApi(config: {
       }),
     createProofMediaUploadUrl: (body) =>
       req("/api/proof-media/upload-url", { method: "POST", json: body }),
+    createEventCoverMediaUploadUrl: (body) =>
+      req("/api/event-cover-media/upload-url", { method: "POST", json: body }),
     listStakes: (eventId) => req(`/api/events/${encodeURIComponent(eventId)}/stakes`),
     createStake: (eventId, body) =>
       req(`/api/events/${encodeURIComponent(eventId)}/stakes`, {

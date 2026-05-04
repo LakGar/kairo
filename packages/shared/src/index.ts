@@ -4,6 +4,7 @@ export * from "./profile-update";
 export * from "./push-token";
 export * from "./enums";
 export * from "./events";
+export * from "./event-cover-media-upload";
 export * from "./matches";
 export * from "./proof";
 export * from "./proof-media-upload";

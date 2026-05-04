@@ -56,6 +56,7 @@ export interface ApiEventPublic {
   city: string | null;
   state: string | null;
   country: string | null;
+  coverImageUrl?: string | null;
   startsAt: JsonDateString;
   endsAt: JsonDateString | null;
   maxTeams: number | null;

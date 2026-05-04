@@ -30,9 +30,10 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Kairo to access your photos to set your profile picture."
+          "photosPermission": "Allow Kairo to access your photos for event covers and proof."
         }
       ],
+      "@react-native-community/datetimepicker",
       [
         "expo-camera",
         {
