@@ -76,13 +76,23 @@ Until then, staging can still work using the acting-user header pattern document
 | Command | When to use |
 |---------|-------------|
 | **`npm run db:generate`** | After any `schema.prisma` change; regenerates `@prisma/client`. Safe to run without `DATABASE_URL` for codegen in CI (generate still needs schema on disk). |
-| **`npm run db:push`** | **Quick sync**: pushes schema to the DB without migration files. Good for disposable staging DBs and rapid iteration. **Requires `DATABASE_URL`.** |
+| **`npm run db:push`** | **Quick sync**: pushes schema to the DB without migration files. Good for disposable staging DBs and rapid iteration. **Requires `DATABASE_URL`.** Prisma may refuse the push if it detects possible data loss (e.g. new `@unique` on existing rows); see **`npm run db:push:accept-data-loss`** below. |
+| **`npm run db:push:accept-data-loss`** | Same as `db:push` but passes **`--accept-data-loss`**. Use only on **throwaway** or dev DBs when you accept Prisma’s warning (e.g. adding `User.clerkUserId` @unique on a DB that already has users). **Never** on production without a backup and explicit review. |
 | **`npm run db:migrate`** | Runs `prisma migrate dev` (loads env from `website/`). Use when you want **versioned migrations** in git. **Requires `DATABASE_URL`.** |
 | **`npm run db:seed`** | Idempotent MVP seed (`packages/db/prisma/seed.ts`). **Requires `DATABASE_URL`.** |
 | **`npm run db:studio`** | Opens Prisma Studio against the configured database. |
 | **`npm run db:dev:fresh`** | **Destructive**: `db push --force-reset` + seed. **Never** on production. |
 
 **Note:** This repo’s `db:push` / `db:migrate` / `db:seed` scripts use **`dotenv-cli`** pointed at **`website/.env`** and **`website/.env.local`**. Ensure `DATABASE_URL` is set there (not only in `packages/db/.env`, which is not used by these scripts).
+
+### Restart Next.js after schema / client changes
+
+After **`npm run db:generate`**, **`db:push`**, or **`db:push:accept-data-loss`**, **restart** the Next dev server (`npm run dev` in `website/`). Otherwise you may see transient **500**s such as:
+
+- Prisma **`Unknown field '…' on model Profile`** (server bundle still using an old generated client), or
+- **`Cannot read properties of undefined (reading 'TEAM_AGREEMENT')`** (stale enum / client in the Turbopack cache).
+
+A fresh process loads `node_modules/@prisma/client` that matches the current `schema.prisma`.
 
 ### Migration-based workflow (recommended for long-lived staging)
 

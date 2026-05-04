@@ -16,6 +16,7 @@
     "generate": "prisma generate",
     "migrate:dev": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma migrate dev",
     "push": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db push",
+    "push:accept-data-loss": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db push --accept-data-loss",
     "push:reset": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db push --force-reset",
     "studio": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma studio",
     "seed": "dotenv -o -e ../../website/.env -e ../../website/.env.local -- prisma db seed"

@@ -61,6 +61,7 @@ Done:
 - [x] **2026-05-03 (PR 17):** `NotificationReadState` — one row per user (`userId` unique), optional `lastReadAt` cursor for derived in-app notifications (not a full `Notification` table).
 - [x] **2026-05-03 (PR 18):** `Profile` — `onboardingCompleted` / `onboardingCompletedAt`, preference fields (`primaryGoal`, `accountabilityStyle`, JSON arrays for modes/interests/event types, string prefs, optional bio path via existing `bio`).
 - [x] **2026-05-03 (PR 19):** Staging docs — `docs/staging-setup.md` (env, Prisma, storage, devices), `docs/mvp-e2e-checklist.md` (manual MVP QA); root `typecheck:shared`; `@kairo/shared` `npm run typecheck`.
+- [x] **2026-05-03 (PR 20):** Local Postgres via `DATABASE_URL` — `npm run db:push:accept-data-loss` + `npm run db:seed` (see build log work session); `npm run db:push:accept-data-loss` script added for Prisma data-loss warnings on dev DBs.
 
 In Progress:
 
@@ -514,6 +515,36 @@ Done:
 
 **Push:** `git push origin main` — succeeded (`b68da50..7edbbba`; feature `abf2dca`, log follow-up `7edbbba`).
 
+#### Work session — 2026-05-03 (Database + Website + Mobile) — Apply staging schema and run MVP E2E checklist
+
+- **Task:** PR 20 — Apply schema to DB, seed, smoke API, execute `docs/mvp-e2e-checklist.md` as far as the agent environment allows.
+- **Env (this session):**
+  - **`DATABASE_URL`:** Present via `website/.env` + `website/.env.local` (local Postgres `kairo`).
+  - **`PROOF_STORAGE_*`:** Not set in those files — presigned upload E2E **not** exercised; expected **503** until configured.
+  - **Mobile `mobile/.env`:** `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` present; full Clerk/device flows **manual**.
+
+**DB commands run:**
+
+1. `npm run db:generate` — OK.
+2. `npm run db:push` — **failed** (Prisma warning: possible data loss when adding `@unique` on `User.clerkUserId`).
+3. `prisma db push --accept-data-loss` (same env as `db:push`) — **OK**; DB in sync with schema. Repo follow-up: **`npm run db:push:accept-data-loss`** at root (`packages/db` script `push:accept-data-loss`).
+4. **`npm run db:migrate`** — **not** used (no `prisma/migrations` history in repo; migrate dev is for migration-file workflow).
+5. `npm run db:seed` — **OK** (Alice/Bob/Cara + events/teams/matches/proof prompts; seed log printed `kairoUserIds`).
+
+**API / smoke:** `GET /api/me/events` and `GET /api/me/profile` against running `next dev` initially returned **500** (Turbopack/server cache: old Prisma client — `Unknown field onboardingCompleted`, `ResultVerificationMode` undefined). **Mitigation documented:** restart Next after `db:push`/`db:generate`. Fresh `PrismaClient` script confirmed `Profile.onboardingCompleted === false` for seeded Alice.
+
+**MVP checklist:** Account creation, two-user device flows, proof **upload** pipeline, and Home/notifications UI passes were **not** executed in this agent session (Clerk + second device + storage). Seeded data and DB schema are ready for a human run.
+
+**Bugs / friction addressed in repo:** `db:push:accept-data-loss` script; staging + checklist docs updated with **restart Next** note.
+
+**Deferred:** Full checklist on real devices; `PROOF_STORAGE_*` staging bucket; optional adoption of `prisma migrate` for long-lived environments.
+
+**Checks:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint`; `npm run typecheck:shared`; `npm run db:push:accept-data-loss` (idempotent, DB already in sync) — all passed (mobile 4 pre-existing onboarding warnings).
+
+**Commit:** _(after commit)_
+
+**Push:** _(after push)_
+
 In Progress:
 
 - [ ] (none)
@@ -522,7 +553,7 @@ Left:
 
 - [ ] Optional: add `mobile` to root npm workspaces or keep standalone installs.
 - [ ] Edit profile screen + deeper personalization (post-onboarding).
-- [ ] Run `db:push` or `db:migrate` against real staging when `DATABASE_URL` is set; verify checklist on device.
+- [ ] Full **device** MVP checklist (two Clerk users, proof upload with `PROOF_STORAGE_*`, notifications/Home) — DB + seed ready locally after PR 20.
 
 ### Shared / Packages / Types
 

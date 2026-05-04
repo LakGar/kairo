@@ -6,6 +6,7 @@
     "db:generate": "npm run generate -w @kairo/db",
     "db:migrate": "npm run migrate:dev -w @kairo/db",
     "db:push": "npm run push -w @kairo/db",
+    "db:push:accept-data-loss": "npm run push:accept-data-loss -w @kairo/db",
     "db:push:reset": "npm run push:reset -w @kairo/db",
     "db:dev:fresh": "npm run db:push:reset && npm run db:seed",
     "db:studio": "npm run studio -w @kairo/db",

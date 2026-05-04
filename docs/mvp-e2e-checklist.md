@@ -4,6 +4,8 @@ Use this list when validating **staging** or a **fresh local stack** (`DATABASE_
 
 **Prerequisites:** See **`docs/staging-setup.md`** (env, Prisma, storage, device URL).
 
+**After `db:push` / `db:generate`:** Restart the **website** dev server so API routes use the latest Prisma client (see staging doc — avoids false 500s).
+
 ---
 
 ## Account and profile
