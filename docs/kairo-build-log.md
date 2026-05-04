@@ -510,9 +510,9 @@ Done:
 
 **Checks:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint`; `npm run typecheck:shared` — all passed (mobile 4 pre-existing `onboarding-welcome-hero` warnings).
 
-**Commit:** _(after commit)_
+**Commit:** `abf2dca` — `docs: add staging setup and MVP e2e checklist`
 
-**Push:** _(after push)_
+**Push:** _(after `git push`)_
 
 In Progress:
 
