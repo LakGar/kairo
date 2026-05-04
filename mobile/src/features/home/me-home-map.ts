@@ -3,7 +3,6 @@ import type { ApiHomeAction, ApiHomeEventSummary, ApiMeEventsPayload } from "@/s
 import {
   COMMITMENT_COVER_PLACEHOLDER,
   type CommitmentRole,
-  type CommitmentStatus,
   type MockCommitment,
   type MockNextAction,
   type MockProofTask,
@@ -28,19 +27,18 @@ function toCommitmentRole(r: string): CommitmentRole {
   }
 }
 
-function toCommitmentStatus(s: ApiHomeEventSummary): CommitmentStatus {
-  if (s.status === "CANCELLED") return "Waiting approval";
-  if (s.status === "DRAFT") return "Waiting approval";
-  if (s.proofStatus === "PENDING") return "Needs proof";
-  if (s.status === "COMPLETED") return "Verified";
-  return "Upcoming";
-}
-
 function locationLine(s: ApiHomeEventSummary): string {
   return [s.locationName, s.city, s.state].filter(Boolean).join(" · ") || "Location TBD";
 }
 
 export function mapSummaryToMockCommitment(s: ApiHomeEventSummary): MockCommitment {
+  const statusLine =
+    s.commitmentStatusLine?.trim() ||
+    (s.status === "CANCELLED" || s.status === "DRAFT"
+      ? "Event not active"
+      : s.status === "COMPLETED"
+        ? "Completed"
+        : "Upcoming");
   return {
     id: `api-${s.id}-${s.role}`,
     title: s.title,
@@ -49,8 +47,9 @@ export function mapSummaryToMockCommitment(s: ApiHomeEventSummary): MockCommitme
     organizerLine: s.role === "Hosting" ? "You're organizing" : undefined,
     timeLabel: formatEventStartsAt(s.startsAt),
     locationLabel: locationLine(s),
-    status: toCommitmentStatus(s),
-    scoreImpact: s.scoreImpactLabel ?? "On track",
+    status: statusLine,
+    scoreImpact: s.scoreImpactLabel?.trim() || "No score impact",
+    commitmentStatus: s.commitmentStatus,
     eventIdPlaceholder: s.id,
   };
 }

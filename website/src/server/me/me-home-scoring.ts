@@ -253,6 +253,131 @@ export function computeCommitmentCompletion(u: CommitmentScoringUnit): {
   };
 }
 
+/** Home API / UI — mirrors MVP score deltas without recomputing totals. */
+export type HomeCommitmentStatus =
+  | "UPCOMING"
+  | "WAITING_RESULT"
+  /** Reserved for future granular states; aggregate flow uses `FULLY_VERIFIED` / proof rows first. */
+  | "RESULT_CONFIRMED"
+  | "PROOF_PENDING"
+  | "PROOF_MISSING"
+  | "PROOF_REJECTED"
+  | "FULLY_VERIFIED"
+  | "NO_SCORE_IMPACT";
+
+export type CommitmentHomeDisplay = {
+  commitmentStatus: HomeCommitmentStatus;
+  /** Human-readable status line on Home. */
+  commitmentStatusLine: string;
+  /** Score impact explanation (penalties / bonus copy). */
+  scoreImpactLabel: string;
+  scoreImpactValue: number | null;
+  completionReason?: string;
+};
+
+/**
+ * Aggregates all scoring units for one event into a single Home card.
+ * Priority matches penalty ordering used in `unitScoreDelta`.
+ */
+export function getCommitmentHomeDisplayFromUnits(
+  units: CommitmentScoringUnit[],
+): CommitmentHomeDisplay {
+  if (units.length === 0) {
+    return {
+      commitmentStatus: "NO_SCORE_IMPACT",
+      commitmentStatusLine: "Not in your score",
+      scoreImpactLabel: "No score impact",
+      scoreImpactValue: null,
+      completionReason: "no_scoring_units",
+    };
+  }
+
+  const allUpcoming = units.every((u) => u.isUpcoming);
+  if (allUpcoming) {
+    return {
+      commitmentStatus: "UPCOMING",
+      commitmentStatusLine: "Upcoming",
+      scoreImpactLabel: "No impact yet",
+      scoreImpactValue: null,
+    };
+  }
+
+  if (units.every(isFullyComplete)) {
+    return {
+      commitmentStatus: "FULLY_VERIFIED",
+      commitmentStatusLine: "Fully verified",
+      scoreImpactLabel: "Completed: +2",
+      scoreImpactValue: 2,
+      completionReason: "all_units_complete",
+    };
+  }
+
+  if (units.some((u) => u.hasRejectedProof)) {
+    return {
+      commitmentStatus: "PROOF_REJECTED",
+      commitmentStatusLine: "Proof rejected",
+      scoreImpactLabel: "Proof rejected: -8",
+      scoreImpactValue: -8,
+    };
+  }
+
+  const proofMissing = units.some(
+    (u) => u.eventEnded && u.proofRequired && !u.proofApproved && !u.resultComplete,
+  );
+  if (proofMissing) {
+    return {
+      commitmentStatus: "PROOF_MISSING",
+      commitmentStatusLine: "Proof missing",
+      scoreImpactLabel: "Proof missing: -6",
+      scoreImpactValue: -6,
+    };
+  }
+
+  const proofPending = units.some(
+    (u) => u.resultComplete && u.proofRequired && !u.proofApproved,
+  );
+  if (proofPending) {
+    return {
+      commitmentStatus: "PROOF_PENDING",
+      commitmentStatusLine: "Result confirmed, proof needed",
+      scoreImpactLabel: "Proof pending: -3",
+      scoreImpactValue: -3,
+    };
+  }
+
+  if (units.some((u) => !u.resultComplete)) {
+    return {
+      commitmentStatus: "WAITING_RESULT",
+      commitmentStatusLine: "Waiting for result",
+      scoreImpactLabel: "+2 if verified",
+      scoreImpactValue: null,
+    };
+  }
+
+  return {
+    commitmentStatus: "UPCOMING",
+    commitmentStatusLine: "Upcoming",
+    scoreImpactLabel: "No impact yet",
+    scoreImpactValue: null,
+  };
+}
+
+export function getCommitmentHomeDisplayForRole(
+  role: string,
+  units: CommitmentScoringUnit[],
+): CommitmentHomeDisplay {
+  if (role === "Watching" || role === "Volunteer") {
+    return {
+      commitmentStatus: "NO_SCORE_IMPACT",
+      commitmentStatusLine: "Not scored",
+      scoreImpactLabel: "No score impact",
+      scoreImpactValue: null,
+      completionReason: "role_excluded_from_score",
+    };
+  }
+  return getCommitmentHomeDisplayFromUnits(units);
+}
+
 export type KairoScoreBreakdown = {
   score: number;
   scoreLabel: string;

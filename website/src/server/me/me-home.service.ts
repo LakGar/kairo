@@ -13,8 +13,10 @@ import {
   buildCommitmentUnitsWithProofs,
   computeKairoScore,
   computeStreakDaysFromActivity,
+  getCommitmentHomeDisplayForRole,
   utcDayKey,
   MS_24H,
+  type CommitmentScoringUnit,
   type ScoringEventRow,
   type UserProofLite,
 } from "@/server/me/me-home-scoring";
@@ -39,7 +41,16 @@ export type MeHomeEventSummary = {
   state: string | null;
   imageUrl: string | null;
   proofStatus?: string | null;
-  scoreImpactLabel?: string | null;
+  /** Machine-readable commitment state for Home UI. */
+  commitmentStatus: string;
+  /** Human-readable status line on Home. */
+  commitmentStatusLine: string;
+  /** Score impact copy (penalties / bonus). */
+  scoreImpactLabel: string;
+  /** Optional numeric hint (+2, -3, -6, -8); null when N/A. */
+  scoreImpactValue?: number | null;
+  /** MVP diagnostic (e.g. aggregate_of_units). */
+  completionReason?: string | null;
   participantCount: number;
 };
 
@@ -120,7 +131,11 @@ function userOnTeam(
   return team.members.some((m) => m.userId === userId);
 }
 
-function toSummary(e: EventRow, role: string): MeHomeEventSummary {
+function toSummary(
+  e: EventRow,
+  role: string,
+  homeDisplay: ReturnType<typeof getCommitmentHomeDisplayForRole>,
+): MeHomeEventSummary {
   return {
     id: e.id,
     title: e.title,
@@ -133,8 +148,22 @@ function toSummary(e: EventRow, role: string): MeHomeEventSummary {
     state: e.state,
     imageUrl: null,
     participantCount: e._count.participants,
-    scoreImpactLabel: "On track",
+    commitmentStatus: homeDisplay.commitmentStatus,
+    commitmentStatusLine: homeDisplay.commitmentStatusLine,
+    scoreImpactLabel: homeDisplay.scoreImpactLabel,
+    scoreImpactValue: homeDisplay.scoreImpactValue,
+    completionReason: homeDisplay.completionReason ?? null,
   };
+}
+
+function indexUnitsByEventId(units: CommitmentScoringUnit[]): Map<string, CommitmentScoringUnit[]> {
+  const map = new Map<string, CommitmentScoringUnit[]>();
+  for (const u of units) {
+    const list = map.get(u.eventId);
+    if (list) list.push(u);
+    else map.set(u.eventId, [u]);
+  }
+  return map;
 }
 
 async function loadEventsForParticipant(
@@ -195,13 +224,6 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
     loadEventsForParticipant(userId, EventParticipantRole.WATCHER),
     loadEventsForParticipant(userId, EventParticipantRole.VOLUNTEER),
   ]);
-
-  const hosting = hostingRows.map((e) =>
-    toSummary(e as unknown as EventRow, "Hosting"),
-  );
-  const attending = playerEvents.map((e) => toSummary(e, "Player"));
-  const watching = watcherEvents.map((e) => toSummary(e, "Watching"));
-  const volunteering = volunteerEvents.map((e) => toSummary(e, "Volunteer"));
 
   const now = new Date();
 
@@ -352,6 +374,38 @@ export async function getMeHomePayload(userId: string): Promise<Result<MeHomePay
     userProofs,
     now,
   );
+
+  const unitsByEventId = indexUnitsByEventId(commitmentUnits);
+
+  const hosting = hostingRows.map((e) => {
+    const row = e as unknown as EventRow;
+    const display = getCommitmentHomeDisplayForRole(
+      "Hosting",
+      unitsByEventId.get(row.id) ?? [],
+    );
+    return toSummary(row, "Hosting", display);
+  });
+  const attending = playerEvents.map((e) => {
+    const display = getCommitmentHomeDisplayForRole(
+      "Player",
+      unitsByEventId.get(e.id) ?? [],
+    );
+    return toSummary(e, "Player", display);
+  });
+  const watching = watcherEvents.map((e) => {
+    const display = getCommitmentHomeDisplayForRole(
+      "Watching",
+      unitsByEventId.get(e.id) ?? [],
+    );
+    return toSummary(e, "Watching", display);
+  });
+  const volunteering = volunteerEvents.map((e) => {
+    const display = getCommitmentHomeDisplayForRole(
+      "Volunteer",
+      unitsByEventId.get(e.id) ?? [],
+    );
+    return toSummary(e, "Volunteer", display);
+  });
 
   const streakActivityDays = new Set(streakLogs.map((l) => utcDayKey(l.createdAt)));
   const streakDays = computeStreakDaysFromActivity(streakActivityDays, now);

@@ -363,7 +363,7 @@ Done:
 - **Mobile:** **`KairoScoreCard`** — clamp score/trend/streak for safe numbers. **`StreakRankRow`** — optional **`completedRecent` / `totalRecent`** line. **`home-dashboard`** — passes API counts.
 - **Docs:** **`docs/mvp-full-function-plan.md`** — §1.5 **MVP Kairo Score** + backlog/home snapshot updates. This log.
 - **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
-- **TODOs:** Watcher/volunteer lower weight or inclusion; meetup “attendance” without **`startsAt`** heuristic; **7-day trend** when all commitments are newer than 7 days returns **0**; leaderboard for **`weeklyRank`**; optional **`scoreImpactLabel`** per event row from completion state.
+- **TODOs:** Watcher/volunteer lower weight or inclusion; meetup “attendance” without **`startsAt`** heuristic; **7-day trend** when all commitments are newer than 7 days returns **0**; leaderboard for **`weeklyRank`**; ~~optional **`scoreImpactLabel`** per event row~~ (PR14).
 - **Commit / push:** `score: add MVP Kairo Score logic` on `main`; `git push origin main` succeeded (verify tip with `git log -1 --oneline`).
 
 #### Work session — 2026-05-03 (Shared + Website + Mobile) — Result verification defaults by event format
@@ -376,6 +376,16 @@ Done:
 - **Checks:** `cd packages/shared && npx tsc --noEmit`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
 - **TODOs:** Optional **`Event.resultVerificationMode`** on `Event` + host override UI; legacy **`CreateEventForm`** parity if still used.
 - **Commit / push:** Message `events: default result verification by format` on `main`; `git push origin main` succeeded (verify tip with `git log -1 --oneline`).
+
+#### Work session — 2026-05-03 (Website + Mobile) — Home commitment score impact labels
+
+- **Task:** Enrich **`GET /api/me/events`** event summaries with **`commitmentStatus`**, **`commitmentStatusLine`**, **`scoreImpactLabel`**, optional **`scoreImpactValue`** / **`completionReason`** — derived from existing scoring units (no new DB table); mobile commitment row shows status + impact with red/green/gray accents; no scoring formula change.
+- **Backend:** **`me-home-scoring.ts`** — **`getCommitmentHomeDisplayFromUnits`**, **`getCommitmentHomeDisplayForRole`** (watchers/volunteers → **not scored**); **`me-home.service.ts`** — index units by **`eventId`**, build hosting/attending/watching/volunteering after **`commitmentUnits`**.
+- **Mobile:** **`ApiHomeEventSummary`**; **`me-home-map.ts`**; **`commitment-list-item.tsx`** (wrap-friendly text, tone from **`commitmentStatus`**); **`personal-commitment-to-mock`** — **`NO_SCORE_IMPACT`** for local row.
+- **Docs:** **`docs/mvp-full-function-plan.md`** Home row; this log.
+- **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
+- **TODOs:** Surface **stale team-result review (-2)** on commitment copy if desired; i18n for status strings.
+- **Commit / push:** Message `home: explain commitment score impact` on `main`; `git push origin main` (verify tip with `git log -1 --oneline`).
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 

@@ -139,7 +139,7 @@ MVP can still use **organizer-decides** for most events; this document remains t
 | Event detail, join, teams, organizer tools, proof submit | **Wired to API** per build log Phases 9–11 |
 | **Premium Create Event** (`PremiumCreateEventScreen`, Create tab) | **Not wired** — submit validates locally then `console.log`; **does not** `POST /api/events` |
 | **Legacy/API create** (`CreateEventForm` if still present) | Verify single source of truth: **one** create path should call the API |
-| Home dashboard | **API-backed** score + commitments from `GET /api/me/events`; **personal commitment** row remains **SecureStore-only** (not server) |
+| Home dashboard | **API-backed** score + commitments from `GET /api/me/events`; each summary includes **`commitmentStatus`** + **`commitmentStatusLine`** + **`scoreImpactLabel`** (and optional **`scoreImpactValue`**) so users see how a row affects Kairo Score; **personal commitment** row remains **SecureStore-only** (not server) |
 | Chat / friends / notifications | **No backend** — empty or local-only UX |
 | Onboarding (preferences) | **Local-only** completion — no server persistence |
 

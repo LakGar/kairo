@@ -91,7 +91,12 @@ export interface ApiHomeEventSummary {
   state: string | null;
   imageUrl: string | null;
   proofStatus?: string | null;
-  scoreImpactLabel?: string | null;
+  /** e.g. `UPCOMING` | `FULLY_VERIFIED` | `PROOF_PENDING` | … */
+  commitmentStatus: string;
+  commitmentStatusLine: string;
+  scoreImpactLabel: string;
+  scoreImpactValue?: number | null;
+  completionReason?: string | null;
   participantCount: number;
 }
 

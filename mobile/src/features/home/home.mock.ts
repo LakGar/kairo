@@ -31,8 +31,12 @@ export interface MockCommitment {
   organizerLine?: string;
   timeLabel: string;
   locationLabel: string;
-  status: CommitmentStatus;
+  /** Status line (from API `commitmentStatusLine` or local copy). */
+  status: CommitmentStatus | string;
+  /** Score impact line (from API `scoreImpactLabel`). */
   scoreImpact: string;
+  /** API `commitmentStatus` for accent colors; optional for personal rows. */
+  commitmentStatus?: string;
   eventIdPlaceholder: string;
 }
 
