@@ -78,10 +78,68 @@ export interface ApiEventPublic {
   };
 }
 
-/** `GET /api/me/events` — events you host vs events you joined. */
-export interface ApiMyEventsPayload {
-  hosting: ApiEventPublic[];
-  attending: ApiEventPublic[];
+/** One row for Home / My Events lists (`GET /api/me/events`). */
+export interface ApiHomeEventSummary {
+  id: string;
+  title: string;
+  activityType: string;
+  role: string;
+  status: string;
+  startsAt: JsonDateString;
+  locationName: string | null;
+  city: string | null;
+  state: string | null;
+  imageUrl: string | null;
+  proofStatus?: string | null;
+  scoreImpactLabel?: string | null;
+  participantCount: number;
+}
+
+export interface ApiHomeAction {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string;
+  eventId?: string;
+  ctaLabel: string;
+}
+
+export interface ApiHomeProofInboxItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  eventId?: string;
+  matchId?: string;
+  proofSubmissionId?: string;
+}
+
+export interface ApiHomeActivityItem {
+  id: string;
+  text: string;
+  createdAt: JsonDateString;
+}
+
+export interface ApiHomeStats {
+  kairoScore: number;
+  scoreLabel: string;
+  sevenDayTrend: number;
+  streakDays: number;
+  weeklyRank: number | null;
+  completedRecent: number;
+  totalRecent: number;
+}
+
+/** `GET /api/me/events` — grouped summaries + Home dashboard blocks. */
+export interface ApiMeEventsPayload {
+  hosting: ApiHomeEventSummary[];
+  attending: ApiHomeEventSummary[];
+  invited: ApiHomeEventSummary[];
+  watching: ApiHomeEventSummary[];
+  volunteering: ApiHomeEventSummary[];
+  actions: ApiHomeAction[];
+  proofInbox: ApiHomeProofInboxItem[];
+  stats: ApiHomeStats;
+  recentActivity: ApiHomeActivityItem[];
 }
 
 export interface ApiTeamMember {
@@ -195,4 +253,15 @@ export interface ApiLeaveTeamResult {
 export interface ApiProofReviewResult {
   id: string;
   status: string;
+}
+
+/** Stripe charge–backed row from `GET /api/billing/purchases`. */
+export interface ApiBillingPurchase {
+  id: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  created: number;
+  description: string | null;
+  receiptUrl: string | null;
 }

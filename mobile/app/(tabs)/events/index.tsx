@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,10 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { FeatureEmptyState } from "@/src/components/feature-empty-state";
 import { useUIPalette } from "@/hooks/use-ui-palette";
-import { EventListRow } from "@/src/features/events/event-list-row";
+import {
+  EventListRow,
+  type EventListRowEvent,
+} from "@/src/features/events/event-list-row";
 import { useMyEvents } from "@/src/features/events/use-my-events";
-import type { ApiEventPublic } from "@/src/api";
 
 type Segment = "hosting" | "attending";
 
@@ -24,6 +27,8 @@ export default function MyEventsScreen() {
   const router = useRouter();
   const ui = useUIPalette();
   const tint = useThemeColor({}, "tint");
+  const emptyText = useThemeColor({}, "text");
+  const emptyMuted = useThemeColor({}, "tabIconDefault");
   const { hosting, attending, loading, refreshing, error, refresh } = useMyEvents();
   const [segment, setSegment] = useState<Segment>("hosting");
 
@@ -31,7 +36,7 @@ export default function MyEventsScreen() {
     return segment === "hosting" ? hosting : attending;
   }, [segment, hosting, attending]);
 
-  const onOpen = (event: ApiEventPublic) => {
+  const onOpen = (event: EventListRowEvent) => {
     router.push(`/(tabs)/events/${event.id}`);
   };
 
@@ -123,14 +128,31 @@ export default function MyEventsScreen() {
           }
           ListEmptyComponent={
             <ThemedView style={styles.empty}>
-              <ThemedText type="subtitle">
-                {segment === "hosting" ? "No events you host yet" : "Not attending any events yet"}
-              </ThemedText>
-              <ThemedText type="muted" style={styles.emptySub}>
-                {segment === "hosting"
-                  ? "Create an event from the Create tab, then publish when you are ready."
-                  : "Browse Discover and join an event as player, watcher, or volunteer."}
-              </ThemedText>
+              <FeatureEmptyState
+                colors={{
+                  textPrimary: emptyText,
+                  textMuted: emptyMuted,
+                  icon: emptyMuted,
+                }}
+                primaryButtonColors={{ bg: tint, label: ui.linkOnTint }}
+                icon={segment === "hosting" ? "calendar-outline" : "compass-outline"}
+                title={
+                  segment === "hosting" ? "No events you host yet" : "Not attending any events yet"
+                }
+                subtitle={
+                  segment === "hosting"
+                    ? "Create an event from the Create tab, then publish when you are ready."
+                    : "Browse Discover and join an event as player, watcher, or volunteer."
+                }
+                primaryAction={{
+                  label: segment === "hosting" ? "Create event" : "Open Discover",
+                  onPress: () =>
+                    segment === "hosting"
+                      ? router.push("/(tabs)/create")
+                      : router.push("/(tabs)/(home)/index" as Href),
+                }}
+                compact
+              />
             </ThemedView>
           }
           renderItem={({ item }) => (
@@ -195,13 +217,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   empty: {
-    paddingVertical: 40,
+    paddingVertical: 24,
     paddingHorizontal: 12,
     alignItems: "center",
-    gap: 8,
-  },
-  emptySub: {
-    textAlign: "center",
   },
   button: {
     paddingVertical: 14,

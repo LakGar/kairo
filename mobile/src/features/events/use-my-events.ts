@@ -1,17 +1,22 @@
+import { useUser } from "@clerk/expo";
 import { useCallback, useEffect, useState } from "react";
 
 import {
   createKairoApiFromEnv,
+  getLinkedKairoUserId,
   KairoApiConfigurationError,
   KairoApiError,
-  type ApiEventPublic,
+  type ApiHomeEventSummary,
+  type ApiMeEventsPayload,
 } from "@/src/api";
 
 import type { EventsErrorState } from "./use-upcoming-events";
 
 export function useMyEvents() {
-  const [hosting, setHosting] = useState<ApiEventPublic[]>([]);
-  const [attending, setAttending] = useState<ApiEventPublic[]>([]);
+  const { user } = useUser();
+  const [hosting, setHosting] = useState<ApiHomeEventSummary[]>([]);
+  const [attending, setAttending] = useState<ApiHomeEventSummary[]>([]);
+  const [homePayload, setHomePayload] = useState<ApiMeEventsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<EventsErrorState | null>(null);
@@ -21,8 +26,9 @@ export function useMyEvents() {
     else setRefreshing(true);
     setError(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: getLinkedKairoUserId(user) });
       const data = await api.getMyEvents();
+      setHomePayload(data);
       setHosting(data.hosting);
       setAttending(data.attending);
     } catch (e) {
@@ -41,11 +47,12 @@ export function useMyEvents() {
       }
       setHosting([]);
       setAttending([]);
+      setHomePayload(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     void load("initial");
@@ -53,5 +60,5 @@ export function useMyEvents() {
 
   const refresh = useCallback(() => load("refresh"), [load]);
 
-  return { hosting, attending, loading, refreshing, error, refresh };
+  return { hosting, attending, homePayload, loading, refreshing, error, refresh };
 }

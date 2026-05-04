@@ -1,23 +1,11 @@
-import { NextResponse } from "next/server";
-
-import { getMyCreatedEvents, getMyJoinedEvents } from "@/server/events/event.service";
+import { getMeHomePayload } from "@/server/me/me-home.service";
 import { fromServiceResult, requireUserId } from "@/src/lib/api-http";
 
+/** `GET /api/me/events` — dashboard payload for the acting user (`x-kairo-user-id`). */
 export async function GET(request: Request) {
   const auth = requireUserId(request);
   if (!auth.ok) return auth.response;
 
-  const hosting = await getMyCreatedEvents(auth.userId);
-  if (!hosting.success) return fromServiceResult(hosting);
-
-  const attending = await getMyJoinedEvents(auth.userId);
-  if (!attending.success) return fromServiceResult(attending);
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      hosting: hosting.data,
-      attending: attending.data,
-    },
-  });
+  const result = await getMeHomePayload(auth.userId);
+  return fromServiceResult(result);
 }

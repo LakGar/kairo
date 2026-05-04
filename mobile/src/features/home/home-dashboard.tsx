@@ -1,57 +1,162 @@
 import { useUser } from "@clerk/expo";
-import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
+import { FeatureEmptyState } from "@/src/components/feature-empty-state";
 import { CommitmentList } from "@/src/features/home/components/commitment-list";
 import { KairoScoreCard } from "@/src/features/home/components/kairo-score-card";
 import { NextActionCard } from "@/src/features/home/components/next-action-card";
 import { ProofInboxCard } from "@/src/features/home/components/proof-inbox-card";
 import { RecentActivity } from "@/src/features/home/components/recent-activity";
 import { StreakRankRow } from "@/src/features/home/components/streak-rank-row";
-import {
-  MOCK_ACTIVITY,
-  MOCK_COMMITMENTS,
-  MOCK_HOME_HEADER,
-  MOCK_KAIRO_SCORE,
-  MOCK_NEXT_ACTION,
-  MOCK_PROOF_INBOX,
-  MOCK_STREAK_RANK,
-  scoreTierLabel,
-} from "@/src/features/home/home.mock";
+import { getMyEventsHome } from "@/src/features/home/get-my-events-home";
 import type { MockCommitment } from "@/src/features/home/home.mock";
-import { HomeColors } from "@/src/features/home/home-tokens";
+import type { HomePalette } from "@/src/features/home/home-tokens";
+import { useHomeColors } from "@/src/features/home/home-theme";
+import {
+  activityToMock,
+  homeActionToMockNextAction,
+  mergeMeHomeToCommitments,
+  proofInboxToMockTasks,
+} from "@/src/features/home/me-home-map";
+import { loadPersonalCommitment } from "@/src/features/personal-commitment/personal-commitment-store";
+import { personalCommitmentToMockRow } from "@/src/features/personal-commitment/personal-commitment-to-mock";
+import {
+  getLinkedKairoUserId,
+  KairoApiConfigurationError,
+  KairoApiError,
+  type ApiMeEventsPayload,
+} from "@/src/api";
 
 const H_PAD = 20;
 
 type HomeDashboardProps = {
   contentPaddingTop: number;
   contentPaddingBottom: number;
+  onRequestPersonalCommitmentFlow?: () => void;
 };
+
+type HomeError = { message: string; code?: string };
 
 export function HomeDashboard({
   contentPaddingTop,
   contentPaddingBottom,
+  onRequestPersonalCommitmentFlow,
 }: HomeDashboardProps) {
   const router = useRouter();
   const { user } = useUser();
+  const colors = useHomeColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [personalRows, setPersonalRows] = useState<MockCommitment[]>([]);
+  const [homeData, setHomeData] = useState<ApiMeEventsPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<HomeError | null>(null);
+
+  const reloadPersonal = useCallback(() => {
+    void loadPersonalCommitment().then((p) => {
+      setPersonalRows(p ? [personalCommitmentToMockRow(p)] : []);
+    });
+  }, []);
+
+  const loadHome = useCallback(
+    async (mode: "initial" | "refresh") => {
+      if (mode === "initial") setLoading(true);
+      else setRefreshing(true);
+      setError(null);
+      try {
+        const payload = await getMyEventsHome(getLinkedKairoUserId(user));
+        setHomeData(payload);
+      } catch (e) {
+        if (e instanceof KairoApiConfigurationError) {
+          setError({
+            message:
+              "Missing API configuration. Set EXPO_PUBLIC_API_URL (and sign in so bootstrap can set your user id, or set EXPO_PUBLIC_KAIRO_DEV_USER_ID).",
+            code: "CONFIG",
+          });
+        } else if (e instanceof KairoApiError) {
+          setError({ message: e.message, code: e.code });
+        } else {
+          setError({
+            message: e instanceof Error ? e.message : "Could not load your dashboard.",
+          });
+        }
+        setHomeData(null);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [user],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      reloadPersonal();
+    }, [reloadPersonal]),
+  );
+
+  useEffect(() => {
+    void loadHome("initial");
+  }, [loadHome]);
+
+  const apiCommitments = useMemo(
+    () => (homeData ? mergeMeHomeToCommitments(homeData) : []),
+    [homeData],
+  );
+
+  const commitments = useMemo(
+    () => [...personalRows, ...apiCommitments],
+    [personalRows, apiCommitments],
+  );
+
   const greetingName =
     user?.firstName?.trim() ||
     user?.username?.trim() ||
     user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
     "there";
 
-  const tier = scoreTierLabel(MOCK_KAIRO_SCORE.score);
-
   const onCommitmentPress = (item: MockCommitment) => {
-    // TODO: replace `eventIdPlaceholder` with real id from API; detail may 404 for mock ids.
-    console.log("Commitment pressed", item.id);
-    router.push(`/(tabs)/events/${item.eventIdPlaceholder}`);
+    if (item.eventIdPlaceholder === "personal") {
+      Alert.alert(
+        "Personal commitment",
+        "Proof check-ins for personal commitments will tie into your score soon. Keep showing up.",
+      );
+      return;
+    }
+    router.push(`/(tabs)/events/${item.eventIdPlaceholder}` as Href);
   };
+
+  const nextActionMock =
+    homeData && homeData.actions.length > 0
+      ? homeActionToMockNextAction(homeData.actions[0], apiCommitments)
+      : null;
+
+  const proofTasks = homeData ? proofInboxToMockTasks(homeData.proofInbox) : [];
+  const activityItems = homeData ? activityToMock(homeData.recentActivity) : [];
+
+  const stats = homeData?.stats;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void loadHome("refresh")}
+          tintColor={colors.accent}
+        />
+      }
       contentContainerStyle={[
         styles.scroll,
         {
@@ -62,88 +167,153 @@ export function HomeDashboard({
     >
       <View style={styles.greetBlock}>
         <Text style={styles.greetHi}>Hey {greetingName}</Text>
-        <Text style={styles.greetLine}>
-          You have {MOCK_HOME_HEADER.actionCountToday} actions today
-        </Text>
+        <Text style={styles.greetLine}>Your accountability snapshot — proof, events, and score in one place.</Text>
       </View>
 
-      <KairoScoreCard
-        score={MOCK_KAIRO_SCORE.score}
-        tierLabel={tier}
-        trend7d={MOCK_KAIRO_SCORE.trend7d}
-        streakDays={MOCK_KAIRO_SCORE.streakDays}
-      />
+      {error ? (
+        <FeatureEmptyState
+          icon="cloud-offline-outline"
+          title="Could not load dashboard"
+          subtitle={error.message}
+          compact
+          primaryAction={{
+            label: "Retry",
+            onPress: () => void loadHome("refresh"),
+          }}
+        />
+      ) : null}
+
+      {loading && !homeData ? (
+        <View style={styles.loadingBlock}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.loadingText}>Loading your commitments…</Text>
+        </View>
+      ) : null}
+
+      {!error && stats ? (
+        <KairoScoreCard
+          score={stats.kairoScore}
+          tierLabel={stats.scoreLabel}
+          trend7d={stats.sevenDayTrend}
+          streakDays={stats.streakDays}
+        />
+      ) : null}
+      {!error && !loading && !stats ? (
+        <FeatureEmptyState
+          icon="stats-chart-outline"
+          title="Kairo Score"
+          subtitle="Sign in and connect to the API to see your score estimate."
+          compact
+        />
+      ) : null}
+
+      {!error && stats ? (
+        <StreakRankRow
+          streakDays={stats.streakDays}
+          streakTrendLabel={stats.sevenDayTrend >= 0 ? "On track" : "Catch up"}
+          weeklyRank={stats.weeklyRank}
+          rankTrendLabel={stats.weeklyRank == null ? "Unranked (MVP)" : "This week"}
+        />
+      ) : null}
 
       <View style={styles.block}>
         <Text style={styles.blockTitle}>{"Today's next action"}</Text>
-        <NextActionCard
-          action={MOCK_NEXT_ACTION}
-          onSubmitProof={() => {
-            // TODO: navigate to proof flow / camera when route exists
-            console.log("Submit proof pressed");
-          }}
-          onViewEvent={() => {
-            // TODO: use real event id from API
-            router.push(`/(tabs)/events/${MOCK_NEXT_ACTION.eventIdPlaceholder}`);
-          }}
-        />
+        {nextActionMock ? (
+          <NextActionCard
+            action={nextActionMock}
+            onSubmitProof={() => {
+              console.log("TODO: navigate to proof submit flow when route exists", nextActionMock);
+            }}
+            onViewEvent={() => {
+              if (nextActionMock.eventIdPlaceholder) {
+                router.push(`/(tabs)/events/${nextActionMock.eventIdPlaceholder}` as Href);
+              }
+            }}
+          />
+        ) : (
+          <FeatureEmptyState
+            icon="flash-outline"
+            title="Nothing due right now"
+            subtitle="Join a challenge on Discover — your next proof or RSVP will surface here."
+            compact
+            primaryAction={{
+              label: "Open Discover",
+              onPress: () => router.push("/(tabs)/(home)/index" as Href),
+            }}
+          />
+        )}
       </View>
 
-      <CommitmentList commitments={MOCK_COMMITMENTS} onOpenCommitment={onCommitmentPress} />
-
-      <View style={styles.block}>
+      {homeData ? (
         <ProofInboxCard
-          pendingCount={MOCK_PROOF_INBOX.pendingCount}
-          tasks={MOCK_PROOF_INBOX.tasks}
+          pendingCount={homeData.proofInbox.length}
+          tasks={proofTasks}
           onReview={() => {
-            // TODO: navigate to dedicated proof inbox when route exists
-            console.log("Review proof inbox pressed");
+            console.log("TODO: open organizer proof review when route exists");
           }}
         />
-      </View>
+      ) : null}
 
-      <View style={styles.block}>
-        <StreakRankRow
-          streakDays={MOCK_STREAK_RANK.streakDays}
-          streakTrendLabel={MOCK_STREAK_RANK.streakTrendLabel}
-          weeklyRank={MOCK_STREAK_RANK.weeklyRank}
-          rankTrendLabel={MOCK_STREAK_RANK.rankTrendLabel}
+      {homeData && activityItems.length > 0 ? (
+        <RecentActivity items={activityItems} />
+      ) : homeData && activityItems.length === 0 ? (
+        <FeatureEmptyState
+          icon="time-outline"
+          title="Recent activity"
+          subtitle="No recent activity yet — create or join an event to get started."
+          compact
         />
-      </View>
+      ) : null}
 
-      <RecentActivity items={MOCK_ACTIVITY} />
+      <CommitmentList
+        commitments={commitments}
+        onOpenCommitment={onCommitmentPress}
+        onCreatePersonalCommitment={onRequestPersonalCommitmentFlow}
+      />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: {
-    paddingHorizontal: H_PAD,
-    gap: 20,
-  },
-  greetBlock: {
-    marginBottom: 2,
-    gap: 6,
-  },
-  greetHi: {
-    color: HomeColors.textPrimary,
-    fontSize: 26,
-    fontWeight: "800",
-    letterSpacing: -0.7,
-  },
-  greetLine: {
-    color: HomeColors.textSecondary,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  block: {
-    gap: 10,
-  },
-  blockTitle: {
-    color: HomeColors.textPrimary,
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: -0.4,
-    marginBottom: -2,
-  },
-});
+function makeStyles(c: HomePalette) {
+  return StyleSheet.create({
+    scroll: {
+      paddingHorizontal: H_PAD,
+      gap: 20,
+    },
+    greetBlock: {
+      marginBottom: 2,
+      gap: 6,
+    },
+    greetHi: {
+      color: c.textPrimary,
+      fontSize: 26,
+      fontWeight: "800",
+      letterSpacing: -0.7,
+    },
+    greetLine: {
+      color: c.textSecondary,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    block: {
+      gap: 10,
+    },
+    blockTitle: {
+      color: c.textPrimary,
+      fontSize: 18,
+      fontWeight: "800",
+      letterSpacing: -0.4,
+      marginBottom: -2,
+    },
+    loadingBlock: {
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 24,
+    },
+    loadingText: {
+      color: c.textMuted,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  });
+}

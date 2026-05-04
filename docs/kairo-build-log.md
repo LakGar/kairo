@@ -212,6 +212,20 @@ Done:
 - **Commit:** `487fe4a` — `auth: add Clerk Prisma user bootstrap`; `8342c11` — `docs: record Clerk bootstrap session`
 - **Push:** `git push origin main` — succeeded (`5badf0f..8342c11`)
 
+#### Work session — 2026-05-03 (Mobile + Website) — Add My Events API and wire Home dashboard
+
+- **Task:** Extend `GET /api/me/events` with grouped `EventSummary` + Home blocks (actions, proof inbox, MVP stats, recent activity); wire `HomeDashboard` to real data with loading / error / pull-to-refresh; keep UI components and styling.
+- **Before:** `git status` — large unrelated dirty tree; **intended commit scope:** `website/app/api/me/events`, `website/src/server/me/me-home.service.ts`, mobile home + API types + `EventListRow` / `use-my-events` / My Events tab, this log.
+
+**After (2026-05-03):**
+
+- **Endpoint:** `GET /api/me/events` returns `ApiMeEventsPayload` — `hosting` / `attending` / `invited` (empty) / `watching` / `volunteering` summaries, `actions`, `proofInbox`, `stats` (MVP placeholder score with code comment), `recentActivity` (last 5 `ActivityLog` rows for user or related events).
+- **Website:** `website/src/server/me/me-home.service.ts` — Prisma queries by organizer + participant roles; proof prompts for upcoming joined events → submit action; pending proof for host → review actions + inbox; `imageUrl` always null until schema supports it.
+- **Mobile:** `getMyEventsHome`, `me-home-map.ts`, `home-dashboard.tsx` — fetch on mount, `RefreshControl`, error + retry, merge API commitments with personal row; `COMMITMENT_COVER_PLACEHOLDER`; `EventListRow` accepts `ApiHomeEventSummary`; My Events tab uses summaries; empty commitments copy + Create / Discover + personal link.
+- **Commands run:** `cd website && npm run typecheck` + `npm run lint` — pass; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
+- **Device / app:** Not run in agent.
+- **TODOs:** Proof submit/review routes; real scoring model; `weeklyRank`; optional prune unused `getMyCreatedEvents` / `getMyJoinedEvents` if nothing else imports them.
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

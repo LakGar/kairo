@@ -6,7 +6,7 @@ import { HomeColors } from "@/src/features/home/home-tokens";
 type Props = {
   streakDays: number;
   streakTrendLabel: string;
-  weeklyRank: number;
+  weeklyRank: number | null;
   rankTrendLabel: string;
 };
 
@@ -31,7 +31,7 @@ export function StreakRankRow({
           <Ionicons name="ribbon-outline" size={18} color={HomeColors.textMuted} />
           <Text style={styles.cardTitle}>Weekly rank</Text>
         </View>
-        <Text style={styles.big}>#{weeklyRank}</Text>
+        <Text style={styles.big}>{weeklyRank == null ? "—" : `#${weeklyRank}`}</Text>
         <Text style={styles.trend}>{rankTrendLabel}</Text>
         <Text style={styles.micro}>Among friends</Text>
       </View>
