@@ -18,13 +18,18 @@ Prisma CLI commands in this repo load **`website/.env`** then **`website/.env.lo
 
 Without `DATABASE_URL`, `npm run db:push`, `db:migrate`, and `db:seed` will not apply schema or data.
 
+### Supabase-hosted Postgres (Prisma only)
+
+If your database lives on **Supabase**, Prisma still uses **`DATABASE_URL` only** — there is no separate Supabase “DB password” env var in this repo. In the Supabase dashboard go to **Project Settings → Database** and copy a **connection string** (prefer the **pooling** URI for serverless / many short-lived connections, or **direct** for migrations if your tooling requires it). Paste that entire string as `DATABASE_URL` in `website/.env.local`. This is independent of the Storage variables below (same project, different credentials).
+
 ### Proof media uploads (Supabase Storage)
 
 Used by `POST /api/proof-media/upload-url`: the website creates a **Supabase Storage signed upload URL** (service role, server-only); the mobile app **PUT**s bytes to that URL, then submits proof with the returned **public HTTPS URL**. If Supabase env is unset, the route returns **503** `NOT_CONFIGURED`. The mobile app does **not** use a Supabase key.
 
 | Variable | Purpose |
 |----------|---------|
-| **`SUPABASE_URL`** | Project URL, e.g. `https://<ref>.supabase.co` |
+| **`SUPABASE_URL`** | Project URL, e.g. `https://<ref>.supabase.co` (same as dashboard **Project URL**). If unset, the proof upload service falls back to **`NEXT_PUBLIC_SUPABASE_URL`** so you can set the host once. |
+| **`NEXT_PUBLIC_SUPABASE_URL`** | Optional duplicate of project URL for client-side tooling; also used as server fallback for `SUPABASE_URL` when proof storage is configured. |
 | **`SUPABASE_SERVICE_ROLE_KEY`** | Service role key (**server only**; never ship to Expo) |
 | **`SUPABASE_PROOF_BUCKET`** | Storage bucket name (default **`kairo-proof-media`** if unset) |
 | **`SUPABASE_PROOF_PUBLIC_BASE_URL`** | Optional. If set, replaces the **origin** of `getPublicUrl` output (custom domain / CDN in front of public object paths). |

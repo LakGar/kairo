@@ -38,7 +38,9 @@ type SupabaseProofEnv =
     };
 
 function readProofSupabaseEnv(): SupabaseProofEnv {
-  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseUrl =
+    process.env.SUPABASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const bucket =
     process.env.SUPABASE_PROOF_BUCKET?.trim() || "kairo-proof-media";
@@ -49,7 +51,7 @@ function readProofSupabaseEnv(): SupabaseProofEnv {
     return {
       ok: false,
       message:
-        "Proof storage is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (see website/.env.example).",
+        "Proof storage is not configured. Set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL (see website/.env.example).",
     };
   }
 
