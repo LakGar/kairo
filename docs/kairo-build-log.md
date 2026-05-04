@@ -288,7 +288,7 @@ Done:
 - **Shared:** `submitProofSchema` — `url` co-validated in `superRefine`; `file:` allowed for PHOTO/VIDEO; LINK requires http(s).
 - **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
 - **TODOs left:** Upload pipeline (S3/Supabase) replacing `file:` URIs; video preview component; optional `expo-av`; AI verification; paywall.
-- **Commit:** (recorded after `git commit`)
+- **Commit:** `0533762` — `mobile: add in-app proof capture`
 - **Push:** (recorded after `git push`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
