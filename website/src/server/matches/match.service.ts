@@ -1,8 +1,10 @@
 import {
+  EventFormat,
   MatchResultStatus,
   MatchStatus,
   ResultVerificationMode,
 } from "@prisma/client";
+import { getDefaultResultVerificationModeForEventFormat } from "@kairo/shared";
 
 import { prisma } from "@/lib/db";
 import { err, ok, type Result } from "@/src/lib/result";
@@ -21,16 +23,16 @@ import {
 async function assertOrganizerForEvent(
   eventId: string,
   userId: string,
-): Promise<Result<null>> {
+): Promise<Result<{ format: EventFormat }>> {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { organizerId: true },
+    select: { organizerId: true, format: true },
   });
   if (!event) return err("Event not found", "NOT_FOUND");
   if (event.organizerId !== userId) {
     return err("Only the organizer can modify matches", "FORBIDDEN");
   }
-  return ok(null);
+  return ok({ format: event.format });
 }
 
 async function assertTeamsBelongToEvent(
@@ -112,8 +114,15 @@ export async function createManualMatch(
   );
   if (!teams.success) return teams;
 
-  const verificationMode =
-    d.resultVerificationMode ?? ResultVerificationMode.ORGANIZER_DECIDES;
+  let verificationMode: ResultVerificationMode =
+    d.resultVerificationMode ??
+    (getDefaultResultVerificationModeForEventFormat(org.data.format) as ResultVerificationMode);
+  if (
+    verificationMode === ResultVerificationMode.TEAM_AGREEMENT &&
+    (!d.homeTeamId || !d.awayTeamId)
+  ) {
+    verificationMode = ResultVerificationMode.ORGANIZER_DECIDES;
+  }
 
   const match = await prisma.match.create({
     data: {

@@ -352,7 +352,7 @@ Done:
 - **Backend:** `me-home.service.ts` — query waiting matches with team includes; actions prepended so they can win **`actions[0]`**; payload slice **`0..8`**. New action **`type: TEAM_RESULT_REVIEW`**, title **“Confirm match result”**, **`ctaLabel`: “Review Result”**.
 - **Mobile:** `event-proof-nav.ts` — `focus` union includes **`result`**; `home-dashboard.tsx` navigation; `next-action-card.tsx` labels/icon for team result; **`[eventId].tsx`** focus scroll + banner; **`EventTeamAgreementResultsSection`** **`highlightMatchId`**.
 - **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
-- **TODOs:** Home action priority tuning vs proof inbox; proof row highlight by `proofSubmissionId`; Kairo Score AND rule; `Event.resultVerificationMode` defaults.
+- **TODOs:** Home action priority tuning vs proof inbox; proof row highlight by `proofSubmissionId`; Kairo Score AND rule; ~~`Event.format` → match result defaults~~ (PR13).
 - **Commit:** `19d7e75` — `home: add team result review actions`; `8bc2a87` — `docs: record PR11 commit and push`
 - **Push:** `git push origin main` — succeeded (`b2c08cb..8bc2a87`)
 
@@ -365,6 +365,17 @@ Done:
 - **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
 - **TODOs:** Watcher/volunteer lower weight or inclusion; meetup “attendance” without **`startsAt`** heuristic; **7-day trend** when all commitments are newer than 7 days returns **0**; leaderboard for **`weeklyRank`**; optional **`scoreImpactLabel`** per event row from completion state.
 - **Commit / push:** `score: add MVP Kairo Score logic` on `main`; `git push origin main` succeeded (verify tip with `git log -1 --oneline`).
+
+#### Work session — 2026-05-03 (Shared + Website + Mobile) — Result verification defaults by event format
+
+- **Task:** Default **`resultVerificationMode`** for new matches from **`Event.format`** (`OPEN_MEETUP` → **`TEAM_AGREEMENT`**, other formats → **`ORGANIZER_DECIDES`**); subtle Create Event + organizer copy; server applies default when mode omitted; do not rely on mobile only.
+- **Shared:** **`getDefaultResultVerificationModeForEventFormat`** + **`EventFormatValue`** / **`ResultVerificationModeValue`** in **`packages/shared/src/events.ts`**; **`createManualMatchSchema`** comment in **`matches.ts`**.
+- **Website:** **`match.service.ts`** — **`assertOrganizerForEvent`** returns **`format`**; **`createManualMatch`** uses shared default when **`resultVerificationMode`** omitted; if **`TEAM_AGREEMENT`** would apply without both teams → **`ORGANIZER_DECIDES`**.
+- **Mobile:** **`premium-create-event-screen.tsx`** — muted line under Format from default mode; **`event-organizer-section.tsx`** — default switch from format, reset when **`event.format`** changes, always send explicit **`TEAM_AGREEMENT` | `ORGANIZER_DECIDES`** on create; short result copy above switch.
+- **Docs:** **`docs/mvp-full-function-plan.md`** §1.5 defaults + backlog.
+- **Checks:** `cd packages/shared && npx tsc --noEmit`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding warnings on mobile).
+- **TODOs:** Optional **`Event.resultVerificationMode`** on `Event` + host override UI; legacy **`CreateEventForm`** parity if still used.
+- **Commit / push:** Message `events: default result verification by format` on `main`; `git push origin main` succeeded (verify tip with `git log -1 --oneline`).
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 

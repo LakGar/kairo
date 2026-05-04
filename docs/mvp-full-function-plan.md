@@ -51,7 +51,7 @@ This document ties together **`docs/kairo-build-log.md`**, **`docs/onboarding-bu
 | **`resultVerificationMode: TEAM_AGREEMENT`** | Two-sided flow: submit → opponent confirm/dispute → organizer only on dispute. |
 | **`resultVerificationMode: ORGANIZER_DECIDES`** | Organizer sets/locks official result; no opponent confirmation step. |
 
-**Suggested defaults by `EventFormat`:**
+**Defaults by `EventFormat` (implemented in `@kairo/shared` + `createManualMatch` server + mobile copy / organizer toggle):**
 
 | `EventFormat` | Default `resultVerificationMode` |
 |---------------|----------------------------------|
@@ -61,7 +61,7 @@ This document ties together **`docs/kairo-build-log.md`**, **`docs/onboarding-bu
 | `SINGLE_ELIMINATION` | `ORGANIZER_DECIDES` |
 | `SOLO_COMPETITION` | `ORGANIZER_DECIDES` |
 
-Hosts may override later in settings UI once the field exists.
+Per-match override remains on organizer match creation; **`TEAM_AGREEMENT`** still requires both teams (server coerces to **`ORGANIZER_DECIDES`** if teams are missing). Event-level `Event.resultVerificationMode` (host settings UI) remains future work.
 
 ### Match-level result fields (shipped in repo)
 
@@ -100,7 +100,7 @@ Implemented as **MVP heuristics** in `website/src/server/me/me-home-scoring.ts` 
 
 | Layer | Status / next |
 |-------|----------------|
-| **Prisma / DB** | `Match` result fields shipped; **`Event.resultVerificationMode`** still optional/future. |
+| **Prisma / DB** | `Match` result fields shipped; **`Event.resultVerificationMode`** still optional/future (defaults derived from **`Event.format`** at match creation). |
 | **`@kairo/shared`** | Team-agreement submit/confirm/dispute Zod schemas shipped. |
 | **Website + REST** | Team agreement **POST** routes + services shipped; organizer resolves disputes via existing **`PATCH .../winner`**. |
 | **Mobile** | Event detail **Team agreement results** section + organizer toggle for new matches shipped. |

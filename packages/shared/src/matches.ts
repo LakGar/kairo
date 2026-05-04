@@ -11,7 +11,7 @@ export const createManualMatchSchema = z
     homeTeamId: z.string().cuid().optional().nullable(),
     awayTeamId: z.string().cuid().optional().nullable(),
     status: matchStatusSchema.optional(),
-    /** Defaults to ORGANIZER_DECIDES on the server. TEAM_AGREEMENT requires both home and away teams. */
+    /** If omitted, server picks default from parent event `format` (`OPEN_MEETUP` → team agreement). TEAM_AGREEMENT requires both home and away teams. */
     resultVerificationMode: resultVerificationModeSchema.optional(),
   })
   .refine(

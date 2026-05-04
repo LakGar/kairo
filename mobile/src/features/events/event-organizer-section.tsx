@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/expo";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,9 @@ import {
 import {
   createManualMatchSchema,
   createProofPromptSchema,
+  getDefaultResultVerificationModeForEventFormat,
   type CreateProofPromptInput,
+  type EventFormatValue,
   proofTypeSchema,
 } from "@kairo/shared";
 
@@ -84,7 +86,21 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
   const [matchNumStr, setMatchNumStr] = useState("");
   const [scheduledStr, setScheduledStr] = useState("");
   const [createMatchBusy, setCreateMatchBusy] = useState(false);
-  const [teamAgreementResult, setTeamAgreementResult] = useState(false);
+  const eventFormat = event.format as EventFormatValue;
+  const defaultTeamAgreement =
+    getDefaultResultVerificationModeForEventFormat(eventFormat) === "TEAM_AGREEMENT";
+  const formatRef = useRef(event.format);
+  const [teamAgreementResult, setTeamAgreementResult] = useState(defaultTeamAgreement);
+
+  useEffect(() => {
+    if (formatRef.current !== event.format) {
+      formatRef.current = event.format;
+      setTeamAgreementResult(
+        getDefaultResultVerificationModeForEventFormat(event.format as EventFormatValue) ===
+          "TEAM_AGREEMENT",
+      );
+    }
+  }, [event.format]);
 
   const [promptTitle, setPromptTitle] = useState("");
   const [promptDesc, setPromptDesc] = useState("");
@@ -169,7 +185,9 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       round: Number.isFinite(round) ? round : null,
       matchNumber: Number.isFinite(matchNumber) ? matchNumber : null,
       scheduledAt: scheduledAt && !Number.isNaN(scheduledAt.getTime()) ? scheduledAt : null,
-      ...(teamAgreementResult ? { resultVerificationMode: "TEAM_AGREEMENT" as const } : {}),
+      resultVerificationMode: teamAgreementResult
+        ? ("TEAM_AGREEMENT" as const)
+        : ("ORGANIZER_DECIDES" as const),
     };
 
     if (teamAgreementResult && (!homeTeamId || !awayTeamId)) {
@@ -196,7 +214,10 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
       setScheduledStr("");
       setHomeTeamId(null);
       setAwayTeamId(null);
-      setTeamAgreementResult(false);
+      setTeamAgreementResult(
+        getDefaultResultVerificationModeForEventFormat(event.format as EventFormatValue) ===
+          "TEAM_AGREEMENT",
+      );
       setBanner("Match created.");
       void refresh();
       onEventChanged();
@@ -432,12 +453,17 @@ export function EventOrganizerSection({ event, teams, onEventChanged }: Props) {
         placeholderTextColor={textColor + "99"}
         style={[styles.input, { borderColor, color: textColor, backgroundColor: surface }]}
       />
+      <ThemedText type="small" style={styles.fieldLabel}>
+        {getDefaultResultVerificationModeForEventFormat(eventFormat) === "TEAM_AGREEMENT"
+          ? "Teams agree on results. Disputes go to the organizer."
+          : "Organizer confirms results."}
+      </ThemedText>
       <View style={styles.switchRow}>
         <ThemedText type="default">Team agreement results</ThemedText>
         <Switch value={teamAgreementResult} onValueChange={setTeamAgreementResult} />
       </View>
       <ThemedText type="small" style={styles.fieldLabel}>
-        When on, both teams must confirm the submitted result (opponent can dispute; organizer resolves).
+        When on, both teams must be set; opponent confirms or disputes (you resolve disputes).
       </ThemedText>
       <Pressable
         style={[styles.button, { backgroundColor: tint, marginTop: 10 }]}

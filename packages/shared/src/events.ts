@@ -4,7 +4,21 @@ import {
   eventFormatSchema,
   eventVisibilitySchema,
   joinEventParticipantRoleSchema,
+  resultVerificationModeSchema,
 } from "./enums";
+
+export type EventFormatValue = z.infer<typeof eventFormatSchema>;
+export type ResultVerificationModeValue = z.infer<typeof resultVerificationModeSchema>;
+
+/**
+ * MVP default for new matches (mirrors product plan §1.5).
+ * `OPEN_MEETUP` → team agreement; structured competition formats → organizer decides.
+ */
+export function getDefaultResultVerificationModeForEventFormat(
+  format: EventFormatValue,
+): ResultVerificationModeValue {
+  return format === "OPEN_MEETUP" ? "TEAM_AGREEMENT" : "ORGANIZER_DECIDES";
+}
 
 const optionalTrimmedString = (max: number) =>
   z

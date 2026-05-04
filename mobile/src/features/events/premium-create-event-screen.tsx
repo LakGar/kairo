@@ -19,6 +19,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { getDefaultResultVerificationModeForEventFormat } from "@kairo/shared";
+
 import {
   createKairoApiFromEnv,
   getApiBaseUrl,
@@ -306,6 +308,12 @@ const FORMAT_OPTIONS: { value: EventFormat; label: string }[] = [
   { value: "ROUND_ROBIN", label: "Round robin" },
   { value: "SINGLE_ELIMINATION", label: "Single elimination" },
 ];
+
+function resultVerificationFormatHint(format: EventFormat): string {
+  return getDefaultResultVerificationModeForEventFormat(format) === "TEAM_AGREEMENT"
+    ? "Teams agree on results. Disputes go to the organizer."
+    : "Organizer confirms results.";
+}
 
 const STAKE_OPTIONS: { value: StakeType; label: string }[] = [
   { value: "NONE", label: "No stakes" },
@@ -806,6 +814,9 @@ export function PremiumCreateEventScreen() {
                   />
                 ))}
               </View>
+              <Text style={[styles.mutedNote, { marginTop: 10 }]}>
+                {resultVerificationFormatHint(form.format)}
+              </Text>
             </CreateEventSection>
           </View>
 
