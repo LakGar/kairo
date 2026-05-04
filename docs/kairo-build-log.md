@@ -62,6 +62,7 @@ Done:
 - [x] **2026-05-03 (PR 18):** `Profile` — `onboardingCompleted` / `onboardingCompletedAt`, preference fields (`primaryGoal`, `accountabilityStyle`, JSON arrays for modes/interests/event types, string prefs, optional bio path via existing `bio`).
 - [x] **2026-05-03 (PR 19):** Staging docs — `docs/staging-setup.md` (env, Prisma, storage, devices), `docs/mvp-e2e-checklist.md` (manual MVP QA); root `typecheck:shared`; `@kairo/shared` `npm run typecheck`.
 - [x] **2026-05-03 (PR 20):** Local Postgres via `DATABASE_URL` — `npm run db:push:accept-data-loss` + `npm run db:seed` (see build log work session); `npm run db:push:accept-data-loss` script added for Prisma data-loss warnings on dev DBs.
+- [x] **2026-05-03 (PR 24):** `PushTicket` — Expo **`/push/send`** ticket **`id`** ↔ optional **`PushToken`** for **`/push/getReceipts`** correlation and **`DeviceNotRegistered`** handling.
 
 In Progress:
 
@@ -82,6 +83,7 @@ Done:
 - [x] **Phase 3:** Server layer under `website/src/server/` — `activity` (`logActivity`), `events` (create/update/publish/cancel/join + queries), `teams` (create/join/leave + queries), `matches` (create/score/winner + queries), `proof` (prompts/submit/approve/reject + queries), `stakes` (create/complete/fail + queries); `website/src/lib/result.ts`, `slug.ts`; path aliases `@/server/*`, `@/src/*` in `website/tsconfig.json`.
 - [x] **Phase 4:** `website/app/api/**` REST handlers — JSON `{ success, data | error }`, HTTP status from service codes; mutating routes use `requireUserId` → `x-kairo-user-id` (TODO Clerk); `website/src/lib/api-http.ts` (`fromServiceResult`, `parseJsonBody`, `requireUserId`); public reads: `GET /api/events` (upcoming), `GET /api/events/[eventId]`, lists for teams/matches/proof/stakes/prompts.
 - [x] **2026-05-03:** `GET /api/me/notifications` + `PATCH /api/me/notifications/read` (`me-notifications.service.ts`, read cursor `NotificationReadState`).
+- [x] **2026-05-03 (PR 24):** `push.service.ts` — batched **`/push/send`** (100), **`PushTicket`** persistence for **`ok`** tickets with **`id`**, **`checkExpoPushReceipts`** (`/push/getReceipts`, 1000 ids), disable **`PushToken`** on **`DeviceNotRegistered`** (ticket or receipt).
 - [x] **2026-05-03:** `GET /api/me/profile` + `PATCH /api/me/profile/onboarding` (`me-profile.service.ts`; Zod in `@kairo/shared`).
 
 In Progress:
@@ -400,8 +402,8 @@ Done:
 - **Dispatch:** **`sendExpoPushMessagesWithMeta`** + **`sendPushToUser`** (batched per user token list); **`checkExpoPushReceipts`** updates **`PushTicket`** and disables tokens on receipt errors when mapped.
 - **TODOs (next):** **Scheduled** receipt job (~15 min after send per Expo guidance); prune **24h** stale **`PushTicket`** rows; rate limits / retries on **429** / **5xx**.
 - **Commands run:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint` — pass.
-- **Commit / message:** `notifications: add push batching and receipt handling` (verify hash with `git log -1 --oneline`).
-- **Push:** `git push origin main` — verify tip after push.
+- **Commit:** `fe83274` — `notifications: add push batching and receipt handling`
+- **Push:** `git push origin main` — succeeded (`5fed043..fe83274`)
 
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
