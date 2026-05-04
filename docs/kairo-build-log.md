@@ -439,9 +439,9 @@ Done:
 
 **TODOs (product):** `Notification` table; persisted read state; push notifications.
 
-**Commit:** _(hash after commit)_ — `notifications: add in-app notifications center`
+**Commit:** `2a42ba8` — `notifications: add in-app notifications center`
 
-**Push:** _(status after push)_
+**Push:** `git push origin main` — succeeded (`0ffca97..2a42ba8`).
 
 In Progress:
 
