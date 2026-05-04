@@ -541,9 +541,9 @@ Done:
 
 **Checks:** `npm run db:generate`; `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint`; `npm run typecheck:shared`; `npm run db:push:accept-data-loss` (idempotent, DB already in sync) — all passed (mobile 4 pre-existing onboarding warnings).
 
-**Commit:** _(after commit)_
+**Commit:** `441691e` — `test: apply staging schema and run MVP e2e checklist`
 
-**Push:** _(after push)_
+**Push:** _(after `git push`)_
 
 In Progress:
 
