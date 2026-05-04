@@ -1,7 +1,7 @@
 /**
- * Temporary dev identity for API routes until Clerk (or other) auth is wired on the website.
- *
- * Send: `x-kairo-user-id: <user cuid>` from clients (e.g. mobile) in local development only.
+ * API actor id from the mobile app and other non-cookie clients.
+ * Value must be the Prisma `User.id` (cuid).
+ * Mobile: Clerk metadata `kairoUserId` and/or `POST /api/auth/bootstrap` + SecureStore (see mobile `resolveActingUserId`).
  */
 export const KAIRO_USER_ID_HEADER = "x-kairo-user-id";
 
@@ -12,3 +12,4 @@ export function getCurrentUserIdFromRequest(request: Request): string | null {
 }
 
 // TODO: Replace with Clerk `auth()` / session on the server when website auth is integrated.
+// TODO: Verify Clerk JWT for `POST /api/auth/bootstrap` before trusting mobile-provided identity.

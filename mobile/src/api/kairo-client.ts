@@ -1,4 +1,7 @@
-import { getApiBaseUrl, getDevUserId } from "./config";
+import Constants from "expo-constants";
+
+import { getBootstrappedUserIdSync } from "./bootstrap-user-id";
+import { getApiBaseUrl } from "./config";
 import {
   KairoApiConfigurationError,
   KairoApiError,
@@ -12,9 +15,38 @@ import {
   type ApiProofSubmission,
   type ApiStake,
   type ApiTeamPublic,
+  type ApiBillingPurchase,
 } from "./types";
 
 type HttpMethod = "GET" | "POST" | "PATCH";
+
+type ExpoExtra = { devUserId?: string };
+
+/** Prisma `User.id` from env / app config when Clerk metadata is not linked yet. */
+export function getDevFallbackKairoUserId(): string | undefined {
+  const fromEnv = process.env.EXPO_PUBLIC_KAIRO_DEV_USER_ID?.trim();
+  if (fromEnv) return fromEnv;
+  const extra = Constants.expoConfig?.extra as ExpoExtra | undefined;
+  const fromExtra = extra?.devUserId?.trim();
+  return fromExtra || undefined;
+}
+
+/**
+ * Prefer an explicit id (e.g. from Clerk `kairoUserId`); otherwise dev fallback from
+ * `EXPO_PUBLIC_KAIRO_DEV_USER_ID` / `expo.extra.devUserId`.
+ */
+/**
+ * Resolves Prisma `User.id` for `x-kairo-user-id`.
+ * Order: explicit (e.g. Clerk metadata `kairoUserId`) → bootstrapped id from SecureStore → dev env id.
+ */
+export function resolveActingUserId(explicitUserId?: string | null): string | undefined {
+  const trimmed = explicitUserId?.trim();
+  if (trimmed) return trimmed;
+  const boot = getBootstrappedUserIdSync()?.trim();
+  if (boot) return boot;
+  return getDevFallbackKairoUserId();
+}
+
 
 async function requestEnvelope<T>(
   baseUrl: string,
@@ -22,12 +54,12 @@ async function requestEnvelope<T>(
   options: {
     method?: HttpMethod;
     json?: unknown;
-    devUserId?: string | null;
+    userId?: string | null;
   } = {},
 ): Promise<T> {
   const method = options.method ?? "GET";
   const headers = new Headers();
-  const uid = options.devUserId?.trim();
+  const uid = options.userId?.trim();
   if (uid) {
     headers.set("x-kairo-user-id", uid);
   }
@@ -101,18 +133,22 @@ export interface KairoApi {
   markMatchWinner: (matchId: string, body: unknown) => Promise<ApiMatchPublic>;
   approveProof: (proofSubmissionId: string) => Promise<ApiProofReviewResult>;
   rejectProof: (proofSubmissionId: string) => Promise<ApiProofReviewResult>;
+  createBillingPortalSession: (body: {
+    flow: "payment_method_update" | "default";
+  }) => Promise<{ url: string }>;
+  listBillingPurchases: () => Promise<ApiBillingPurchase[]>;
 }
 
 export function createKairoApi(config: {
   baseUrl: string;
-  /** Dev: sent as `x-kairo-user-id` for mutating routes until Clerk replaces it. */
-  devUserId?: string | null;
+  /** Linked Prisma `User.id`, sent as `x-kairo-user-id` when present. */
+  userId?: string | null;
 }): KairoApi {
   const base = config.baseUrl.trim().replace(/\/$/, "");
-  const devUserId = config.devUserId?.trim() || undefined;
+  const userId = config.userId?.trim() || undefined;
 
   const req = <T>(path: string, o: { method?: HttpMethod; json?: unknown } = {}) =>
-    requestEnvelope<T>(base, path, { ...o, devUserId });
+    requestEnvelope<T>(base, path, { ...o, userId });
 
   return {
     listUpcomingEvents: () => req("/api/events"),
@@ -181,16 +217,22 @@ export function createKairoApi(config: {
       req(`/api/proof/${encodeURIComponent(proofSubmissionId)}/reject`, {
         method: "POST",
       }),
+    createBillingPortalSession: (body) =>
+      req("/api/billing/portal/session", { method: "POST", json: body }),
+    listBillingPurchases: () => req("/api/billing/purchases"),
   };
 }
 
 /**
- * Builds a client from `EXPO_PUBLIC_API_URL` / `expo.extra.apiUrl` and optional dev user id.
+ * Builds a client from `EXPO_PUBLIC_API_URL` / `expo.extra.apiUrl` and optional user id.
+ * When `userId` is missing or blank, uses the bootstrapped Prisma id from SecureStore (see
+ * `useBootstrapKairoUser`), then `EXPO_PUBLIC_KAIRO_DEV_USER_ID` / `expo.extra.devUserId`, so local dev
+ * can hit the DB-backed API after `npm run db:seed` without Clerk metadata.
  * @throws {KairoApiConfigurationError} when no base URL is configured.
  */
 export function createKairoApiFromEnv(overrides?: {
   baseUrl?: string;
-  devUserId?: string | null;
+  userId?: string | null;
 }): KairoApi {
   const rawBase =
     overrides?.baseUrl !== undefined && overrides.baseUrl !== ""
@@ -202,8 +244,9 @@ export function createKairoApiFromEnv(overrides?: {
       "Missing API base URL. Set EXPO_PUBLIC_API_URL in mobile/.env (see .env.example), or pass overrides.baseUrl.",
     );
   }
-  const devUserId =
-    overrides && "devUserId" in overrides ? overrides.devUserId : getDevUserId();
+  const explicit =
+    overrides && "userId" in overrides ? (overrides.userId ?? undefined) : undefined;
+  const userId = resolveActingUserId(explicit);
 
-  return createKairoApi({ baseUrl, devUserId });
+  return createKairoApi({ baseUrl, userId });
 }

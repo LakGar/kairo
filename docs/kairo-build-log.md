@@ -195,6 +195,21 @@ Done:
 - **Commit:** `960e185` — `mobile: wire premium create event to API`
 - **Push:** `git push origin main` — succeeded (`c30c6ba..960e185`)
 
+#### Work session — 2026-05-03 (Mobile + Website) — Clerk Prisma user bootstrap
+
+- **Task:** Idempotent `POST /api/auth/bootstrap` (website) + mobile SecureStore persistence + `resolveActingUserId` prefers bootstrapped Prisma id before `EXPO_PUBLIC_KAIRO_DEV_USER_ID`; keep dev header fallback and optional Clerk metadata `kairoUserId`.
+- **Before:** `git status` — large unrelated dirty tree; **intended commit scope:** Prisma `User.clerkUserId`, `@kairo/shared` bootstrap schema, website bootstrap route/service, mobile API + hook + signed-in tabs layout, env examples, this log.
+
+**After (2026-05-03):**
+
+- **Schema:** `User.clerkUserId String? @unique` in `packages/db/prisma/schema.prisma` (run `db:migrate` / `db:push` when applying to a database).
+- **Shared:** `authBootstrapRequestSchema` + `AuthBootstrapRequestInput` in `packages/shared/src/auth-bootstrap.ts`.
+- **Website:** `POST /api/auth/bootstrap` → `bootstrapClerkUser` — find by `clerkUserId`, else by email (attach `clerkUserId`), else create `User` + `Profile`; profile upsert respects unique `username`; TODOs for Clerk token verification; `current-user.ts` doc note.
+- **Mobile:** `postAuthBootstrap`, SecureStore `{ prismaUserId, clerkUserId }`, `resolveActingUserId` = explicit metadata → bootstrap → dev; `useBootstrapKairoUser` in `(tabs)/_layout` after sign-in; `__DEV__` warnings only; `mobile/.env.example` + `website/.env.example` notes.
+- **Commands run:** `npm run db:generate` (root) — pass; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
+- **Device / app:** Not run in agent.
+- **TODOs:** Production Clerk JWT verification on bootstrap; optional `db:push` for new column; wire website mutating routes off raw header when ready.
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

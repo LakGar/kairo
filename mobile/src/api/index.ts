@@ -1,9 +1,21 @@
 export {
   createKairoApi,
   createKairoApiFromEnv,
+  getDevFallbackKairoUserId,
+  resolveActingUserId,
   type KairoApi,
 } from "./kairo-client";
-export { getApiBaseUrl, getDevUserId, requireApiBaseUrl } from "./config";
+export { postAuthBootstrap, type AuthBootstrapResponse, type AuthBootstrapProfileDto } from "./auth-api";
+export {
+  clearBootstrappedUserId,
+  getBootstrappedUserIdSync,
+  loadBootstrappedContext,
+  saveBootstrappedContext,
+  setBootstrappedUserIdSync,
+  type StoredBootstrap,
+} from "./bootstrap-user-id";
+export { getApiBaseUrl, requireApiBaseUrl } from "./config";
+export { getLinkedKairoUserId } from "./linked-kairo-user-id";
 export {
   KairoApiConfigurationError,
   KairoApiError,
@@ -13,6 +25,7 @@ export {
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,
+  type ApiBillingPurchase,
   type ApiProofReviewResult,
   type ApiProofSubmission,
   type ApiStake,
@@ -24,6 +37,7 @@ export {
 } from "./types";
 
 export type {
+  AuthBootstrapRequestInput,
   CreateEventInput,
   CreateManualMatchInput,
   CreateProofPromptInput,

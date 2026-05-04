@@ -88,9 +88,11 @@ enum StakeStatus {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  role      UserRole @default(USER)
+  id          String   @id @default(cuid())
+  /** Clerk `user_…` id — set by `POST /api/auth/bootstrap` from the mobile app. */
+  clerkUserId String?  @unique
+  email       String   @unique
+  role        UserRole @default(USER)
 
   profile   Profile?
 

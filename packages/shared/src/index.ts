@@ -1,3 +1,4 @@
+export * from "./auth-bootstrap";
 export * from "./enums";
 export * from "./events";
 export * from "./matches";

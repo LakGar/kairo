@@ -1,17 +1,15 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
-import { Redirect, Tabs } from "expo-router";
-import { Platform, StyleSheet } from "react-native";
+import { Redirect, Stack } from "expo-router";
 
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useUIPalette } from "@/hooks/use-ui-palette";
+import { useBootstrapKairoUser } from "@/src/features/auth/use-bootstrap-kairo-user";
 
-export default function TabLayout() {
+/**
+ * Signed-in shell: Stack with `(home)` (JS Tabs + floating blur bar for Home / Discover / Chat),
+ * plus `settings` (avatar only), `profile` redirect, `create`, and `events`.
+ */
+export default function TabsStackLayout() {
   const { isSignedIn, isLoaded } = useAuth();
-  const colorScheme = useColorScheme() ?? "light";
-  const palette = Colors[colorScheme];
-  const ui = useUIPalette();
+  useBootstrapKairoUser();
 
   if (!isLoaded) {
     return null;
@@ -22,93 +20,17 @@ export default function TabLayout() {
   }
 
   return (
-    <Tabs
-      initialRouteName="dashboard"
-      screenOptions={{
-        headerTitleAlign: "center",
-        headerStyle: {
-          backgroundColor: ui.groupedBackground,
-        },
-        headerShadowVisible: false,
-        headerTitleStyle: {
-          fontWeight: "700",
-          fontSize: 17,
-        },
-        tabBarActiveTintColor: palette.tabIconSelected,
-        tabBarInactiveTintColor: palette.tabIconDefault,
-        tabBarStyle: {
-          backgroundColor: ui.tabBar,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: ui.tabBarBorder,
-          paddingTop: 6,
-          height: Platform.OS === "ios" ? 88 : 68,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-          letterSpacing: 0.2,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
-          ),
-        }}
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(home)" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="profile" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="create" />
+      <Stack.Screen name="events" />
+      <Stack.Screen
+        name="personal-commit-onboarding"
+        options={{ presentation: "fullScreenModal", headerShown: false }}
       />
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Discover",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "compass" : "compass-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="events"
-        options={{
-          title: "Events",
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "calendar" : "calendar-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="create"
-        options={{
-          title: "New event",
-          tabBarLabel: "Create",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "add-circle" : "add-circle-outline"}
-              size={26}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    </Stack>
   );
 }
