@@ -272,8 +272,8 @@ Done:
 - **Files:** `mobile/src/features/events/create-event.types.ts`, `premium-create-event-map-api.ts`, `premium-create-event-screen.tsx`, `premium-proof-prompt-templates.ts`, `docs/kairo-build-log.md`.
 - **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings). Website checks not run (no website edits).
 - **TODOs left:** Event detail banner when proof prompt create fails post-event; in-app camera capture; multi-type ProofPrompt; narrow organizer proof prompt UI to photo/video when product ready.
-- **Commit:** `d739e06` — `proof: restrict create event proof to photo video prompts`
-- **Push:** (recorded after `git push`)
+- **Commit:** `d739e06` — `proof: restrict create event proof to photo video prompts`; `e9f5f12` — `docs: record proof cleanup session commit`
+- **Push:** `git push origin main` — succeeded
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
