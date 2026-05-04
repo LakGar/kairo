@@ -309,6 +309,18 @@ Done:
 - **Commit:** `d650fe5` — `proof: add durable media upload pipeline`; `9e33f1b` — `docs: record proof upload PR7 commit hash`
 - **Push:** `git push origin main` — succeeded (`ab6e774..d650fe5`, then `d650fe5..9e33f1b`)
 
+#### Work session — 2026-05-03 (Website + Shared + Mobile) — Harden proof upload validation
+
+- **Task:** Production-durable PHOTO/VIDEO URLs; explicit dev `file:` gate; presign **403** unless organizer or **APPROVED** participant; validate `matchId` / `promptId` belong to event on presign; clearer mobile errors; document storage/moderation TODOs.
+- **URL policy (`proof.service.ts`):** `file:` only when `PROOF_ALLOW_FILE_URL=1` **and** `NODE_ENV !== "production"`; **`file:` always rejected in production.** PHOTO/VIDEO require **https** in production; in non-production **http** allowed only for **localhost** (local MinIO). LINK unchanged (http(s)).
+- **Authorization:** `assertUserMaySubmitProofForEvent` — organizer **or** `EventParticipant` with `APPROVED`; used by **submitProof** and **createProofMediaUploadUrl** (replaces prior submit path that allowed PENDING). Presign checks `Match` / `ProofPrompt` scoped to `eventId` before issuing URL.
+- **Shared:** `submitProofSchema` — PHOTO/VIDEO URLs reject non-local **http** (aligns with server); still require non-empty url for PHOTO/VIDEO.
+- **Mobile:** `NOT_CONFIGURED` / 503 → “Proof uploads are not configured yet.”; `FORBIDDEN` / 403 → “You must be part of this event to submit proof.”; after successful upload, schema/submit failures → retry copy + TODO orphan delete.
+- **Commands run:** `cd packages/shared && npx tsc --noEmit`; `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
+- **TODOs left:** Orphan upload deletion; virus scan / moderation; EXIF policy; deep rate limits on presign.
+- **Commit:** `ab180e4` — `proof: harden media upload validation`
+- **Push:** `git push origin main` — (record after push)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).

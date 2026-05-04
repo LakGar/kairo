@@ -20,6 +20,7 @@ export function inferProofMediaContentType(
 /**
  * Presigned PUT to object storage, then returns the public HTTPS URL for `submitProof`.
  * TODO: If `submitProof` fails after this succeeds, delete the orphan object (lifecycle rule or explicit delete API).
+ * Upload errors (403, 503) are surfaced by the API client; map user-facing copy in the capture screen.
  */
 export async function uploadCapturedProofToStorage(params: {
   api: KairoApi;

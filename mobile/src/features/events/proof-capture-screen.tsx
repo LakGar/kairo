@@ -162,10 +162,11 @@ export function ProofCaptureScreen() {
     setSubmitting(true);
     setError(null);
     setUploadStatus(null);
+    let uploadedPublicUrl: string | null = null;
     try {
       const api = createKairoApiFromEnv({ userId: linkedUserId });
       setUploadStatus("Uploading proof…");
-      const publicUrl = await uploadCapturedProofToStorage({
+      uploadedPublicUrl = await uploadCapturedProofToStorage({
         api,
         eventId,
         localUri: capturedUri,
@@ -180,32 +181,29 @@ export function ProofCaptureScreen() {
         matchId,
         promptId,
         type: proofType,
-        url: publicUrl,
+        url: uploadedPublicUrl,
         text: "Captured in Kairo",
       };
       const parsed = submitProofSchema.safeParse(body);
       if (!parsed.success) {
-        const flat = parsed.error.flatten();
-        const first =
-          Object.values(flat.fieldErrors).flat()[0] ??
-          flat.formErrors[0] ??
-          parsed.error.message;
-        setError(first ?? "Invalid proof payload.");
-        // TODO: publicUrl may point at an orphan object if validation failed before submit; add cleanup.
+        setError("Could not submit proof. Tap Submit proof to try again.");
+        // TODO: delete orphan object at uploadedPublicUrl (lifecycle rule or explicit delete API).
         return;
       }
       await api.submitProof(eventId, parsed.data);
       router.replace(buildEventDetailFocusHref(eventId, { focus: "proof" }));
     } catch (e) {
-      if (e instanceof KairoApiError) {
-        if (e.code === "NOT_CONFIGURED") {
-          setError(
-            `${e.message} Set proof storage env vars on the website (see website/.env.example), then retry.`,
-          );
+      if (uploadedPublicUrl !== null) {
+        setError("Could not submit proof. Tap Submit proof to try again.");
+        // TODO: delete orphan object in storage (lifecycle rule or explicit delete API).
+      } else if (e instanceof KairoApiError) {
+        if (e.code === "NOT_CONFIGURED" || e.httpStatus === 503) {
+          setError("Proof uploads are not configured yet.");
+        } else if (e.code === "FORBIDDEN" || e.httpStatus === 403) {
+          setError("You must be part of this event to submit proof.");
         } else {
           setError(e.message);
         }
-        // TODO: If upload succeeded but submitProof failed, delete orphan object (lifecycle rule or API).
       } else if (e instanceof KairoApiConfigurationError) {
         setError(e.message);
       } else {

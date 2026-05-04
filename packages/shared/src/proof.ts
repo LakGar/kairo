@@ -25,13 +25,20 @@ function parseHttpOrFileUrl(raw: string): URL | null {
   }
 }
 
+/** Non-local http:// media URLs are rejected (production rules are enforced again on the server). */
+function isLocalhostHttpUrl(u: URL): boolean {
+  if (u.protocol !== "http:") return false;
+  const h = u.hostname.toLowerCase();
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+}
+
 export const submitProofSchema = z
   .object({
     eventId: z.string().cuid(),
     matchId: z.string().cuid().optional().nullable(),
     promptId: z.string().cuid().optional().nullable(),
     type: proofTypeSchema,
-    /** Remote URL or temporary `file:` URI from in-app capture until storage upload exists. */
+    /** Remote HTTPS URL after upload; `file:` only for dev capture before upload (server-gated). */
     url: z.union([z.string().max(4000), z.literal(""), z.null()]).optional().nullable(),
     text: z.union([z.string().max(8000), z.literal("")]).optional().nullable(),
   })
@@ -68,15 +75,24 @@ export const submitProofSchema = z
       if (!urlTrim) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "PHOTO/VIDEO proof requires a url (remote or temporary file URI until upload)",
+          message: "PHOTO/VIDEO proof requires a media URL",
           path: ["url"],
         });
-      } else if (!parseHttpOrFileUrl(urlTrim)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "PHOTO/VIDEO url must be http(s) or file",
-          path: ["url"],
-        });
+      } else {
+        const u = parseHttpOrFileUrl(urlTrim);
+        if (!u) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "PHOTO/VIDEO url must be https, file, or http://localhost (local storage)",
+            path: ["url"],
+          });
+        } else if (u.protocol === "http:" && !isLocalhostHttpUrl(u)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "PHOTO/VIDEO proof must use https (http is only allowed for localhost dev storage)",
+            path: ["url"],
+          });
+        }
       }
     }
   });

@@ -27,18 +27,35 @@ async function assertOrganizer(eventId: string, userId: string) {
   return ok(null);
 }
 
-async function assertCanSubmitProof(eventId: string, userId: string) {
-  const p = await prisma.eventParticipant.findFirst({
+/** Organizer or APPROVED participant may request proof-media presigns and submit proof. */
+export async function assertUserMaySubmitProofForEvent(
+  eventId: string,
+  userId: string,
+): Promise<Result<null>> {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { organizerId: true },
+  });
+  if (!event) return err("Event not found", "NOT_FOUND");
+  if (event.organizerId === userId) return ok(null);
+
+  const participant = await prisma.eventParticipant.findFirst({
     where: {
       eventId,
       userId,
-      status: { in: [RegistrationStatus.APPROVED, RegistrationStatus.PENDING] },
+      status: RegistrationStatus.APPROVED,
     },
   });
-  if (!p) {
-    return err("You must join the event before submitting proof", "FORBIDDEN");
+  if (!participant) {
+    return err("You must be part of this event to submit proof.", "FORBIDDEN");
   }
   return ok(null);
+}
+
+function isLocalhostHttpUrl(u: URL): boolean {
+  if (u.protocol !== "http:") return false;
+  const h = u.hostname.toLowerCase();
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
 }
 
 export async function createProofPrompt(
@@ -78,6 +95,8 @@ export async function createProofPrompt(
   return ok(prompt);
 }
 
+// TODO(proof media): virus scanning; content moderation; EXIF/location metadata policy;
+// TODO(proof media): delete orphan storage objects when submitProof fails after a successful upload.
 export async function submitProof(
   eventId: string,
   input: unknown,
@@ -98,7 +117,7 @@ export async function submitProof(
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) return err("Event not found", "NOT_FOUND");
 
-  const can = await assertCanSubmitProof(eventId, currentUserId);
+  const can = await assertUserMaySubmitProofForEvent(eventId, currentUserId);
   if (!can.success) return can;
 
   if (d.matchId) {
@@ -115,25 +134,53 @@ export async function submitProof(
   }
 
   const urlTrim = d.url?.trim() ?? "";
+  const isProd = process.env.NODE_ENV === "production";
+  const allowFileUrl =
+    process.env.PROOF_ALLOW_FILE_URL === "1" && !isProd;
+
   if (d.type === "PHOTO" || d.type === "VIDEO") {
-    if (urlTrim.startsWith("file:")) {
-      if (process.env.PROOF_ALLOW_FILE_URL !== "1") {
+    if (!urlTrim) {
+      return err("PHOTO and VIDEO proof require a media URL.", "VALIDATION_ERROR");
+    }
+    try {
+      const u = new URL(urlTrim);
+      if (u.protocol === "file:") {
+        if (isProd) {
+          return err(
+            "PHOTO and VIDEO proof must use an HTTPS URL from the upload flow (file URLs are not allowed in production).",
+            "VALIDATION_ERROR",
+          );
+        }
+        if (!allowFileUrl) {
+          return err(
+            "Temporary file:// URLs are disabled. Use the in-app upload flow, or set PROOF_ALLOW_FILE_URL=1 for trusted local development only.",
+            "VALIDATION_ERROR",
+          );
+        }
+      } else if (u.protocol === "https:") {
+        // preferred durable URL
+      } else if (u.protocol === "http:") {
+        if (isProd) {
+          return err(
+            "PHOTO and VIDEO proof must use an HTTPS URL in production.",
+            "VALIDATION_ERROR",
+          );
+        }
+        if (!isLocalhostHttpUrl(u)) {
+          return err(
+            "PHOTO and VIDEO http:// URLs are only allowed for localhost in non-production (e.g. local MinIO). Use https in production.",
+            "VALIDATION_ERROR",
+          );
+        }
+      } else {
         return err(
-          "PHOTO and VIDEO proof must use an HTTPS URL from the upload flow. Set PROOF_ALLOW_FILE_URL=1 only for trusted local development.",
+          "Proof media URL must be https, or file:// when explicitly allowed for local dev.",
           "VALIDATION_ERROR",
         );
       }
-    } else if (urlTrim) {
-      try {
-        const u = new URL(urlTrim);
-        if (u.protocol !== "https:" && u.protocol !== "http:") {
-          return err("Proof media URL must be http(s).", "VALIDATION_ERROR");
-        }
-      } catch {
-        return err("Invalid proof media URL.", "VALIDATION_ERROR");
-      }
+    } catch {
+      return err("Invalid proof media URL.", "VALIDATION_ERROR");
     }
-    // TODO: disallow http: outside development; disallow file: outside PROOF_ALLOW_FILE_URL.
   }
 
   const submission = await prisma.proofSubmission.create({

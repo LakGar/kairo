@@ -45,3 +45,5 @@ export const proofMediaUploadInstructionsSchema = z.object({
 });
 
 export type ProofMediaUploadInstructions = z.infer<typeof proofMediaUploadInstructionsSchema>;
+
+// TODO: virus scanning / content moderation on uploaded bytes; EXIF/location metadata policy; orphan object cleanup after failed submitProof.

@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 
 import { prisma } from "@/lib/db";
 import { err, ok, type Result } from "@/src/lib/result";
+import { assertUserMaySubmitProofForEvent } from "@/server/proof/proof.service";
 import {
   proofMediaUploadRequestSchema,
   type ProofMediaUploadInstructions,
@@ -72,7 +73,8 @@ function readProofStorageEnv(): StorageEnv {
 /**
  * Returns a presigned PUT URL and the eventual HTTPS public URL for proof media.
  * TODO: virus scanning / content moderation before treating uploads as trusted.
- * TODO: verify participant is allowed to upload for this event (currently only checks event exists).
+ * TODO: EXIF / location metadata policy (strip or document).
+ * TODO: delete orphan storage objects when submitProof fails after upload.
  */
 export async function createProofMediaUploadUrl(
   input: unknown,
@@ -99,6 +101,26 @@ export async function createProofMediaUploadUrl(
   if (!event) {
     return err("Event not found", "NOT_FOUND");
   }
+
+  if (d.matchId) {
+    const m = await prisma.match.findFirst({
+      where: { id: d.matchId, eventId: d.eventId },
+    });
+    if (!m) {
+      return err("Match not found for this event", "NOT_FOUND");
+    }
+  }
+  if (d.promptId) {
+    const pr = await prisma.proofPrompt.findFirst({
+      where: { id: d.promptId, eventId: d.eventId },
+    });
+    if (!pr) {
+      return err("Proof prompt not found for this event", "NOT_FOUND");
+    }
+  }
+
+  const access = await assertUserMaySubmitProofForEvent(d.eventId, userId);
+  if (!access.success) return access;
 
   const ext = extensionForContentType(d.contentType);
   const nonce = randomBytes(10).toString("hex");
