@@ -1,3 +1,5 @@
+import { useUser } from "@clerk/expo";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,7 +15,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
   createKairoApiFromEnv,
-  getDevUserId,
+  getLinkedKairoUserId,
   KairoApiConfigurationError,
   KairoApiError,
   type ApiEventPublic,
@@ -21,6 +23,7 @@ import {
   type ApiProofSubmission,
 } from "@/src/api";
 
+import type { ProofCaptureMode } from "./proof-capture.types";
 import { useEventProofSubmitData } from "./use-event-proof-submit-data";
 
 type Props = {
@@ -44,7 +47,9 @@ function submissionSnippet(s: ApiProofSubmission): string {
 }
 
 export function EventProofSubmitSection({ event, onSubmitted }: Props) {
-  const devUserId = getDevUserId();
+  const { user } = useUser();
+  const router = useRouter();
+  const linkedUserId = getLinkedKairoUserId(user);
   const open = event.status === "PUBLISHED" || event.status === "LIVE";
 
   const { prompts, matches, submissions, loading, error, refresh } = useEventProofSubmitData(
@@ -66,12 +71,34 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
   const [message, setMessage] = useState<string | null>(null);
 
   const mine = useMemo(() => {
-    if (!devUserId) return [];
+    if (!linkedUserId) return [];
     return submissions
-      .filter((s) => s.userId === devUserId)
+      .filter((s) => s.userId === linkedUserId)
       .slice()
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  }, [submissions, devUserId]);
+  }, [submissions, linkedUserId]);
+
+  const selectedPrompt = useMemo(
+    () => prompts.find((p) => p.id === promptId) ?? null,
+    [prompts, promptId],
+  );
+
+  const promptProofUpper = (selectedPrompt?.proofType ?? "").toUpperCase();
+  const showCapture =
+    Boolean(selectedPrompt) &&
+    (promptProofUpper === "PHOTO" || promptProofUpper === "VIDEO");
+  const showLegacy =
+    !selectedPrompt || promptProofUpper === "TEXT" || promptProofUpper === "LINK";
+
+  const openProofCapture = (mode: ProofCaptureMode) => {
+    const q = new URLSearchParams();
+    q.set("eventId", event.id);
+    q.set("proofType", mode);
+    if (promptId) q.set("promptId", promptId);
+    if (matchId) q.set("matchId", matchId);
+    if (selectedPrompt?.title) q.set("promptTitle", selectedPrompt.title);
+    router.push(`/(tabs)/proof-capture?${q.toString()}` as const);
+  };
 
   if (!open) {
     return null;
@@ -100,7 +127,7 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
       return;
     }
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.submitProof(event.id, parsed.data);
       setText("");
       setUrl("");
@@ -123,14 +150,9 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
   return (
     <ThemedView style={styles.block}>
       <ThemedText type="subtitle">Submit proof</ThemedText>
-      {!devUserId ? (
-        <ThemedText type="small" style={styles.warn}>
-          Set EXPO_PUBLIC_KAIRO_DEV_USER_ID in mobile/.env to submit proof in dev.
-        </ThemedText>
-      ) : null}
       <ThemedText type="muted" style={styles.gapTop}>
-        Join the event first. Use text for write-ups or paste a URL for links and
-        image/video hosting (no file upload in MVP).
+        Join the event first. For photo or video prompts, capture proof in Kairo. Older
+        text/link prompts can still use the fields below.
       </ThemedText>
 
       {loading ? <ActivityIndicator style={styles.loader} /> : null}
@@ -144,69 +166,6 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
           </Pressable>
         </View>
       ) : null}
-
-      <ThemedText type="small" style={styles.label}>
-        Proof type
-      </ThemedText>
-      <View style={styles.chipRow}>
-        {proofTypes.map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => setProofType(t)}
-            style={[
-              styles.chip,
-              { borderColor },
-              proofType === t && { borderColor: tint, backgroundColor: `${String(tint)}22` },
-            ]}
-          >
-            <ThemedText type="small">
-              {t === "LINK"
-                ? "Link"
-                : t === "TEXT"
-                  ? "Text"
-                  : t === "PHOTO"
-                    ? "Photo URL"
-                    : "Video URL"}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </View>
-
-      {proofType === "TEXT" ? (
-        <>
-          <ThemedText type="small" style={styles.label}>
-            Text
-          </ThemedText>
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Describe what you did or saw"
-            placeholderTextColor="#8E8E93"
-            multiline
-            style={[
-              styles.input,
-              styles.textArea,
-              { borderColor, backgroundColor: surface, color: textColor },
-            ]}
-          />
-        </>
-      ) : (
-        <>
-          <ThemedText type="small" style={styles.label}>
-            URL
-          </ThemedText>
-          <TextInput
-            value={url}
-            onChangeText={setUrl}
-            placeholder="https://…"
-            placeholderTextColor="#8E8E93"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            style={[styles.input, { borderColor, backgroundColor: surface, color: textColor }]}
-          />
-        </>
-      )}
 
       <ThemedText type="small" style={styles.label}>
         Link to match (optional)
@@ -256,7 +215,13 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
         {prompts.map((p) => (
           <Pressable
             key={p.id}
-            onPress={() => setPromptId(p.id)}
+            onPress={() => {
+              setPromptId(p.id);
+              const u = p.proofType.toUpperCase();
+              if (u === "TEXT" || u === "LINK") {
+                setProofType(u as SubmitProofInput["type"]);
+              }
+            }}
             style={[
               styles.chip,
               { borderColor },
@@ -270,23 +235,119 @@ export function EventProofSubmitSection({ event, onSubmitted }: Props) {
         ))}
       </View>
 
+      {showLegacy ? (
+        <>
+          <ThemedText type="small" style={styles.label}>
+            Proof type
+          </ThemedText>
+          <View style={styles.chipRow}>
+            {proofTypes.map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => setProofType(t)}
+                style={[
+                  styles.chip,
+                  { borderColor },
+                  proofType === t && { borderColor: tint, backgroundColor: `${String(tint)}22` },
+                ]}
+              >
+                <ThemedText type="small">
+                  {t === "LINK"
+                    ? "Link"
+                    : t === "TEXT"
+                      ? "Text"
+                      : t === "PHOTO"
+                        ? "Photo URL"
+                        : "Video URL"}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+
+          {proofType === "TEXT" ? (
+            <>
+              <ThemedText type="small" style={styles.label}>
+                Text
+              </ThemedText>
+              <TextInput
+                value={text}
+                onChangeText={setText}
+                placeholder="Describe what you did or saw"
+                placeholderTextColor="#8E8E93"
+                multiline
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  { borderColor, backgroundColor: surface, color: textColor },
+                ]}
+              />
+            </>
+          ) : (
+            <>
+              <ThemedText type="small" style={styles.label}>
+                URL
+              </ThemedText>
+              <TextInput
+                value={url}
+                onChangeText={setUrl}
+                placeholder="https://…"
+                placeholderTextColor="#8E8E93"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                style={[styles.input, { borderColor, backgroundColor: surface, color: textColor }]}
+              />
+            </>
+          )}
+        </>
+      ) : null}
+
+      {showCapture ? (
+        <View style={styles.captureBlock}>
+          <ThemedText type="small" style={styles.label}>
+            Capture in Kairo
+          </ThemedText>
+          {promptProofUpper === "PHOTO" ? (
+            <Pressable
+              style={[styles.captureBtn, { borderColor: tint }]}
+              onPress={() => openProofCapture("PHOTO")}
+            >
+              <ThemedText type="small" style={{ fontWeight: "700" }}>
+                Capture photo
+              </ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.captureBtn, { borderColor: tint }]}
+              onPress={() => openProofCapture("VIDEO")}
+            >
+              <ThemedText type="small" style={{ fontWeight: "700" }}>
+                Capture video
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      ) : null}
+
       {message ? (
         <ThemedText type="small" style={styles.msg}>
           {message}
         </ThemedText>
       ) : null}
 
-      <Pressable
-        style={[styles.button, (!devUserId || busy) && styles.buttonDisabled]}
-        onPress={() => void onSubmit()}
-        disabled={!devUserId || busy}
-      >
-        {busy ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <ThemedText style={styles.buttonLabel}>Submit proof</ThemedText>
-        )}
-      </Pressable>
+      {showLegacy ? (
+        <Pressable
+          style={[styles.button, busy && styles.buttonDisabled]}
+          onPress={() => void onSubmit()}
+          disabled={busy}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <ThemedText style={styles.buttonLabel}>Submit proof</ThemedText>
+          )}
+        </Pressable>
+      ) : null}
 
       {mine.length > 0 ? (
         <>
@@ -383,5 +444,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginTop: 8,
+  },
+  captureBlock: {
+    marginTop: 8,
+    gap: 8,
+  },
+  captureBtn: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

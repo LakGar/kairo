@@ -28,6 +28,10 @@ export default function TabsStackLayout() {
       <Stack.Screen name="create" />
       <Stack.Screen name="events" />
       <Stack.Screen
+        name="proof-capture"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
+      <Stack.Screen
         name="personal-commit-onboarding"
         options={{ presentation: "fullScreenModal", headerShown: false }}
       />

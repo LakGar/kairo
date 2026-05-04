@@ -275,6 +275,22 @@ Done:
 - **Commit:** `d739e06` — `proof: restrict create event proof to photo video prompts`; `e9f5f12` — `docs: record proof cleanup session commit`
 - **Push:** `git push origin main` — succeeded
 
+#### Work session — 2026-05-03 (Mobile / Expo / mobile) — In-app photo/video proof capture
+
+- **Task:** Add `expo-camera` flow from event detail — capture photo or record video (≤10s), preview, retake, submit via `submitProof` with temporary `file:` URI in `url` (TODO: replace with storage URL); route `/(tabs)/proof-capture` with query params; permission-denied UX; extend `@kairo/shared` `submitProofSchema` so `file:` passes validation for PHOTO/VIDEO while LINK stays http(s)-only.
+- **Before:** `git status` — mixed dirty tree; **intended commit scope:** proof capture feature files, `event-proof-submit-section`, tabs layout + route, `app.json` plugin, `packages/shared` proof schema, `mobile` lockfile, this log.
+
+**After (2026-05-03):**
+
+- **Dependency:** `expo-camera` (Expo SDK 54–aligned via `npx expo install expo-camera`); `app.json` `expo-camera` plugin for camera + microphone strings.
+- **Route:** `mobile/app/(tabs)/proof-capture.tsx` (modal stack screen) + `ProofCaptureScreen` (`proof-capture-screen.tsx`, `proof-capture.types.ts`).
+- **Event detail:** `EventProofSubmitSection` — match + prompt chips first; for selected prompt with `proofType` PHOTO/VIDEO, **Capture photo** / **Capture video** opens capture route with `eventId`, `promptId`, `matchId`, `promptTitle`; legacy TEXT/LINK + URL path unchanged when no prompt or TEXT/LINK prompt.
+- **Shared:** `submitProofSchema` — `url` co-validated in `superRefine`; `file:` allowed for PHOTO/VIDEO; LINK requires http(s).
+- **Commands run:** `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings); `cd website && npm run typecheck` + `npm run lint` — pass.
+- **TODOs left:** Upload pipeline (S3/Supabase) replacing `file:` URIs; video preview component; optional `expo-av`; AI verification; paywall.
+- **Commit:** (recorded after `git commit`)
+- **Push:** (recorded after `git push`)
+
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
 - **Task:** Finish Discover — align with `theme/colors` + dashboard `HomeColors`; add **cities** and **Kairo-wide categories** (not concerts-only); copy grounded in `docs/kairo-build-log.md` (“participate”, proof/teams/challenges; avoid gambling framing).
