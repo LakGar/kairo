@@ -164,6 +164,13 @@ export interface ApiMarkNotificationsReadPayload {
   lastReadAt: JsonDateString;
 }
 
+/** `POST /api/me/push-tokens` / `PATCH /api/me/push-tokens` — Expo device token row. */
+export interface ApiPushTokenDto {
+  id: string;
+  token: string;
+  enabled: boolean;
+}
+
 /** `GET /api/me/profile` — profile + onboarding flags. */
 export interface ApiMeProfileDto {
   id: string;

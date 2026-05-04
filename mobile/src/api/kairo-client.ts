@@ -4,7 +4,9 @@ import { getBootstrappedUserIdSync } from "./bootstrap-user-id";
 import { getApiBaseUrl } from "./config";
 import type {
   ProfileOnboardingCompleteRequestInput,
+  RegisterPushTokenRequestInput,
   UpdateMyProfileRequestInput,
+  UpdatePushTokenRequestInput,
 } from "@kairo/shared";
 
 import {
@@ -16,6 +18,7 @@ import {
   type ApiMeEventsPayload,
   type ApiMeNotificationsPayload,
   type ApiMeProfilePayload,
+  type ApiPushTokenDto,
   type ApiMarkNotificationsReadPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
@@ -155,6 +158,8 @@ export interface KairoApi {
   listBillingPurchases: () => Promise<ApiBillingPurchase[]>;
   getMyNotifications: () => Promise<ApiMeNotificationsPayload>;
   markNotificationsRead: (body?: { before?: string }) => Promise<ApiMarkNotificationsReadPayload>;
+  registerPushToken: (body: RegisterPushTokenRequestInput) => Promise<ApiPushTokenDto>;
+  patchPushToken: (body: UpdatePushTokenRequestInput) => Promise<ApiPushTokenDto>;
   getMyProfile: () => Promise<ApiMeProfilePayload>;
   updateMyProfile: (body: UpdateMyProfileRequestInput) => Promise<ApiMeProfilePayload>;
   completeOnboarding: (body: ProfileOnboardingCompleteRequestInput) => Promise<ApiCompleteOnboardingPayload>;
@@ -264,6 +269,10 @@ export function createKairoApi(config: {
         method: "PATCH",
         json: body && Object.keys(body).length > 0 ? body : {},
       }),
+    registerPushToken: (body) =>
+      req("/api/me/push-tokens", { method: "POST", json: body }),
+    patchPushToken: (body) =>
+      req("/api/me/push-tokens", { method: "PATCH", json: body }),
     getMyProfile: () => req("/api/me/profile"),
     updateMyProfile: (body) =>
       req("/api/me/profile", { method: "PATCH", json: body }),

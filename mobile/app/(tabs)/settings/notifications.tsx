@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
+import { useFocusEffect } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import {
   ActivityIndicator,
   Linking,
@@ -14,6 +17,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SettingsStackHeader } from "@/components/settings-stack-header";
+import {
+  disableRegisteredPushTokenOnBackend,
+  registerPushTokenWithBackend,
+  STORED_EXPO_PUSH_TOKEN_KEY,
+} from "@/src/features/notifications/register-push-token";
 import {
   defaultNotificationPrefs,
   loadNotificationPrefs,
@@ -129,6 +137,24 @@ function createNotificationsStyles(c: SettingsChrome) {
       fontSize: 16,
       fontWeight: "600",
     },
+    pushPrimaryBtn: {
+      marginTop: 10,
+      borderRadius: 14,
+      paddingVertical: 14,
+      alignItems: "center",
+      backgroundColor: c.primaryBtnBg,
+    },
+    pushPrimaryBtnText: {
+      color: c.primaryBtnText,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    pushStatus: {
+      marginTop: 8,
+      fontSize: 14,
+      lineHeight: 20,
+      color: c.hintEmphasis,
+    },
   });
 }
 
@@ -141,6 +167,26 @@ export default function NotificationsSettingsScreen() {
 
   const [prefs, setPrefs] = useState<NotificationPrefs>(defaultNotificationPrefs);
   const [loading, setLoading] = useState(true);
+  const [pushStatusLine, setPushStatusLine] = useState<string>("");
+  const [registeringPush, setRegisteringPush] = useState(false);
+
+  const refreshPushDeviceState = useCallback(async () => {
+    if (Platform.OS === "web") {
+      setPushStatusLine("Push is not available on web.");
+      return;
+    }
+    const { status } = await Notifications.getPermissionsAsync();
+    const stored = await SecureStore.getItemAsync(STORED_EXPO_PUSH_TOKEN_KEY);
+    if (status === "granted" && stored?.trim()) {
+      setPushStatusLine("Push permission granted · device token saved on Kairo.");
+    } else if (status === "granted") {
+      setPushStatusLine("Push permission granted · tap below to register this device.");
+    } else if (status === "denied") {
+      setPushStatusLine("Notifications blocked for Kairo — use system settings to enable.");
+    } else {
+      setPushStatusLine("Permission not granted yet — use Enable push or the Push toggle.");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,10 +201,22 @@ export default function NotificationsSettingsScreen() {
     };
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refreshPushDeviceState();
+    }, [refreshPushDeviceState]),
+  );
+
   const persist = useCallback(async (next: NotificationPrefs) => {
     setPrefs(next);
     await saveNotificationPrefs(next);
-  }, []);
+    if (next.push) {
+      await registerPushTokenWithBackend({ requestPermission: true });
+    } else {
+      await disableRegisteredPushTokenOnBackend();
+    }
+    await refreshPushDeviceState();
+  }, [refreshPushDeviceState]);
 
   return (
     <View style={styles.root}>
@@ -170,6 +228,46 @@ export default function NotificationsSettingsScreen() {
           { paddingTop: headerPad, paddingBottom: bottomPad },
         ]}
       >
+        <Text style={styles.sectionLabel}>This device (Expo push)</Text>
+        <View style={styles.group}>
+          <View style={[styles.row, styles.rowDivider]}>
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>Status</Text>
+              <Text style={styles.pushStatus}>{pushStatusLine || "…"}</Text>
+            </View>
+          </View>
+          <Pressable
+            disabled={registeringPush || Platform.OS === "web"}
+            onPress={async () => {
+              setRegisteringPush(true);
+              try {
+                const r = await registerPushTokenWithBackend({ requestPermission: true });
+                await refreshPushDeviceState();
+                if (!r.ok && r.reason !== "permission_denied" && r.reason !== "permission_needed") {
+                  setPushStatusLine(
+                    r.reason === "not_configured"
+                      ? "API not configured — set EXPO_PUBLIC_API_URL and sign in."
+                      : `Could not register: ${r.reason}`,
+                  );
+                }
+              } finally {
+                setRegisteringPush(false);
+              }
+            }}
+            style={({ pressed }) => [
+              styles.pushPrimaryBtn,
+              (registeringPush || Platform.OS === "web") && { opacity: 0.45 },
+              pressed && !registeringPush && { opacity: 0.9 },
+            ]}
+          >
+            {registeringPush ? (
+              <ActivityIndicator color={chrome.primaryBtnText} />
+            ) : (
+              <Text style={styles.pushPrimaryBtnText}>Enable push notifications</Text>
+            )}
+          </Pressable>
+        </View>
+
         <Text style={styles.sectionLabel}>Channels</Text>
         {loading ? (
           <View style={styles.loading}>
@@ -197,7 +295,7 @@ export default function NotificationsSettingsScreen() {
             />
             <ToggleRow
               title="Push"
-              subtitle="In-app alerts on this device (requires notification permission)."
+              subtitle="When on, registers this device with Kairo for Expo push (physical device recommended)."
               value={prefs.push}
               onValueChange={(push) => void persist({ ...prefs, push })}
               styles={styles}
@@ -207,8 +305,9 @@ export default function NotificationsSettingsScreen() {
         )}
 
         <Text style={styles.hint}>
-          These preferences are stored on this device. When Kairo&apos;s backend
-          notification service is connected, they will control what we send you.
+          Channel toggles are stored on this device. Expo push delivery requires a physical
+          device (simulators usually cannot obtain a push token). The server stores your Expo
+          token for future sends — event automation is not wired yet.
         </Text>
 
         <Pressable

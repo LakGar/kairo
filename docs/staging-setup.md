@@ -69,6 +69,13 @@ Until then, staging can still work using the acting-user header pattern document
 |----------|---------|
 | **`EXPO_PUBLIC_KAIRO_DEV_USER_ID`** | Prisma `User.id` used as `x-kairo-user-id` when bootstrap / Clerk metadata has not linked an id yet. **Use only for local dev** after `npm run db:seed`; copy a seeded user id from the seed log. Do not rely on this in production staging unless you understand the impersonation risk. |
 
+### Expo push notifications (mobile + API)
+
+- The app registers an **Expo push token** with **`POST /api/me/push-tokens`** after sign-in (silent attempt if permission already granted) and from **Settings → Notifications** (“Enable push notifications” or turning **Push** on in Channels).
+- **Physical devices** are recommended: iOS Simulator and many Android emulators **cannot** obtain a real Expo push token. Use a dev build or Expo Go on hardware when testing delivery.
+- **EAS / FCM:** Production iOS push typically needs Apple push keys and an **EAS project** (`extra.eas.projectId` in `app.json` or EAS-managed config). Android uses FCM through Expo; follow [Expo push setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) for production.
+- **Server dispatch** uses Expo’s HTTPS API (`exp.host/--/api/v2/push/send`) from `website/src/server/notifications/push.service.ts` — no separate npm dependency. Automated sends from proof/result flows are **not** wired in the MVP foundation PR.
+
 ---
 
 ## Prisma commands (from monorepo root)

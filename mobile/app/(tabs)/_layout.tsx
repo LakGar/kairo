@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useBootstrapKairoUser } from "@/src/features/auth/use-bootstrap-kairo-user";
 import { useMeProfileOnboardingGate } from "@/src/features/auth/use-me-profile-onboarding-gate";
+import { useRegisterPushTokenSession } from "@/src/features/notifications/use-register-push-token-session";
 
 /**
  * Signed-in shell: Stack with `(home)` (JS Tabs + floating blur bar for Home / Discover / Chat),
@@ -14,6 +15,7 @@ export default function TabsStackLayout() {
   const { isSignedIn, isLoaded } = useAuth();
   useBootstrapKairoUser();
   const { gate } = useMeProfileOnboardingGate();
+  useRegisterPushTokenSession(Boolean(isSignedIn), gate);
 
   if (!isLoaded) {
     return null;

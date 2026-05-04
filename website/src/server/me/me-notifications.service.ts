@@ -3,7 +3,8 @@
  *
  * Read badge: `NotificationReadState.lastReadAt` cursor (not per-notification rows).
  *
- * TODO: full `Notification` table; per-notification read state; push delivery.
+ * TODO: full `Notification` table; per-notification read state; wire domain events to
+ * `sendPushToUser` / Expo receipts (see `website/src/server/notifications/push.service.ts`).
  */
 import {
   MatchResultStatus,

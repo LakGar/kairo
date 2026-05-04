@@ -53,6 +53,7 @@
           }
         }
       ],
+      "expo-notifications",
       "expo-font"
     ],
     "experiments": {

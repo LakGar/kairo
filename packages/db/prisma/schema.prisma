@@ -117,9 +117,26 @@ model User {
   activityLogs      ActivityLog[]
   matchResultsResolved Match[] @relation("MatchResultResolvedBy")
   notificationReadState NotificationReadState?
+  pushTokens           PushToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/** Expo push token for `expo-notifications` device registration (one row per unique token). */
+model PushToken {
+  id       String  @id @default(cuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token    String  @unique
+  platform String?
+  deviceId String?
+  enabled  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /** Single cursor per user for derived in-app notifications (not per-row reads). */

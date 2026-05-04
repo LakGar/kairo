@@ -363,6 +363,23 @@ Done:
 - **Commit:** `a296cc1` — `profile: add settings and profile editing`
 - **Push:** `git push origin main` — succeeded (`1c5e9b2..a296cc1`)
 
+#### Work session — 2026-05-03 (PR 22 · Database + Website + Mobile + Shared) — Expo push notification foundation
+
+- **Area:** Database + Website + Mobile + Shared  
+- **Task:** Expo push **token registration** + **dispatch helper**; no SMS/email/paywall; no automatic sends from proof/result flows; settings/notifications UX for permission + register only.
+- **Before:** `git status` — mixed dirty tree; **commit scope:** Prisma **`PushToken`** + `User.pushTokens`, **`POST`/`PATCH /api/me/push-tokens`**, `push-tokens.service`, **`push.service.ts`**, shared Zod, mobile **`expo-notifications`** + registration module + tab session hook + settings screen, `app.json` plugin, docs.
+
+**After (2026-05-03):**
+
+- **Schema:** `PushToken` (`token` **@unique**, `platform`, `deviceId`, `enabled`, relation to `User`); **`npm run db:generate`** run — **`db:push` / migrate not run** in agent (apply when `DATABASE_URL` is set).
+- **API:** **`POST /api/me/push-tokens`** (upsert by token, bind user, `enabled: true`); **`PATCH /api/me/push-tokens`** (`token` + `enabled`) for the owning user only.
+- **Dispatch:** `sendExpoPushNotification` / `sendPushToUser` via **`fetch`** to Expo push API; token shape validated with **`isLikelyExpoPushToken`**; failures **`console.warn`**; TODOs for receipts, batching, rate limits, retries, user prefs.
+- **Mobile:** `expo-notifications`; **`registerPushTokenWithBackend`** + SecureStore last token for PATCH disable; **`useRegisterPushTokenSession`** after onboarding **`gate === "ready"`** (no permission prompt); **Settings → Notifications** — status line + **Enable push notifications** button; Push channel toggle registers / disables on backend.
+- **Real device push test:** **Not run** in agent (no physical device / E2E send exercised).
+- **Commands run:** `npm run db:generate`; `npm install` (root); `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint`; `npm run typecheck:shared` — pass (4 pre-existing onboarding warnings).
+- **Commit:** `db2b832` — `notifications: add Expo push token foundation`
+- **Push:** (filled after push)
+
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
 - **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.

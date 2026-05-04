@@ -31,6 +31,7 @@ export {
   type ApiMeNotificationsPayload,
   type ApiMeProfileDto,
   type ApiMeProfilePayload,
+  type ApiPushTokenDto,
   type ApiMarkNotificationsReadPayload,
   type ApiNotificationFocus,
   type ApiNotificationItem,
@@ -64,4 +65,6 @@ export type {
   UpdateEventInput,
   UpdateMatchScoreInput,
   UpdateMyProfileRequestInput,
+  RegisterPushTokenRequestInput,
+  UpdatePushTokenRequestInput,
 } from "@kairo/shared";
