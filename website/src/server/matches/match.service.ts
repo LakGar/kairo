@@ -12,6 +12,10 @@ import { ActivityAction } from "@/server/activity/activity-actions";
 import { logActivity } from "@/server/activity/activity.service";
 import { queryMatchById, queryMatchesForEvent } from "@/server/matches/match.queries";
 import {
+  getTeamMemberUserIds,
+  sendPushToUsersBestEffort,
+} from "@/server/notifications/push-triggers";
+import {
   parseConfirmTeamAgreementResult,
   parseCreateManualMatch,
   parseDisputeTeamAgreementResult,
@@ -331,6 +335,30 @@ export async function submitTeamAgreementResult(
       winnerTeamId: updated.winnerTeamId,
     },
   });
+
+  const opponentTeamId = getOpponentTeamId(
+    existing.homeTeamId,
+    existing.awayTeamId,
+    userTeamId,
+  );
+  if (opponentTeamId) {
+    try {
+      const memberIds = await getTeamMemberUserIds(opponentTeamId);
+      const targets = memberIds.filter((id) => id !== currentUserId);
+      await sendPushToUsersBestEffort(targets, {
+        title: "Confirm match result",
+        body: "Your opponent submitted a result. Review it before it becomes official.",
+        data: {
+          type: "TEAM_RESULT_REVIEW",
+          eventId: existing.eventId,
+          matchId,
+          focus: "result",
+        },
+      });
+    } catch (e) {
+      console.warn("[push] team agreement result notify", e instanceof Error ? e.message : e);
+    }
+  }
 
   const full = await queryMatchById(matchId);
   return ok(full!);

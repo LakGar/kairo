@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useBootstrapKairoUser } from "@/src/features/auth/use-bootstrap-kairo-user";
 import { useMeProfileOnboardingGate } from "@/src/features/auth/use-me-profile-onboarding-gate";
+import { usePushNotificationResponseNavigation } from "@/src/features/notifications/use-push-notification-response";
 import { useRegisterPushTokenSession } from "@/src/features/notifications/use-register-push-token-session";
 
 /**
@@ -16,6 +17,7 @@ export default function TabsStackLayout() {
   useBootstrapKairoUser();
   const { gate } = useMeProfileOnboardingGate();
   useRegisterPushTokenSession(Boolean(isSignedIn), gate);
+  usePushNotificationResponseNavigation(Boolean(isSignedIn) && gate === "ready");
 
   if (!isLoaded) {
     return null;

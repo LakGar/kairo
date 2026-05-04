@@ -380,6 +380,18 @@ Done:
 - **Commit:** `25a3df9` — `notifications: add Expo push token foundation`; `b5c801b` — `docs: fix PR22 build log commit hash after amend`
 - **Push:** `git push origin main` — succeeded (`265d74a..b5c801b`)
 
+#### Work session — 2026-05-03 (PR 23 · Website + Mobile) — Wire push notifications for proof and result actions
+
+- **Area:** Website + Mobile  
+- **Task:** Send **Expo** pushes for high-value actions only: **team agreement** result awaiting opponent confirm → opposing team; **proof submitted** → organizer (skip if submitter is organizer); **proof approved/rejected** → submitter. **No** new tables, **no** schema change, **no** email/SMS/paywall, **no** push per `ActivityLog`. **Dedupe** by user list; **`sendPushToUser`** best-effort + try/catch; **`mostly-off` / `off` / `none`** on `Profile.notificationPreference` skips push; **TODO** for finer `minimal`/`important` semantics vs push-only.
+- **Backend:** `website/src/server/notifications/push-triggers.ts` — `getTeamMemberUserIds`, `sendPushToUsersBestEffort`, `profileAllowsPush`. Wired in **`submitTeamAgreementResult`** (`match.service.ts`), **`submitProof`** + **`setProofReviewStatus`** (`proof.service.ts`).
+- **Mobile:** `use-push-notification-response.ts` — `expo-notifications` **response** listener + one-time **`getLastNotificationResponseAsync`**; tap → **`buildEventDetailFocusHref`** → **`/(tabs)/events/[eventId]`** with **`focus`** (`proof` | `organizer` | `result`) and optional **`matchId`** / **`proofSubmissionId`**; registered from **`app/(tabs)/_layout.tsx`** when signed in and onboarding **`ready`**.
+- **TODOs (follow-up):** Expo **receipt** / ticket checking; **batching** multi-token sends; full **preference** matrix; **push scheduling** / reminders; cold-start **stale** `getLastNotificationResponseAsync` if product requires it.
+- **Real device push test:** **Not run** in this session (no device E2E).
+- **Commands run:** `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (**4** pre-existing onboarding lint warnings on mobile).
+- **Commit:** `501cada`  
+- **Push:** `git push origin main` — verify tip `501cada`
+
 #### Work session — 2026-05-03 (Database + Shared + Website + Mobile) — Organizer-decided result verification
 
 - **Task:** Explicit **result verification** on `Match` (orthogonal to proof): enums `ResultVerificationMode`, `MatchResultStatus`; match fields + FK relations to `Team` / `User`; **ORGANIZER_DECIDES** default; **`markMatchWinner`** sets `resultStatus: CONFIRMED`, `resolvedByUserId`, logs **`MATCH_RESULT_CONFIRMED`** (keeps **`MATCH_WINNER_MARKED`**). **`updateMatchScore`** does not change result track. **`createManualMatch`** defaults mode; **`TEAM_AGREEMENT`** rejected in shared schema until team flow ships.

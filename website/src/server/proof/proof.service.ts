@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { err, ok, type Result } from "@/src/lib/result";
 import { ActivityAction } from "@/server/activity/activity-actions";
 import { logActivity } from "@/server/activity/activity.service";
+import { sendPushToUsersBestEffort } from "@/server/notifications/push-triggers";
 import {
   queryProofPromptsForEvent,
   queryProofSubmissionById,
@@ -203,6 +204,26 @@ export async function submitProof(
     metadata: { proofSubmissionId: submission.id },
   });
 
+  const organizerId = event.organizerId;
+  if (organizerId && organizerId !== currentUserId) {
+    try {
+      const data: Record<string, string> = {
+        type: "REVIEW_PROOF",
+        eventId,
+        proofSubmissionId: submission.id,
+        focus: "organizer",
+      };
+      if (d.matchId) data.matchId = d.matchId;
+      await sendPushToUsersBestEffort([organizerId], {
+        title: "Proof needs review",
+        body: "A participant submitted proof for your event.",
+        data,
+      });
+    } catch (e) {
+      console.warn("[push] proof submitted notify", e instanceof Error ? e.message : e);
+    }
+  }
+
   return ok(submission);
 }
 
@@ -253,6 +274,29 @@ async function setProofReviewStatus(
     action,
     metadata: { proofSubmissionId },
   });
+
+  const submitterId = sub.user.id;
+  if (submitterId) {
+    try {
+      const approved = status === ProofStatus.APPROVED;
+      const data: Record<string, string> = {
+        type: approved ? "PROOF_APPROVED" : "PROOF_REJECTED",
+        eventId: sub.eventId,
+        proofSubmissionId,
+        focus: "proof",
+      };
+      if (sub.matchId) data.matchId = sub.matchId;
+      await sendPushToUsersBestEffort([submitterId], {
+        title: approved ? "Proof approved" : "Proof rejected",
+        body: approved
+          ? "Your proof was approved."
+          : "Your proof was rejected. Review the event for details.",
+        data,
+      });
+    } catch (e) {
+      console.warn("[push] proof review notify", e instanceof Error ? e.message : e);
+    }
+  }
 
   return ok({ id: updated.id, status: updated.status });
 }
