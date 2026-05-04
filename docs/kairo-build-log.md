@@ -225,8 +225,8 @@ Done:
 - **Commands run:** `cd website && npm run typecheck` + `npm run lint` — pass; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
 - **Device / app:** Not run in agent.
 - **TODOs:** Proof submit/review routes; real scoring model; `weeklyRank`; optional prune unused `getMyCreatedEvents` / `getMyJoinedEvents` if nothing else imports them.
-- **Commit:** `7539b93` — `home: wire dashboard to my events API`
-- **Push:** (recorded after `git push`)
+- **Commit:** `7539b93` — `home: wire dashboard to my events API`; `4859082` — `docs: record home dashboard API session`
+- **Push:** `git push origin main` — succeeded (`c3f482f..4859082`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
