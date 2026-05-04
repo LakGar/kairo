@@ -192,6 +192,8 @@ Done:
 - **Device / app:** Not run in agent (API wiring verified by typecheck + lint only).
 - **Create event API:** Wired for premium screen (draft on server; same as `CreateEventForm`).
 - **TODOs left:** Date/time picker to mutate `schedule`; image picker; entry fee UI → cents; chain `createStake` / `createProofPrompt` after create when field mapping is complete.
+- **Commit:** `960e185` — `mobile: wire premium create event to API`
+- **Push:** `git push origin main` — succeeded (`c30c6ba..960e185`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 
