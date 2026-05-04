@@ -184,7 +184,7 @@ async function loadEventsForParticipant(
   return parts.map((p) => p.event as unknown as EventRow);
 }
 
-function formatActivityText(action: string, metadata: unknown): string {
+export function formatActivityText(action: string, metadata: unknown): string {
   const meta =
     typeof metadata === "object" && metadata !== null
       ? (metadata as Record<string, unknown>)

@@ -8,6 +8,7 @@ import {
   type ApiEnvelope,
   type ApiEventPublic,
   type ApiMeEventsPayload,
+  type ApiMeNotificationsPayload,
   type ApiLeaveTeamResult,
   type ApiMatchPublic,
   type ApiProofPrompt,
@@ -144,6 +145,7 @@ export interface KairoApi {
     flow: "payment_method_update" | "default";
   }) => Promise<{ url: string }>;
   listBillingPurchases: () => Promise<ApiBillingPurchase[]>;
+  getMyNotifications: () => Promise<ApiMeNotificationsPayload>;
 }
 
 export function createKairoApi(config: {
@@ -244,6 +246,7 @@ export function createKairoApi(config: {
     createBillingPortalSession: (body) =>
       req("/api/billing/portal/session", { method: "POST", json: body }),
     listBillingPurchases: () => req("/api/billing/purchases"),
+    getMyNotifications: () => req("/api/me/notifications"),
   };
 }
 

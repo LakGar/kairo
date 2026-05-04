@@ -420,6 +420,29 @@ Done:
 
 **Commit / push:** Maintainer commits when the wider dirty tree is ready.
 
+#### Work session — 2026-05-03 (Website + Mobile) — Build in-app notifications center
+
+- **Task:** PR 16 — In-app Notifications Center (no push, no new `Notification` table; derived from Home-equivalent queries + activity log).
+- **Before:** `git status` (large unrelated dirty tree); read `me-home.service.ts`, `tab-screen-header`, `(tabs)/_layout` notification route target.
+
+**After:**
+
+- **API:** `GET /api/me/notifications` — `website/app/api/me/notifications/route.ts` + `website/src/server/me/me-notifications.service.ts` (`unreadCount`, `notifications[]` with `NotificationItem` fields including optional `focus`).
+- **Sources:** Pending **team result** confirmations (same rules as Home `TEAM_RESULT_REVIEW`); host **pending proof** reviews (`Proof needs review`, `focus: organizer`); user’s **approved/rejected** submissions (`focus: proof`); last **10** `ActivityLog` rows (same visibility filter as Home; `readAt = createdAt` for MVP informational rows).
+- **Unread:** Count of actionable rows only (team result + host proof review); no persisted mark-read (TODO in service file).
+- **Mobile:** `getMyNotifications()` on `KairoApi`; screen `mobile/app/(tabs)/notifications.tsx` (loading / error+Retry / empty / list, pills Proof·Result·Event·Score, navigation via `buildEventDetailFocusHref`); Home `dashboard.tsx` wires `TabScreenHeader` badge from `unreadCount`.
+- **Reuse:** `formatActivityText` exported from `me-home.service.ts` for activity-derived copy.
+
+**Files:** `website/src/server/me/me-notifications.service.ts`, `website/app/api/me/notifications/route.ts`, `website/src/server/me/me-home.service.ts` (export), `mobile/src/api/types.ts`, `kairo-client.ts`, `index.ts`, `mobile/app/(tabs)/notifications.tsx`, `mobile/app/(tabs)/(home)/dashboard.tsx`, `mobile/components/tab-screen-header.tsx`, `docs/kairo-build-log.md`.
+
+**Checks:** `npm run typecheck -w website`; `cd website && npm run lint`; `cd mobile && npm run typecheck && npm run lint` — passed (mobile 4 pre-existing onboarding-welcome-hero warnings).
+
+**TODOs (product):** `Notification` table; persisted read state; push notifications.
+
+**Commit:** _(hash after commit)_ — `notifications: add in-app notifications center`
+
+**Push:** _(status after push)_
+
 In Progress:
 
 - [ ] (none)

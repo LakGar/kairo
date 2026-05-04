@@ -16,7 +16,7 @@ type Props = {
   variant: TabScreenHeaderVariant;
   /** High-contrast chrome for dark full-bleed feeds (e.g. home). */
   chrome?: "default" | "feedDark";
-  /** When greater than 0 on `home`, shows a small count badge on the notification bell (mock until API). */
+  /** When greater than 0 on `home`, shows a small count badge on the notification bell. */
   notificationBadgeCount?: number;
 };
 
@@ -155,10 +155,7 @@ export function TabScreenHeader({
                 style={styles.iconBtn}
                 accessibilityRole="button"
                 accessibilityLabel="Notifications"
-                onPress={() => {
-                  // TODO: extend notifications screen with invites + proof tasks when wired
-                  router.push("/(tabs)/notifications");
-                }}
+                onPress={() => router.push("/(tabs)/notifications")}
               >
                 <View style={styles.notifWrap}>
                   <Ionicons
@@ -190,9 +187,10 @@ export function TabScreenHeader({
                 hitSlop={10}
                 style={styles.iconBtn}
                 accessibilityRole="button"
-                accessibilityLabel="New message"
+                accessibilityLabel="Friends"
+                onPress={() => router.push("/(tabs)/(home)/chat/friends")}
               >
-                <Ionicons name="add-outline" size={24} color={primary} />
+                <Ionicons name="people-outline" size={24} color={primary} />
               </Pressable>
             </>
           ) : (

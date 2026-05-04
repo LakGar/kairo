@@ -137,6 +137,28 @@ export interface ApiHomeStats {
   totalRecent: number;
 }
 
+/** `GET /api/me/notifications` — in-app notification center (derived rows; no persisted read state yet). */
+export type ApiNotificationFocus = "proof" | "organizer" | "result" | null;
+
+export interface ApiNotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: JsonDateString;
+  readAt: JsonDateString | null;
+  eventId?: string | null;
+  matchId?: string | null;
+  proofSubmissionId?: string | null;
+  actionLabel?: string | null;
+  focus?: ApiNotificationFocus;
+}
+
+export interface ApiMeNotificationsPayload {
+  unreadCount: number;
+  notifications: ApiNotificationItem[];
+}
+
 /** `GET /api/me/events` — grouped summaries + Home dashboard blocks. */
 export interface ApiMeEventsPayload {
   hosting: ApiHomeEventSummary[];
