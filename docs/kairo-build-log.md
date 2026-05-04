@@ -353,8 +353,8 @@ Done:
 - **Mobile:** `event-proof-nav.ts` — `focus` union includes **`result`**; `home-dashboard.tsx` navigation; `next-action-card.tsx` labels/icon for team result; **`[eventId].tsx`** focus scroll + banner; **`EventTeamAgreementResultsSection`** **`highlightMatchId`**.
 - **Checks:** `cd website && npm run typecheck` + `npm run lint`; `cd mobile && npm run typecheck` + `npm run lint` — pass (4 pre-existing onboarding warnings).
 - **TODOs:** Home action priority tuning vs proof inbox; proof row highlight by `proofSubmissionId`; Kairo Score AND rule; `Event.resultVerificationMode` defaults.
-- **Commit:** `19d7e75` — `home: add team result review actions`
-- **Push:** `git push origin main` — succeeded (`b2c08cb..19d7e75`)
+- **Commit:** `19d7e75` — `home: add team result review actions`; `8bc2a87` — `docs: record PR11 commit and push`
+- **Push:** `git push origin main` — succeeded (`b2c08cb..8bc2a87`)
 
 #### Work session — 2026-05-03 (Mobile / Expo / mobile) — Discover (Kairo positioning + theme)
 

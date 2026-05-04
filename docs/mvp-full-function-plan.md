@@ -88,7 +88,7 @@ Exact state machine naming can be refined in Prisma, but **`WAITING_CONFIRMATION
 | **`@kairo/shared`** | Team-agreement submit/confirm/dispute Zod schemas shipped. |
 | **Website + REST** | Team agreement **POST** routes + services shipped; organizer resolves disputes via existing **`PATCH .../winner`**. |
 | **Mobile** | Event detail **Team agreement results** section + organizer toggle for new matches shipped. |
-| **Home / “next action”** | Drive cards from **both** pipelines (e.g. “Confirm result” vs “Submit proof”) — still to do. |
+| **Home / “next action”** | **Team result review** action from `GET /api/me/events` when the user must confirm/dispute (`TEAM_RESULT_REVIEW` → event `focus=result`). Further cards (e.g. richer priority vs inbox) — optional. |
 | **Commitments / Kairo Score** | **AND** rule (confirmed result ∧ proof approved) — still to do. |
 | **Copy / compliance** | Keep participate-first language. |
 
