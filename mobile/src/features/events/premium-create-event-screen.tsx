@@ -461,6 +461,30 @@ export function PremiumCreateEventScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? "light";
   const c = colorScheme === "dark" ? createEventColorsDark : createEventColorsLight;
+  /** Opaque modal chrome — `c.panel` is translucent and makes pickers hard to read. */
+  const modalChrome = useMemo(
+    () =>
+      colorScheme === "dark"
+        ? {
+            backdrop: "rgba(0,0,0,0.88)",
+            sheet: "#1C1C1E",
+            border: "#3A3A3C",
+            inputBg: "#2C2C2E",
+            chipBg: "#3A3A3C",
+            text: "#F9FAFB",
+            muted: "#A1A1AA",
+          }
+        : {
+            backdrop: "rgba(15,23,42,0.55)",
+            sheet: "#FFFFFF",
+            border: "#E2E8F0",
+            inputBg: "#F1F5F9",
+            chipBg: "#E2E8F0",
+            text: "#0F172A",
+            muted: "#64748B",
+          },
+    [colorScheme],
+  );
   const styles = useMemo(() => makePremiumStyles(c), [c]);
   const [schedule, setSchedule] = useState(defaultPremiumSchedule);
   const [form, setForm] = useState<CreateEventForm>(INITIAL_FORM);
@@ -1160,38 +1184,62 @@ export function PremiumCreateEventScreen() {
             style={{
               flex: 1,
               justifyContent: "flex-end",
-              backgroundColor: "rgba(0,0,0,0.45)",
+              backgroundColor: modalChrome.backdrop,
             }}
             onPress={() => setIosScheduleModal(null)}
           >
             <Pressable
               onPress={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: c.panel,
-                paddingTop: 12,
-                paddingBottom: Math.max(insets.bottom, 16),
-                paddingHorizontal: 16,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+                backgroundColor: modalChrome.sheet,
+                paddingTop: 16,
+                paddingBottom: Math.max(insets.bottom, 20),
+                paddingHorizontal: 20,
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderColor: modalChrome.border,
               }}
             >
-              <DateTimePicker
-                value={scheduleDraft}
-                mode="datetime"
-                display="spinner"
-                onChange={(_, d) => {
-                  if (d) setScheduleDraft(d);
+              <Text
+                style={{
+                  color: modalChrome.text,
+                  fontSize: 17,
+                  fontWeight: "700",
+                  marginBottom: 8,
+                  textAlign: "center",
                 }}
-              />
+              >
+                {iosScheduleModal === "start" ? "Start date & time" : "End date & time"}
+              </Text>
+              <View
+                style={{
+                  backgroundColor: modalChrome.sheet,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  marginBottom: 12,
+                }}
+              >
+                <DateTimePicker
+                  value={scheduleDraft}
+                  mode="datetime"
+                  display="spinner"
+                  themeVariant={colorScheme === "dark" ? "dark" : "light"}
+                  onChange={(_, d) => {
+                    if (d) setScheduleDraft(d);
+                  }}
+                />
+              </View>
               <View
                 style={{
                   flexDirection: "row",
                   justifyContent: "space-between",
-                  marginTop: 8,
+                  alignItems: "center",
+                  marginTop: 4,
                 }}
               >
                 <Pressable onPress={() => setIosScheduleModal(null)} hitSlop={12}>
-                  <Text style={{ color: c.textSecondary, fontSize: 17, fontWeight: "600" }}>
+                  <Text style={{ color: modalChrome.muted, fontSize: 17, fontWeight: "600" }}>
                     Cancel
                   </Text>
                 </Pressable>
@@ -1215,7 +1263,7 @@ export function PremiumCreateEventScreen() {
                   }}
                   hitSlop={12}
                 >
-                  <Text style={{ color: c.textPrimary, fontSize: 17, fontWeight: "700" }}>
+                  <Text style={{ color: modalChrome.text, fontSize: 17, fontWeight: "700" }}>
                     Save
                   </Text>
                 </Pressable>
@@ -1235,41 +1283,44 @@ export function PremiumCreateEventScreen() {
               flex: 1,
               justifyContent: "center",
               padding: 24,
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: modalChrome.backdrop,
             }}
             onPress={() => setPriceModalVisible(false)}
           >
             <Pressable
               onPress={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: c.panel,
-                borderRadius: 20,
+                backgroundColor: modalChrome.sheet,
+                borderRadius: 16,
                 padding: 20,
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: c.border,
+                borderWidth: 1,
+                borderColor: modalChrome.border,
+                maxWidth: 400,
+                alignSelf: "center",
+                width: "100%",
               }}
             >
-              <Text style={{ color: c.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
+              <Text style={{ color: modalChrome.text, fontSize: 18, fontWeight: "700", marginBottom: 8 }}>
                 Entry fee
               </Text>
-              <Text style={[styles.mutedNote, { marginBottom: 12 }]}>
-                Amount in USD (no charge yet — shown on the event). Use Free or a number like 10 or 25.50.
+              <Text style={{ color: modalChrome.muted, fontSize: 14, lineHeight: 20, marginBottom: 14 }}>
+                USD amount shown on the event (no charge in the app). Examples: Free, 10, 25.50.
               </Text>
               <TextInput
                 value={priceDraft}
                 onChangeText={setPriceDraft}
                 placeholder="Free or 15"
-                placeholderTextColor={c.textMuted}
+                placeholderTextColor={modalChrome.muted}
                 keyboardType="decimal-pad"
-                style={[
-                  styles.inlineInput,
-                  {
-                    borderWidth: StyleSheet.hairlineWidth,
-                    borderColor: c.border,
-                    borderRadius: 12,
-                    paddingHorizontal: 14,
-                  },
-                ]}
+                style={{
+                  backgroundColor: modalChrome.inputBg,
+                  color: modalChrome.text,
+                  borderRadius: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  fontSize: 17,
+                  fontWeight: "500",
+                }}
               />
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
                 {(["Free", "5", "10", "25"] as const).map((preset) => (
@@ -1278,22 +1329,20 @@ export function PremiumCreateEventScreen() {
                     onPress={() => setPriceDraft(preset === "Free" ? "Free" : `$${preset}`)}
                     style={{
                       paddingHorizontal: 14,
-                      paddingVertical: 8,
+                      paddingVertical: 10,
                       borderRadius: 999,
-                      backgroundColor: c.panelStrong,
-                      borderWidth: StyleSheet.hairlineWidth,
-                      borderColor: c.border,
+                      backgroundColor: modalChrome.chipBg,
                     }}
                   >
-                    <Text style={{ color: c.textPrimary, fontWeight: "600" }}>
+                    <Text style={{ color: modalChrome.text, fontWeight: "600" }}>
                       {preset === "Free" ? "Free" : `$${preset}`}
                     </Text>
                   </Pressable>
                 ))}
               </View>
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 16, marginTop: 20 }}>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 20, marginTop: 22 }}>
                 <Pressable onPress={() => setPriceModalVisible(false)} hitSlop={12}>
-                  <Text style={{ color: c.textMuted, fontWeight: "600" }}>Cancel</Text>
+                  <Text style={{ color: modalChrome.muted, fontWeight: "600", fontSize: 16 }}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -1303,7 +1352,7 @@ export function PremiumCreateEventScreen() {
                   }}
                   hitSlop={12}
                 >
-                  <Text style={{ color: c.textPrimary, fontWeight: "700" }}>Save</Text>
+                  <Text style={{ color: modalChrome.text, fontWeight: "700", fontSize: 16 }}>Save</Text>
                 </Pressable>
               </View>
             </Pressable>
