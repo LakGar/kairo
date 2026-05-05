@@ -96,17 +96,24 @@ function makePremiumStyles(c: CreateEventScreenColors) {
       alignItems: "center",
       justifyContent: "center",
     },
+    /** Cover is full-bleed; form uses `scrollForm` for horizontal inset. */
     scrollContent: {
-      paddingHorizontal: H_PAD,
+      paddingHorizontal: 0,
       paddingTop: 4,
       gap: 20,
     },
+    scrollForm: {
+      paddingHorizontal: H_PAD,
+      gap: 20,
+    },
     coverWrap: {
-      borderRadius: 28,
+      width: "100%",
+      alignSelf: "stretch",
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
       overflow: "hidden",
       aspectRatio: 1.05,
       maxHeight: 320,
-      alignSelf: "stretch",
     },
     coverImg: {
       width: "100%",
@@ -780,7 +787,12 @@ export function PremiumCreateEventScreen() {
         >
           <View style={styles.coverWrap} accessibilityLabel="Event cover">
             {coverUri ? (
-              <Image source={{ uri: coverUri }} style={styles.coverImg} contentFit="cover" />
+              <Image
+                source={{ uri: coverUri }}
+                style={styles.coverImg}
+                contentFit="cover"
+                contentPosition="center"
+              />
             ) : (
               <LinearGradient
                 colors={[...c.coverGradient]}
@@ -804,6 +816,7 @@ export function PremiumCreateEventScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.scrollForm}>
           <View style={styles.block}>
             <CreateEventPillInput
               value={form.title}
@@ -1146,6 +1159,7 @@ export function PremiumCreateEventScreen() {
               <Text style={styles.primaryBtnText}>Create Event</Text>
             )}
           </Pressable>
+          </View>
         </ScrollView>
 
         {androidSchedulePicker ? (
