@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { BlurView } from "expo-blur";
 import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
@@ -1180,96 +1181,109 @@ export function PremiumCreateEventScreen() {
           animationType="slide"
           onRequestClose={() => setIosScheduleModal(null)}
         >
-          <Pressable
-            style={{
-              flex: 1,
-              justifyContent: "flex-end",
-              backgroundColor: modalChrome.backdrop,
-            }}
-            onPress={() => setIosScheduleModal(null)}
-          >
+          <View style={{ flex: 1 }}>
+            <BlurView
+              intensity={55}
+              tint={colorScheme === "dark" ? "dark" : "light"}
+              style={StyleSheet.absoluteFillObject}
+              {...(Platform.OS === "android"
+                ? { experimentalBlurMethod: "dimezisBlurView" as const }
+                : {})}
+            />
             <Pressable
-              onPress={(e) => e.stopPropagation()}
-              style={{
-                backgroundColor: modalChrome.sheet,
-                paddingTop: 16,
-                paddingBottom: Math.max(insets.bottom, 20),
-                paddingHorizontal: 20,
-                borderTopLeftRadius: 16,
-                borderTopRightRadius: 16,
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderColor: modalChrome.border,
-              }}
+              style={[
+                StyleSheet.absoluteFillObject,
+                {
+                  justifyContent: "flex-end",
+                  backgroundColor:
+                    colorScheme === "dark" ? "rgba(0,0,0,0.22)" : "rgba(15,23,42,0.18)",
+                },
+              ]}
+              onPress={() => setIosScheduleModal(null)}
             >
-              <Text
-                style={{
-                  color: modalChrome.text,
-                  fontSize: 17,
-                  fontWeight: "700",
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                {iosScheduleModal === "start" ? "Start date & time" : "End date & time"}
-              </Text>
-              <View
+              <Pressable
+                onPress={(e) => e.stopPropagation()}
                 style={{
                   backgroundColor: modalChrome.sheet,
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  marginBottom: 12,
+                  paddingTop: 16,
+                  paddingBottom: Math.max(insets.bottom, 20),
+                  paddingHorizontal: 20,
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderColor: modalChrome.border,
                 }}
               >
-                <DateTimePicker
-                  value={scheduleDraft}
-                  mode="datetime"
-                  display="spinner"
-                  themeVariant={colorScheme === "dark" ? "dark" : "light"}
-                  onChange={(_, d) => {
-                    if (d) setScheduleDraft(d);
+                <Text
+                  style={{
+                    color: modalChrome.text,
+                    fontSize: 17,
+                    fontWeight: "700",
+                    marginBottom: 8,
+                    textAlign: "center",
                   }}
-                />
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 4,
-                }}
-              >
-                <Pressable onPress={() => setIosScheduleModal(null)} hitSlop={12}>
-                  <Text style={{ color: modalChrome.muted, fontSize: 17, fontWeight: "600" }}>
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    const mode = iosScheduleModal;
-                    if (!mode) return;
-                    if (mode === "start") {
-                      setSchedule((prev) => {
-                        const nextStart = scheduleDraft;
-                        let nextEnd = prev.endsAt;
-                        if (nextEnd < nextStart) {
-                          nextEnd = new Date(nextStart.getTime() + 60 * 60 * 1000);
-                        }
-                        return { startsAt: nextStart, endsAt: nextEnd };
-                      });
-                    } else {
-                      setSchedule((prev) => ({ ...prev, endsAt: scheduleDraft }));
-                    }
-                    setIosScheduleModal(null);
-                  }}
-                  hitSlop={12}
                 >
-                  <Text style={{ color: modalChrome.text, fontSize: 17, fontWeight: "700" }}>
-                    Save
-                  </Text>
-                </Pressable>
-              </View>
+                  {iosScheduleModal === "start" ? "Start date & time" : "End date & time"}
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: modalChrome.sheet,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    marginBottom: 12,
+                  }}
+                >
+                  <DateTimePicker
+                    value={scheduleDraft}
+                    mode="datetime"
+                    display="spinner"
+                    themeVariant={colorScheme === "dark" ? "dark" : "light"}
+                    onChange={(_, d) => {
+                      if (d) setScheduleDraft(d);
+                    }}
+                  />
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 4,
+                  }}
+                >
+                  <Pressable onPress={() => setIosScheduleModal(null)} hitSlop={12}>
+                    <Text style={{ color: modalChrome.muted, fontSize: 17, fontWeight: "600" }}>
+                      Cancel
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      const mode = iosScheduleModal;
+                      if (!mode) return;
+                      if (mode === "start") {
+                        setSchedule((prev) => {
+                          const nextStart = scheduleDraft;
+                          let nextEnd = prev.endsAt;
+                          if (nextEnd < nextStart) {
+                            nextEnd = new Date(nextStart.getTime() + 60 * 60 * 1000);
+                          }
+                          return { startsAt: nextStart, endsAt: nextEnd };
+                        });
+                      } else {
+                        setSchedule((prev) => ({ ...prev, endsAt: scheduleDraft }));
+                      }
+                      setIosScheduleModal(null);
+                    }}
+                    hitSlop={12}
+                  >
+                    <Text style={{ color: modalChrome.text, fontSize: 17, fontWeight: "700" }}>
+                      Save
+                    </Text>
+                  </Pressable>
+                </View>
+              </Pressable>
             </Pressable>
-          </Pressable>
+          </View>
         </Modal>
 
         <Modal
