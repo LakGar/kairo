@@ -16,6 +16,7 @@ import {
   queryEventsJoinedByUser,
   queryUpcomingEvents,
 } from "@/server/events/event.queries";
+import { getEventViewerContext } from "@/server/events/event-viewer-context";
 import {
   parseCreateEvent,
   parseJoinEvent,
@@ -364,10 +365,11 @@ export async function joinEventAsVolunteer(
   return joinEvent(eventId, currentUserId, EventParticipantRole.VOLUNTEER);
 }
 
-export async function getEventById(eventId: string) {
+export async function getEventById(eventId: string, viewerUserId: string | null = null) {
   const e = await queryEventById(eventId);
   if (!e) return err("Event not found", "NOT_FOUND");
-  return ok(e);
+  const viewerContext = await getEventViewerContext(eventId, e.organizerId, viewerUserId);
+  return ok({ ...e, viewerContext });
 }
 
 export async function getEventBySlug(slug: string) {

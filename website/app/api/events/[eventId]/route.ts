@@ -1,11 +1,18 @@
 import { getEventById, updateEvent } from "@/server/events/event.service";
-import { fromServiceResult, parseJsonBody, requireUserId } from "@/src/lib/api-http";
+import {
+  fromServiceResult,
+  parseJsonBody,
+  requireUserId,
+} from "@/src/lib/api-http";
+import { getCurrentUserIdFromRequest } from "@/src/lib/current-user";
 
 type Ctx = { params: Promise<{ eventId: string }> };
 
-export async function GET(_request: Request, ctx: Ctx) {
+/** Public read; optional `x-kairo-user-id` enriches payload with `viewerContext`. */
+export async function GET(request: Request, ctx: Ctx) {
   const { eventId } = await ctx.params;
-  const result = await getEventById(eventId);
+  const viewerUserId = getCurrentUserIdFromRequest(request);
+  const result = await getEventById(eventId, viewerUserId);
   return fromServiceResult(result);
 }
 

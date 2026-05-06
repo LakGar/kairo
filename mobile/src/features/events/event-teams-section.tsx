@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/expo";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,10 +11,11 @@ import { createTeamSchema } from "@kairo/shared";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { FeatureEmptyState } from "@/src/components/feature-empty-state";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
   createKairoApiFromEnv,
-  getDevUserId,
+  getLinkedKairoUserId,
   KairoApiConfigurationError,
   KairoApiError,
   type ApiEventPublic,
@@ -37,6 +39,8 @@ type Props = {
   teamsError: string | null;
   onTeamsChanged: () => void;
   onEventChanged: () => void;
+  /** List teams only (no create / join / leave) for public or spectator roles. */
+  previewOnly?: boolean;
 };
 
 export function EventTeamsSection({
@@ -46,12 +50,14 @@ export function EventTeamsSection({
   teamsError,
   onTeamsChanged,
   onEventChanged,
+  previewOnly = false,
 }: Props) {
+  const { user } = useUser();
+  const linkedUserId = getLinkedKairoUserId(user);
   const borderColor = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
   const surface = useThemeColor({ light: "#F2F2F7", dark: "#1C1C1E" }, "background");
   const textColor = useThemeColor({}, "text");
-
-  const devUserId = getDevUserId();
+  const textMuted = useThemeColor({}, "tabIconDefault");
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
@@ -59,7 +65,9 @@ export function EventTeamsSection({
   const [banner, setBanner] = useState<string | null>(null);
 
   const canUseTeams =
-    (event.status === "PUBLISHED" || event.status === "LIVE") && event.allowTeams;
+    !previewOnly &&
+    (event.status === "PUBLISHED" || event.status === "LIVE") &&
+    event.allowTeams;
 
   const atTeamCap = useMemo(() => {
     if (event.maxTeams == null) return false;
@@ -79,7 +87,7 @@ export function EventTeamsSection({
     setCreateBusy(true);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.createTeam(event.id, parsed.data);
       setNewName("");
       setNewDesc("");
@@ -99,7 +107,7 @@ export function EventTeamsSection({
     setActionBusyId(teamId);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.joinTeam(teamId);
       setBanner("Joined team.");
       onTeamsChanged();
@@ -117,7 +125,7 @@ export function EventTeamsSection({
     setActionBusyId(teamId);
     setBanner(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.leaveTeam(teamId);
       setBanner("Left team.");
       onTeamsChanged();
@@ -156,11 +164,6 @@ export function EventTeamsSection({
   return (
     <ThemedView style={styles.block}>
       <ThemedText type="subtitle">Teams</ThemedText>
-      {!devUserId ? (
-        <ThemedText type="small" style={styles.warn}>
-          Set EXPO_PUBLIC_KAIRO_DEV_USER_ID to create or join teams in dev.
-        </ThemedText>
-      ) : null}
       {banner ? (
         <ThemedText type="small" style={styles.banner}>
           {banner}
@@ -175,13 +178,27 @@ export function EventTeamsSection({
       {teamsLoading ? (
         <ActivityIndicator style={styles.loader} />
       ) : teams.length === 0 ? (
-        <ThemedText type="muted" style={styles.gapTop}>
-          No teams yet. {canUseTeams ? "Be the first to create one below." : ""}
-        </ThemedText>
+        <FeatureEmptyState
+          colors={{
+            textPrimary: textColor,
+            textMuted,
+            icon: borderColor,
+          }}
+          icon="people-outline"
+          title="No teams yet"
+          subtitle={
+            previewOnly
+              ? "Join the event as a player to create or join a team."
+              : canUseTeams
+                ? "Be the first to create a team with the form below."
+                : "Teams are not available for this event."
+          }
+          compact
+        />
       ) : (
         <View style={styles.list}>
           {teams.map((team) => {
-            const onTeam = isOnTeam(team, devUserId);
+            const onTeam = isOnTeam(team, linkedUserId);
             const busy = actionBusyId === team.id;
             return (
               <View key={team.id} style={[styles.card, { borderColor }]}>
@@ -192,7 +209,7 @@ export function EventTeamsSection({
                   Captain: {displayName(team.captain)} · {team.members.length} member
                   {team.members.length === 1 ? "" : "s"}
                 </ThemedText>
-                {canUseTeams && devUserId ? (
+                {canUseTeams ? (
                   <View style={styles.row}>
                     {onTeam ? (
                       <Pressable
@@ -229,7 +246,7 @@ export function EventTeamsSection({
         </View>
       )}
 
-      {canUseTeams && devUserId && !atTeamCap ? (
+      {canUseTeams && !atTeamCap ? (
         <View style={[styles.createBox, { borderTopColor: borderColor }]}>
           <ThemedText type="default" style={styles.createTitle}>
             New team

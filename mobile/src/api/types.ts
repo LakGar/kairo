@@ -48,6 +48,34 @@ export interface ApiEventParticipantPreview {
   user: ApiUserSnippet;
 }
 
+/** From `GET /api/events/[eventId]` when `x-kairo-user-id` is sent (optional on public read). */
+export type ApiEventDetailPrimaryState =
+  | "NOT_JOINED"
+  | "ORGANIZER"
+  | "PARTICIPANT"
+  | "WATCHER"
+  | "VOLUNTEER"
+  | "INVITED"
+  | "WAITLISTED";
+
+export interface ApiEventViewerContext {
+  viewerUserId: string | null;
+  isOrganizer: boolean;
+  participantRoles: string[];
+  participantStatuses: string[];
+  teamMemberships: {
+    teamId: string;
+    teamName: string;
+    role: "CAPTAIN" | "MEMBER";
+  }[];
+  primaryState: ApiEventDetailPrimaryState;
+  organizerStats?: {
+    proofPendingCount: number;
+    matchResultsPendingConfirmation: number;
+    matchResultsDisputed: number;
+  };
+}
+
 /** Public event payload from `GET /api/events` and `GET /api/events/[eventId]`. */
 export interface ApiEventPublic {
   id: string;
@@ -82,6 +110,8 @@ export interface ApiEventPublic {
   organizer: ApiUserSnippet;
   /** Present on detail responses; list may be capped while `_count.participants` is authoritative. */
   participants?: ApiEventParticipantPreview[];
+  /** Present on `GET /api/events/[eventId]` when header sent; omit on list/upcoming responses. */
+  viewerContext?: ApiEventViewerContext | null;
   _count: {
     teams: number;
     participants: number;

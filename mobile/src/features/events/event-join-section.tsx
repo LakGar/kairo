@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/expo";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
 
@@ -6,9 +7,10 @@ import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
   createKairoApiFromEnv,
-  getDevUserId,
+  getLinkedKairoUserId,
   KairoApiConfigurationError,
   KairoApiError,
+  type ApiEventDetailPrimaryState,
   type ApiEventPublic,
 } from "@/src/api";
 
@@ -17,15 +19,17 @@ type JoinRole = "PLAYER" | "WATCHER" | "VOLUNTEER";
 type Props = {
   event: ApiEventPublic;
   onJoined: () => void;
+  /** From `viewerContext.primaryState` on event detail; hides join when already registered. */
+  viewerPrimaryState?: ApiEventDetailPrimaryState | null;
 };
 
-export function EventJoinSection({ event, onJoined }: Props) {
+export function EventJoinSection({ event, onJoined, viewerPrimaryState }: Props) {
+  const { user } = useUser();
+  const linkedUserId = getLinkedKairoUserId(user);
   const borderColor = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
   const surface = useThemeColor({ light: "#F2F2F7", dark: "#1C1C1E" }, "background");
   const textColor = useThemeColor({}, "text");
   const tint = useThemeColor({}, "tint");
-
-  const devUserId = getDevUserId();
 
   const roleOptions = useMemo(() => {
     const opts: JoinRole[] = [];
@@ -48,8 +52,24 @@ export function EventJoinSection({ event, onJoined }: Props) {
 
   const open = event.status === "PUBLISHED" || event.status === "LIVE";
 
+  if (viewerPrimaryState === "WAITLISTED") {
+    return null;
+  }
+
+  const alreadyRegistered =
+    viewerPrimaryState === "PARTICIPANT" ||
+    viewerPrimaryState === "WATCHER" ||
+    viewerPrimaryState === "VOLUNTEER" ||
+    viewerPrimaryState === "ORGANIZER";
+
+  if (alreadyRegistered && event.status !== "DRAFT") {
+    return null;
+  }
+
   if (event.status === "DRAFT") {
-    const isHost = Boolean(devUserId && devUserId === event.organizerId);
+    const isHost =
+      viewerPrimaryState === "ORGANIZER" ||
+      Boolean(linkedUserId && linkedUserId === event.organizerId);
     return (
       <ThemedView style={styles.block}>
         <ThemedText type="subtitle">Join this event</ThemedText>
@@ -81,7 +101,7 @@ export function EventJoinSection({ event, onJoined }: Props) {
     setBusy(true);
     setMessage(null);
     try {
-      const api = createKairoApiFromEnv();
+      const api = createKairoApiFromEnv({ userId: linkedUserId });
       await api.joinEvent(event.id, {
         role,
         note: note.trim() === "" ? undefined : note.trim(),
@@ -105,11 +125,6 @@ export function EventJoinSection({ event, onJoined }: Props) {
   return (
     <ThemedView style={styles.block}>
       <ThemedText type="subtitle">Join this event</ThemedText>
-      {!devUserId ? (
-        <ThemedText type="small" style={styles.warn}>
-          Set EXPO_PUBLIC_KAIRO_DEV_USER_ID in mobile/.env to join from the app in dev.
-        </ThemedText>
-      ) : null}
       <ThemedText type="muted" style={styles.gapTop}>
         Pick how you want to take part, then confirm.
       </ThemedText>
@@ -142,9 +157,9 @@ export function EventJoinSection({ event, onJoined }: Props) {
         </ThemedText>
       ) : null}
       <Pressable
-        style={[styles.button, (!devUserId || busy) && styles.buttonDisabled]}
+        style={[styles.button, busy && styles.buttonDisabled]}
         onPress={() => void onJoin()}
-        disabled={!devUserId || busy}
+        disabled={busy}
       >
         {busy ? (
           <ActivityIndicator color="#fff" />

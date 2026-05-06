@@ -52,6 +52,8 @@ type Props = {
   onChanged: () => void;
   /** When set (e.g. Home deep link), emphasize this match row. */
   highlightMatchId?: string | null;
+  /** When false, match rows are read-only (no submit / confirm / dispute). */
+  allowParticipantResultControls?: boolean;
 };
 
 export function EventTeamAgreementResultsSection({
@@ -60,6 +62,7 @@ export function EventTeamAgreementResultsSection({
   linkedUserId,
   onChanged,
   highlightMatchId,
+  allowParticipantResultControls = true,
 }: Props) {
   const [matches, setMatches] = useState<ApiMatchPublic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +105,7 @@ export function EventTeamAgreementResultsSection({
           m={m}
           teams={teams}
           linkedUserId={linkedUserId}
+          allowParticipantResultControls={allowParticipantResultControls}
           highlight={Boolean(highlightMatchId && highlightMatchId === m.id)}
           onChanged={() => {
             void load();
@@ -117,12 +121,14 @@ function TeamAgreementMatchRow({
   m,
   teams,
   linkedUserId,
+  allowParticipantResultControls,
   highlight,
   onChanged,
 }: {
   m: ApiMatchPublic;
   teams: ApiTeamPublic[];
   linkedUserId: string | undefined;
+  allowParticipantResultControls: boolean;
   highlight?: boolean;
   onChanged: () => void;
 }) {
@@ -138,7 +144,7 @@ function TeamAgreementMatchRow({
       : `Match`;
 
   const myTeamId = userTeamIdOnMatch(m, linkedUserId, teams);
-  const onSide = myTeamId !== null;
+  const onSide = allowParticipantResultControls && myTeamId !== null;
   const oppId = opponentTeamId(m);
 
   const onSubmit = async () => {
@@ -311,7 +317,11 @@ function TeamAgreementMatchRow({
       ) : null}
 
       {!onSide && m.resultStatus !== "CONFIRMED" ? (
-        <Text style={styles.note}>You are not on either team — status only.</Text>
+        <Text style={styles.note}>
+          {allowParticipantResultControls
+            ? "You are not on either team — status only."
+            : "Results are shown for this event — team controls are for registered players."}
+        </Text>
       ) : null}
     </View>
   );

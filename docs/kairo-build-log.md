@@ -1511,6 +1511,22 @@ Next:
 
 ---
 
+### 2026-05-05 — PR 25 (Website + Mobile) — Role-based event detail states
+
+**Task:** Add `viewerContext` to public `GET /api/events/[eventId]` (optional `x-kairo-user-id`) and drive mobile event detail section visibility from `primaryState`.
+
+**Backend:** `getEventViewerContext` in `website/src/server/events/event-viewer-context.ts` — `primaryState` rules (organizer > participant / team member > waitlist > watcher > volunteer > not joined); organizer-only `organizerStats` (pending proof, match confirmation/dispute counts). `INVITED` remains a type with no invite model. Wired in `event.service` `getEventById` and GET route.
+
+**Mobile:** `EventViewerStatusCard`, `inferFallbackPrimaryState` when `viewerContext` omitted; gated `EventHostDashboardSection` / `EventOrganizerSection`, `EventProofSubmitSection`, `EventTeamAgreementResultsSection` (`allowParticipantResultControls`), `EventTeamsSection` (`previewOnly`), `EventJoinSection` (`viewerPrimaryState`). Home deep links `focus=organizer|proof|result` scroll to the right block or show “You do not have access to this action.”
+
+**Files changed (this PR):** `website/app/api/events/[eventId]/route.ts`, `website/src/server/events/event.service.ts`, `website/src/server/events/event-viewer-context.ts`, `mobile/src/api/types.ts`, `mobile/src/api/index.ts`, `mobile/src/features/events/event-viewer-status-card.tsx`, `mobile/src/features/events/event-join-section.tsx`, `mobile/src/features/events/event-teams-section.tsx`, `mobile/src/features/events/event-team-agreement-results-section.tsx`, `mobile/app/(tabs)/events/[eventId].tsx`, `docs/kairo-build-log.md`.
+
+**Checks run:** `website` `npm run typecheck`, `npm run lint`; `mobile` `npm run typecheck`, `npm run lint` (existing warnings in `GoingAvatars` / onboarding hero); root `npm run typecheck:shared`.
+
+**Remaining TODOs:** Optional `INVITED` when invite model exists; richer mobile fallback if API omits `viewerContext` but user has team-only membership (client could infer from teams list).
+
+---
+
 ## Rules
 
 Before every task, update `docs/kairo-build-log.md` with the task under the correct area.

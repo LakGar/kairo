@@ -21,7 +21,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { pickSearchParam } from "@/src/features/home/event-proof-nav";
 
-import { getLinkedKairoUserId, type ApiEventPublic, type ApiUserSnippet } from "@/src/api";
+import {
+  getLinkedKairoUserId,
+  type ApiEventDetailPrimaryState,
+  type ApiEventPublic,
+  type ApiUserSnippet,
+} from "@/src/api";
 import {
   categoryIconForActivity,
   formatEventEntryFeeLine,
@@ -34,6 +39,7 @@ import { EventOrganizerSection } from "@/src/features/events/event-organizer-sec
 import { EventProofSubmitSection } from "@/src/features/events/event-proof-submit-section";
 import { EventTeamAgreementResultsSection } from "@/src/features/events/event-team-agreement-results-section";
 import { EventTeamsSection } from "@/src/features/events/event-teams-section";
+import { EventViewerStatusCard } from "@/src/features/events/event-viewer-status-card";
 import { formatEventDetailWhenLine } from "@/src/features/events/format-event-range";
 import { useEventDetail } from "@/src/features/events/use-event-detail";
 import { useEventTeams } from "@/src/features/events/use-event-teams";
@@ -41,6 +47,24 @@ import { HomeColors } from "@/src/features/home/home-tokens";
 
 const HERO_RADIUS = 22;
 const HERO_HEIGHT = 300;
+
+function inferFallbackPrimaryState(
+  event: ApiEventPublic,
+  linkedUserId: string | undefined,
+): ApiEventDetailPrimaryState {
+  if (!linkedUserId) return "NOT_JOINED";
+  if (linkedUserId === event.organizerId) return "ORGANIZER";
+  const rows = event.participants ?? [];
+  for (const row of rows) {
+    if (row.user.id !== linkedUserId) continue;
+    if (row.status === "WAITLISTED") return "WAITLISTED";
+    if (row.status !== "APPROVED") continue;
+    if (row.role === "PLAYER") return "PARTICIPANT";
+    if (row.role === "WATCHER") return "WATCHER";
+    if (row.role === "VOLUNTEER") return "VOLUNTEER";
+  }
+  return "NOT_JOINED";
+}
 
 const androidHeaderBlur =
   Platform.OS === "android"
@@ -174,6 +198,7 @@ export default function EventDetailScreen() {
   const [contentHeight, setContentHeight] = useState(0);
   /** Y of proof-related blocks within `lowerPanel` (for Home deep links). */
   const [focusSectionYs, setFocusSectionYs] = useState({ organizer: 0, proof: 0, result: 0 });
+  const [focusDenialY, setFocusDenialY] = useState(0);
 
   const { event, loading, error, reload } = useEventDetail(eventId);
   const {
@@ -183,6 +208,38 @@ export default function EventDetailScreen() {
     refresh: refreshTeams,
   } = useEventTeams(eventId);
 
+  const primaryState = useMemo((): ApiEventDetailPrimaryState => {
+    if (!event) return "NOT_JOINED";
+    if (event.viewerContext?.primaryState != null) return event.viewerContext.primaryState;
+    return inferFallbackPrimaryState(event, linkedUserId ?? undefined);
+  }, [event, linkedUserId]);
+
+  const teamsPreviewOnly = useMemo(
+    () =>
+      primaryState === "NOT_JOINED" ||
+      primaryState === "WATCHER" ||
+      primaryState === "VOLUNTEER" ||
+      primaryState === "INVITED" ||
+      primaryState === "WAITLISTED",
+    [primaryState],
+  );
+
+  const showOrganizerTools = primaryState === "ORGANIZER";
+  const showProofSubmit = primaryState === "PARTICIPANT";
+  const allowTeamResultControls = primaryState === "PARTICIPANT";
+
+  const canFocusOrganizer = primaryState === "ORGANIZER";
+  const canFocusProof = primaryState === "PARTICIPANT" || primaryState === "ORGANIZER";
+  const canFocusResult = primaryState === "PARTICIPANT";
+
+  const showFocusDenial = useMemo(() => {
+    if (focus !== "organizer" && focus !== "proof" && focus !== "result") return false;
+    if (focus === "organizer" && !canFocusOrganizer) return true;
+    if (focus === "proof" && !canFocusProof) return true;
+    if (focus === "result" && !canFocusResult) return true;
+    return false;
+  }, [focus, canFocusOrganizer, canFocusProof, canFocusResult]);
+
   useEffect(() => {
     didAutoScrollToFocus.current = false;
   }, [eventId, focus]);
@@ -191,12 +248,16 @@ export default function EventDetailScreen() {
     if (!event || loading) return;
     if (focus !== "organizer" && focus !== "proof" && focus !== "result") return;
     if (didAutoScrollToFocus.current) return;
-    const relY =
-      focus === "organizer"
-        ? focusSectionYs.organizer
-        : focus === "proof"
-          ? focusSectionYs.proof
-          : focusSectionYs.result;
+    let relY = 0;
+    if (showFocusDenial) {
+      relY = focusDenialY;
+    } else if (focus === "organizer") {
+      relY = focusSectionYs.organizer;
+    } else if (focus === "proof") {
+      relY = primaryState === "ORGANIZER" ? focusSectionYs.organizer : focusSectionYs.proof;
+    } else {
+      relY = focusSectionYs.result;
+    }
     if (relY <= 0) return;
     const y = lowerPanelTopY + relY - 20;
     if (y < 12) return;
@@ -209,6 +270,9 @@ export default function EventDetailScreen() {
     event,
     loading,
     focus,
+    showFocusDenial,
+    focusDenialY,
+    primaryState,
     lowerPanelTopY,
     focusSectionYs.organizer,
     focusSectionYs.proof,
@@ -217,8 +281,7 @@ export default function EventDetailScreen() {
 
   const scrollToParticipate = useCallback(() => {
     if (!event) return;
-    const isOrg = Boolean(linkedUserId && linkedUserId === event.organizerId);
-    if (event.status === "DRAFT" && isOrg && lowerPanelTopY > 20) {
+    if (event.status === "DRAFT" && primaryState === "ORGANIZER" && lowerPanelTopY > 20) {
       scrollRef.current?.scrollTo({
         y: Math.max(0, lowerPanelTopY - 12),
         animated: true,
@@ -239,7 +302,7 @@ export default function EventDetailScreen() {
     } else {
       scrollRef.current?.scrollToEnd({ animated: true });
     }
-  }, [event, linkedUserId, lowerPanelTopY, joinWithinLowerY, contentHeight]);
+  }, [event, primaryState, lowerPanelTopY, joinWithinLowerY, contentHeight]);
 
   const onShare = useCallback(async (e: ApiEventPublic) => {
     const loc = [e.locationName, e.city, e.state, e.country].filter(Boolean).join(", ");
@@ -307,13 +370,13 @@ export default function EventDetailScreen() {
     (event.status === "PUBLISHED" || event.status === "LIVE") &&
     (event.allowSoloPlayers || event.allowWatchers || event.allowVolunteers);
 
-  const isOrganizer = Boolean(linkedUserId && linkedUserId === event.organizerId);
+  const isOrganizerRole = primaryState === "ORGANIZER";
 
   const ctaLabel =
     event.status === "CANCELLED"
       ? "Closed"
       : event.status === "DRAFT"
-        ? isOrganizer
+        ? isOrganizerRole
           ? "Manage event"
           : "Details"
         : joinOpen
@@ -387,14 +450,40 @@ export default function EventDetailScreen() {
               setLowerPanelTopY(y);
             }}
           >
+            {showFocusDenial ? (
+              <View
+                onLayout={(e) => {
+                  setFocusDenialY(e.nativeEvent.layout.y);
+                }}
+                style={styles.focusAccessDenied}
+              >
+                <Ionicons name="lock-closed-outline" size={18} color={HomeColors.textMuted} />
+                <Text style={styles.focusAccessDeniedText}>
+                  You do not have access to this action.
+                </Text>
+              </View>
+            ) : null}
+
+            <EventViewerStatusCard
+              event={event}
+              viewerContext={event.viewerContext}
+              fallbackPrimaryState={inferFallbackPrimaryState(event, linkedUserId ?? undefined)}
+            />
+
             <View
               onLayout={(e) => {
                 const y = e.nativeEvent.layout.y;
                 setFocusSectionYs((s) => ({ ...s, organizer: y }));
               }}
             >
-              {focus === "organizer" ? (
+              {showOrganizerTools && focus === "organizer" ? (
                 <ProofFocusBanner icon="clipboard-outline" text="Review pending proof below." />
+              ) : null}
+              {showOrganizerTools && focus === "proof" ? (
+                <ProofFocusBanner
+                  icon="clipboard-outline"
+                  text="Review and approve proof in the Organizer section below."
+                />
               ) : null}
               {user && !linkedUserId ? (
                 <Pressable
@@ -411,12 +500,16 @@ export default function EventDetailScreen() {
                   <Ionicons name="chevron-forward" size={18} color={HomeColors.textMuted} />
                 </Pressable>
               ) : null}
-              <EventHostDashboardSection event={event} onSaved={() => void reload()} />
-              <EventOrganizerSection
-                event={event}
-                teams={teams}
-                onEventChanged={() => void reload()}
-              />
+              {showOrganizerTools ? (
+                <>
+                  <EventHostDashboardSection event={event} onSaved={() => void reload()} />
+                  <EventOrganizerSection
+                    event={event}
+                    teams={teams}
+                    onEventChanged={() => void reload()}
+                  />
+                </>
+              ) : null}
             </View>
 
             <View
@@ -425,7 +518,11 @@ export default function EventDetailScreen() {
                 setJoinWithinLowerY(y);
               }}
             >
-              <EventJoinSection event={event} onJoined={() => void reload()} />
+              <EventJoinSection
+                event={event}
+                onJoined={() => void reload()}
+                viewerPrimaryState={primaryState}
+              />
             </View>
 
             <EventTeamsSection
@@ -435,6 +532,7 @@ export default function EventDetailScreen() {
               teamsError={teamsError}
               onTeamsChanged={() => void refreshTeams()}
               onEventChanged={() => void reload()}
+              previewOnly={teamsPreviewOnly}
             />
 
             <View
@@ -443,7 +541,7 @@ export default function EventDetailScreen() {
                 setFocusSectionYs((s) => ({ ...s, result: y }));
               }}
             >
-              {focus === "result" ? (
+              {allowTeamResultControls && focus === "result" ? (
                 <ProofFocusBanner
                   icon="trophy-outline"
                   text="Review the submitted match result below."
@@ -454,6 +552,7 @@ export default function EventDetailScreen() {
                 teams={teams}
                 linkedUserId={linkedUserId}
                 highlightMatchId={focusMatchId?.trim() || null}
+                allowParticipantResultControls={allowTeamResultControls}
                 onChanged={() => {
                   void refreshTeams();
                   void reload();
@@ -467,10 +566,12 @@ export default function EventDetailScreen() {
                 setFocusSectionYs((s) => ({ ...s, proof: y }));
               }}
             >
-              {focus === "proof" ? (
+              {showProofSubmit && focus === "proof" ? (
                 <ProofFocusBanner icon="camera-outline" text="Submit proof below." />
               ) : null}
-              <EventProofSubmitSection event={event} onSubmitted={() => void reload()} />
+              {showProofSubmit ? (
+                <EventProofSubmitSection event={event} onSubmitted={() => void reload()} />
+              ) : null}
             </View>
           </View>
         </View>
@@ -499,7 +600,7 @@ export default function EventDetailScreen() {
           <View style={styles.topBarRight}>
             <Pressable
               onPress={() => {
-                if (isOrganizer) {
+                if (isOrganizerRole) {
                   Alert.alert(event.title, "Host actions", [
                     {
                       text: "Manage event",
@@ -838,6 +939,27 @@ const styles = StyleSheet.create({
     color: HomeColors.textPrimary,
     fontSize: 14,
     fontWeight: "700",
+    lineHeight: 20,
+  },
+  focusAccessDenied: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(248,113,113,0.12)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(248,113,113,0.35)",
+  },
+  focusAccessDeniedText: {
+    flex: 1,
+    color: HomeColors.textSecondary,
+    fontSize: 14,
+    fontWeight: "600",
     lineHeight: 20,
   },
 });
