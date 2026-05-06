@@ -19,6 +19,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -107,17 +108,17 @@ function makePremiumStyles(c: CreateEventScreenColors) {
       gap: 20,
     },
     coverWrap: {
-      width: "100%",
-      alignSelf: "stretch",
+      position: "relative",
+      alignSelf: "center",
       borderBottomLeftRadius: 28,
       borderBottomRightRadius: 28,
       overflow: "hidden",
       aspectRatio: 1.05,
       maxHeight: 320,
     },
+    /** Absolute fill so expo-image fills the hero (percentage sizing can collapse / hug left). */
     coverImg: {
-      width: "100%",
-      height: "100%",
+      ...StyleSheet.absoluteFillObject,
     },
     coverFab: {
       position: "absolute",
@@ -467,6 +468,7 @@ export function PremiumCreateEventScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? "light";
   const c = colorScheme === "dark" ? createEventColorsDark : createEventColorsLight;
   /** Opaque modal chrome — `c.panel` is translucent and makes pickers hard to read. */
@@ -782,10 +784,16 @@ export function PremiumCreateEventScreen() {
 
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: bottomPad, width: windowWidth },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.coverWrap} accessibilityLabel="Event cover">
+          <View
+            style={[styles.coverWrap, { width: windowWidth }]}
+            accessibilityLabel="Event cover"
+          >
             {coverUri ? (
               <Image
                 source={{ uri: coverUri }}
