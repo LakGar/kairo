@@ -145,14 +145,28 @@ function makePremiumStyles(c: CreateEventScreenColors) {
       position: "absolute",
       right: 16,
       bottom: 16,
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 50,
+      height: 50,
+      borderRadius: 25,
       backgroundColor: c.panelStrong,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
       alignItems: "center",
       justifyContent: "center",
+    },
+    /** Opaque control so “change photo” stays visible on busy cover images. */
+    coverFabOnPhoto: {
+      backgroundColor: "rgba(28,28,30,0.92)",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.28)",
+      ...(Platform.OS === "ios"
+        ? {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.45,
+            shadowRadius: 6,
+          }
+        : { elevation: 10 }),
     },
     block: { gap: 8 },
     timePanel: {
@@ -815,16 +829,23 @@ export function PremiumCreateEventScreen() {
               />
             )}
             <Pressable
-              style={styles.coverFab}
+              style={[styles.coverFab, coverUri ? styles.coverFabOnPhoto : null]}
               onPress={() => void handlePickCoverImage()}
               disabled={coverBusy}
               accessibilityRole="button"
-              accessibilityLabel="Add cover image"
+              accessibilityLabel={coverUri ? "Change cover image" : "Add cover image"}
             >
               {coverBusy ? (
-                <ActivityIndicator color={c.textPrimary} size="small" />
+                <ActivityIndicator
+                  color={coverUri ? "#FFFFFF" : c.textPrimary}
+                  size="small"
+                />
               ) : (
-                <Ionicons name="image-outline" size={20} color={c.textPrimary} />
+                <Ionicons
+                  name="images-outline"
+                  size={22}
+                  color={coverUri ? "#FFFFFF" : c.textPrimary}
+                />
               )}
             </Pressable>
           </View>
