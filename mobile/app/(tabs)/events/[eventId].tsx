@@ -2,7 +2,7 @@ import { useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,13 +19,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { pickSearchParam } from "@/src/features/home/event-proof-nav";
 
-import { getLinkedKairoUserId, type ApiEventPublic } from "@/src/api";
+import { getLinkedKairoUserId, type ApiEventPublic, type ApiUserSnippet } from "@/src/api";
 import {
   categoryIconForActivity,
   formatEventEntryFeeLine,
   gradientColorsForEvent,
   heroImageUrlForEvent,
 } from "@/src/features/events/event-detail-visuals";
+import { EventHostDashboardSection } from "@/src/features/events/event-host-dashboard-section";
 import { EventJoinSection } from "@/src/features/events/event-join-section";
 import { EventOrganizerSection } from "@/src/features/events/event-organizer-section";
 import { EventProofSubmitSection } from "@/src/features/events/event-proof-submit-section";
@@ -48,33 +49,92 @@ function MetaRow({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label:
   );
 }
 
+const GOING_STACK_MAX = 6;
+
 function GoingAvatars({ event }: { event: ApiEventPublic }) {
-  const orgUri = event.organizer.profile?.avatarUrl;
-  const n = event._count.participants;
+  const total = event._count.participants;
+  const preview = event.participants ?? [];
+
+  const stackUsers = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ApiUserSnippet[] = [];
+    for (const row of preview) {
+      const id = row.user.id;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(row.user);
+      if (out.length >= GOING_STACK_MAX) break;
+    }
+    if (out.length === 0 && total > 0 && event.organizer) {
+      out.push(event.organizer);
+    }
+    return out;
+  }, [preview, total, event.organizer]);
+
+  const overflow = Math.max(0, total - stackUsers.length);
+
   const label =
-    n === 0
+    total === 0
       ? "Be the first to RSVP"
-      : `${n} ${n === 1 ? "person" : "people"} going`;
+      : `${total} ${total === 1 ? "person" : "people"} going`;
+
+  const roleHint = useMemo(() => {
+    if (preview.length === 0) return null;
+    const counts: Record<string, number> = {};
+    for (const row of preview) {
+      const r = row.role;
+      counts[r] = (counts[r] ?? 0) + 1;
+    }
+    const parts: string[] = [];
+    if (counts.PLAYER) parts.push(`${counts.PLAYER} player${counts.PLAYER === 1 ? "" : "s"}`);
+    if (counts.WATCHER) parts.push(`${counts.WATCHER} watcher${counts.WATCHER === 1 ? "" : "s"}`);
+    if (counts.VOLUNTEER)
+      parts.push(`${counts.VOLUNTEER} volunteer${counts.VOLUNTEER === 1 ? "" : "s"}`);
+    if (counts.ORGANIZER) parts.push("host");
+    if (parts.length === 0) return null;
+    return parts.join(" · ");
+  }, [preview]);
 
   return (
     <View style={styles.goingBlock}>
       <View style={styles.avatarStack}>
-        {orgUri ? (
-          <View style={styles.avatarRing}>
-            <Image source={{ uri: orgUri }} style={styles.avatarImg} contentFit="cover" />
+        {stackUsers.map((u, index) => (
+          <View
+            key={u.id}
+            style={[
+              styles.avatarRing,
+              index > 0 && styles.avatarRingOverlap,
+              { zIndex: stackUsers.length - index },
+            ]}
+          >
+            {u.profile?.avatarUrl ? (
+              <Image
+                source={{ uri: u.profile.avatarUrl }}
+                style={styles.avatarImg}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.avatarImg, styles.avatarPlaceholderRing]}>
+                <Ionicons name="person" size={18} color={HomeColors.textMuted} />
+              </View>
+            )}
           </View>
-        ) : (
-          <View style={[styles.avatarRing, styles.avatarPlaceholderRing]}>
-            <Ionicons name="person" size={20} color={HomeColors.textMuted} />
-          </View>
-        )}
-        {n > 1 ? (
-          <View style={styles.moreGoingChip}>
-            <Text style={styles.moreGoingChipText}>+{n - 1}</Text>
+        ))}
+        {overflow > 0 ? (
+          <View style={[styles.moreGoingChip, stackUsers.length > 0 && styles.moreGoingChipOverlap]}>
+            <Text style={styles.moreGoingChipText}>+{overflow}</Text>
           </View>
         ) : null}
       </View>
-      <Text style={styles.goingLabel}>{label}</Text>
+      <View style={styles.goingTextCol}>
+        <Text style={styles.goingLabel}>{label}</Text>
+        {roleHint ? (
+          <Text style={styles.goingSubLabel} numberOfLines={2}>
+            In this group: {roleHint}
+            {preview.length < total ? " (sample)" : ""}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -314,6 +374,7 @@ export default function EventDetailScreen() {
               {focus === "organizer" ? (
                 <ProofFocusBanner icon="clipboard-outline" text="Review pending proof below." />
               ) : null}
+              <EventHostDashboardSection event={event} onSaved={() => void reload()} />
               <EventOrganizerSection
                 event={event}
                 teams={teams}
@@ -512,6 +573,10 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 22,
   },
+  goingTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
   avatarStack: {
     flexDirection: "row",
     alignItems: "center",
@@ -523,6 +588,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "rgba(15,23,42,0.95)",
     overflow: "hidden",
+  },
+  avatarRingOverlap: {
+    marginLeft: -12,
   },
   avatarPlaceholderRing: {
     alignItems: "center",
@@ -536,6 +604,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(255,255,255,0.1)",
   },
+  moreGoingChipOverlap: {
+    marginLeft: 4,
+  },
   moreGoingChipText: {
     color: HomeColors.textSecondary,
     fontSize: 13,
@@ -546,11 +617,17 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   goingLabel: {
-    flex: 1,
     color: HomeColors.textSecondary,
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
+  },
+  goingSubLabel: {
+    marginTop: 4,
+    color: HomeColors.textMuted,
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   description: {
     color: HomeColors.textSecondary,

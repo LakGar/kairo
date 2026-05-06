@@ -40,6 +40,14 @@ export interface ApiUserSnippet {
   } | null;
 }
 
+/** Approved attendee row included on event detail (preview; see `_count.participants` for total). */
+export interface ApiEventParticipantPreview {
+  id: string;
+  role: string;
+  status: string;
+  user: ApiUserSnippet;
+}
+
 /** Public event payload from `GET /api/events` and `GET /api/events/[eventId]`. */
 export interface ApiEventPublic {
   id: string;
@@ -72,6 +80,8 @@ export interface ApiEventPublic {
   createdAt: JsonDateString;
   updatedAt: JsonDateString;
   organizer: ApiUserSnippet;
+  /** Present on detail responses; list may be capped while `_count.participants` is authoritative. */
+  participants?: ApiEventParticipantPreview[];
   _count: {
     teams: number;
     participants: number;
@@ -180,6 +190,8 @@ export interface ApiMeProfileDto {
   username: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  /** Public social handles from `Profile.socialLinks` (Prisma JSON). */
+  socialLinks: Record<string, string> | null;
   onboardingCompleted: boolean;
   onboardingCompletedAt: JsonDateString | null;
   primaryGoal: string | null;

@@ -1,7 +1,20 @@
 import type { Prisma } from "@kairo/db";
-import { EventStatus } from "@prisma/client";
+import { EventStatus, RegistrationStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
+
+/** Approved attendees for “who’s going” on the public event page (capped). */
+const eventParticipantPreviewArgs = {
+  where: { status: RegistrationStatus.APPROVED },
+  take: 32,
+  orderBy: { createdAt: "asc" as const },
+  select: {
+    id: true,
+    role: true,
+    status: true,
+    user: { select: { id: true, email: true, profile: true } },
+  },
+} satisfies Prisma.EventParticipantFindManyArgs;
 
 const eventPublicInclude = {
   organizer: { select: { id: true, email: true, profile: true } },
@@ -10,17 +23,23 @@ const eventPublicInclude = {
   },
 } satisfies Prisma.EventInclude;
 
+/** Single-event fetch only — avoids loading attendee rows on every list. */
+const eventDetailInclude = {
+  ...eventPublicInclude,
+  participants: eventParticipantPreviewArgs,
+} satisfies Prisma.EventInclude;
+
 export async function queryEventById(id: string) {
   return prisma.event.findUnique({
     where: { id },
-    include: eventPublicInclude,
+    include: eventDetailInclude,
   });
 }
 
 export async function queryEventBySlug(slug: string) {
   return prisma.event.findUnique({
     where: { slug },
-    include: eventPublicInclude,
+    include: eventDetailInclude,
   });
 }
 
