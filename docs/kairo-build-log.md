@@ -1523,6 +1523,8 @@ Next:
 
 **Checks run:** `website` `npm run typecheck`, `npm run lint`; `mobile` `npm run typecheck`, `npm run lint` (existing warnings in `GoingAvatars` / onboarding hero); root `npm run typecheck:shared`.
 
+**Push:** `main` → `origin/main` succeeded (`e8fd729`).
+
 **Remaining TODOs:** Optional `INVITED` when invite model exists; richer mobile fallback if API omits `viewerContext` but user has team-only membership (client could infer from teams list).
 
 ---
