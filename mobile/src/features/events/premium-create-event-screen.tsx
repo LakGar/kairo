@@ -68,6 +68,9 @@ import {
 import { suggestPremiumProofPromptContent } from "./premium-proof-prompt-templates";
 
 const H_PAD = 24;
+/** Matches header overlay: `paddingTop` after safe area + bar row + bottom padding. */
+const HEADER_OVERLAY_BODY_HEIGHT = 8 + 44 + 12;
+const COVER_CORNER_RADIUS = 28;
 
 const androidHeaderBlur =
   Platform.OS === "android"
@@ -128,15 +131,15 @@ function makePremiumStyles(c: CreateEventScreenColors) {
     coverWrap: {
       position: "relative",
       alignSelf: "center",
-      borderBottomLeftRadius: 28,
-      borderBottomRightRadius: 28,
+      borderRadius: COVER_CORNER_RADIUS,
       overflow: "hidden",
       aspectRatio: 1.05,
       maxHeight: 320,
     },
-    /** Absolute fill so expo-image fills the hero (percentage sizing can collapse / hug left). */
+    /** Absolute fill so expo-image fills the hero; radius matches wrap for clean clipping. */
     coverImg: {
       ...StyleSheet.absoluteFillObject,
+      borderRadius: COVER_CORNER_RADIUS,
     },
     coverFab: {
       position: "absolute",
@@ -530,6 +533,11 @@ export function PremiumCreateEventScreen() {
   const [proofPromptTemplateVariant, setProofPromptTemplateVariant] = useState(0);
 
   const bottomPad = useMemo(() => Math.max(insets.bottom, 20) + 100, [insets.bottom]);
+  /** Scroll content starts below the frosted header so the hero has a clear top edge and rounded corners. */
+  const scrollPadTop = useMemo(
+    () => insets.top + HEADER_OVERLAY_BODY_HEIGHT,
+    [insets.top],
+  );
 
   const patchForm = useCallback(
     <K extends keyof CreateEventForm>(key: K, value: CreateEventForm[K]) => {
@@ -779,7 +787,11 @@ export function PremiumCreateEventScreen() {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: bottomPad, width: windowWidth },
+              {
+                paddingBottom: bottomPad,
+                paddingTop: scrollPadTop,
+                width: windowWidth,
+              },
             ]}
             showsVerticalScrollIndicator={false}
           >
