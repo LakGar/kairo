@@ -1,11 +1,13 @@
 import { useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -39,6 +41,11 @@ import { HomeColors } from "@/src/features/home/home-tokens";
 
 const HERO_RADIUS = 22;
 const HERO_HEIGHT = 300;
+
+const androidHeaderBlur =
+  Platform.OS === "android"
+    ? { experimentalBlurMethod: "dimezisBlurView" as const }
+    : {};
 
 function MetaRow({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
   return (
@@ -209,6 +216,15 @@ export default function EventDetailScreen() {
   ]);
 
   const scrollToParticipate = useCallback(() => {
+    if (!event) return;
+    const isOrg = Boolean(linkedUserId && linkedUserId === event.organizerId);
+    if (event.status === "DRAFT" && isOrg && lowerPanelTopY > 20) {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, lowerPanelTopY - 12),
+        animated: true,
+      });
+      return;
+    }
     const joinAbsY = lowerPanelTopY + joinWithinLowerY;
     if (joinAbsY > 40) {
       scrollRef.current?.scrollTo({
@@ -223,7 +239,7 @@ export default function EventDetailScreen() {
     } else {
       scrollRef.current?.scrollToEnd({ animated: true });
     }
-  }, [lowerPanelTopY, joinWithinLowerY, contentHeight]);
+  }, [event, linkedUserId, lowerPanelTopY, joinWithinLowerY, contentHeight]);
 
   const onShare = useCallback(async (e: ApiEventPublic) => {
     const loc = [e.locationName, e.city, e.state, e.country].filter(Boolean).join(", ");
@@ -291,11 +307,15 @@ export default function EventDetailScreen() {
     (event.status === "PUBLISHED" || event.status === "LIVE") &&
     (event.allowSoloPlayers || event.allowWatchers || event.allowVolunteers);
 
+  const isOrganizer = Boolean(linkedUserId && linkedUserId === event.organizerId);
+
   const ctaLabel =
     event.status === "CANCELLED"
       ? "Closed"
       : event.status === "DRAFT"
-        ? "Hosting"
+        ? isOrganizer
+          ? "Manage event"
+          : "Details"
         : joinOpen
           ? "RSVP"
           : "View event";
@@ -318,16 +338,18 @@ export default function EventDetailScreen() {
         <View style={styles.inner}>
           <View style={{ height: headerTopPad + 44 }} />
 
-          {heroUri ? (
-            <Image
-              source={{ uri: heroUri }}
-              style={styles.hero}
-              contentFit="cover"
-              transition={200}
-            />
-          ) : (
-            <View style={styles.hero} />
-          )}
+          <View style={styles.heroWrap}>
+            {heroUri ? (
+              <Image
+                source={{ uri: heroUri }}
+                style={styles.heroImage}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View style={styles.heroPlaceholder} />
+            )}
+          </View>
 
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={3}>
@@ -373,6 +395,21 @@ export default function EventDetailScreen() {
             >
               {focus === "organizer" ? (
                 <ProofFocusBanner icon="clipboard-outline" text="Review pending proof below." />
+              ) : null}
+              {user && !linkedUserId ? (
+                <Pressable
+                  onPress={() => router.push("/(tabs)/settings")}
+                  style={styles.linkKairoBanner}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open settings to link your Kairo account"
+                >
+                  <Ionicons name="information-circle-outline" size={22} color={HomeColors.black} />
+                  <Text style={styles.linkKairoBannerText}>
+                    Link your Kairo account in Settings to edit, publish, and manage events you
+                    create.
+                  </Text>
+                  <Ionicons name="chevron-forward" size={18} color={HomeColors.textMuted} />
+                </Pressable>
               ) : null}
               <EventHostDashboardSection event={event} onSaved={() => void reload()} />
               <EventOrganizerSection
@@ -441,39 +478,56 @@ export default function EventDetailScreen() {
 
       <View
         pointerEvents="box-none"
-        style={[styles.topBar, { paddingTop: headerTopPad }]}
+        style={[styles.topBarOuter, { paddingTop: headerTopPad }]}
       >
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.iconPressed]}
-          accessibilityLabel="Back"
-        >
-          <Ionicons name="chevron-back" size={28} color={HomeColors.white} />
-        </Pressable>
-        <View style={styles.topBarRight}>
+        <BlurView
+          pointerEvents="none"
+          tint="dark"
+          intensity={34}
+          style={styles.topBarBlur}
+          {...androidHeaderBlur}
+        />
+        <View style={styles.topBarInner}>
           <Pressable
-            onPress={() =>
-              Alert.alert(
-                event.title,
-                "More actions will be available in a future update.",
-                [{ text: "OK", style: "default" }],
-              )
-            }
+            onPress={() => router.back()}
             hitSlop={12}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.iconPressed]}
-            accessibilityLabel="More options"
+            accessibilityLabel="Back"
           >
-            <Ionicons name="ellipsis-horizontal" size={22} color={HomeColors.white} />
+            <Ionicons name="chevron-back" size={28} color={HomeColors.white} />
           </Pressable>
-          <Pressable
-            onPress={() => void onShare(event)}
-            hitSlop={12}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.iconPressed]}
-            accessibilityLabel="Share"
-          >
-            <Ionicons name="share-outline" size={22} color={HomeColors.white} />
-          </Pressable>
+          <View style={styles.topBarRight}>
+            <Pressable
+              onPress={() => {
+                if (isOrganizer) {
+                  Alert.alert(event.title, "Host actions", [
+                    {
+                      text: "Manage event",
+                      onPress: () => scrollToParticipate(),
+                    },
+                    { text: "Cancel", style: "cancel" },
+                  ]);
+                } else {
+                  Alert.alert(event.title, "More actions will be available in a future update.", [
+                    { text: "OK", style: "default" },
+                  ]);
+                }
+              }}
+              hitSlop={12}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconPressed]}
+              accessibilityLabel="More options"
+            >
+              <Ionicons name="ellipsis-horizontal" size={22} color={HomeColors.white} />
+            </Pressable>
+            <Pressable
+              onPress={() => void onShare(event)}
+              hitSlop={12}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconPressed]}
+              accessibilityLabel="Share"
+            >
+              <Ionicons name="share-outline" size={22} color={HomeColors.white} />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -508,11 +562,43 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: "40%",
   },
-  hero: {
+  heroWrap: {
     width: "100%",
     height: HERO_HEIGHT,
     borderRadius: HERO_RADIUS,
     marginBottom: 22,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroPlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  linkKairoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: "rgba(253, 186, 116, 0.25)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.12)",
+  },
+  linkKairoBannerText: {
+    flex: 1,
+    color: HomeColors.black,
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
   },
   titleRow: {
     flexDirection: "row",
@@ -648,16 +734,23 @@ const styles = StyleSheet.create({
     borderColor: HomeColors.border,
     overflow: "hidden",
   },
-  topBar: {
+  topBarOuter: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 20,
+    overflow: "hidden",
+    paddingBottom: 10,
+  },
+  topBarBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  topBarInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 8,
-    zIndex: 20,
   },
   topBarRight: {
     flexDirection: "row",
