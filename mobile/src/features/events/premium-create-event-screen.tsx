@@ -69,16 +69,34 @@ import { suggestPremiumProofPromptContent } from "./premium-proof-prompt-templat
 
 const H_PAD = 24;
 
+const androidHeaderBlur =
+  Platform.OS === "android"
+    ? { experimentalBlurMethod: "dimezisBlurView" as const }
+    : {};
+
 function makePremiumStyles(c: CreateEventScreenColors) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.deepBackground },
     flex: { flex: 1 },
-    header: {
+    /** Scroll area sits full-screen; header is absolutely overlaid so content blurs underneath. */
+    body: { flex: 1 },
+    scrollFlex: { flex: 1 },
+    headerOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+      overflow: "hidden",
+      backgroundColor: "transparent",
+    },
+    headerRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: H_PAD - 8,
       paddingBottom: 12,
+      minHeight: 44,
     },
     headerSide: { width: 44, alignItems: "flex-start", justifyContent: "center" },
     headerTitle: {
@@ -100,7 +118,7 @@ function makePremiumStyles(c: CreateEventScreenColors) {
     /** Cover is full-bleed; form uses `scrollForm` for horizontal inset. */
     scrollContent: {
       paddingHorizontal: 0,
-      paddingTop: 4,
+      paddingTop: 0,
       gap: 20,
     },
     scrollForm: {
@@ -755,41 +773,16 @@ export function PremiumCreateEventScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={insets.top}
       >
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Pressable
-            onPress={handleBack}
-            hitSlop={12}
-            style={styles.headerSide}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
+        <View style={styles.body}>
+          <ScrollView
+            style={styles.scrollFlex}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: bottomPad, width: windowWidth },
+            ]}
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons name="chevron-back" size={28} color={c.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Create Event</Text>
-          <Pressable
-            onPress={() => void runSubmit()}
-            hitSlop={12}
-            style={styles.checkBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Save event"
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color={c.black} />
-            ) : (
-              <Ionicons name="checkmark" size={22} color={c.black} />
-            )}
-          </Pressable>
-        </View>
-
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: bottomPad, width: windowWidth },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
           <View
             style={[styles.coverWrap, { width: windowWidth }]}
             accessibilityLabel="Event cover"
@@ -1169,6 +1162,52 @@ export function PremiumCreateEventScreen() {
           </Pressable>
           </View>
         </ScrollView>
+
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.headerOverlay,
+              {
+                paddingTop: insets.top + 8,
+                paddingBottom: 0,
+              },
+            ]}
+          >
+            <BlurView
+              pointerEvents="none"
+              tint={colorScheme === "dark" ? "dark" : "extraLight"}
+              intensity={colorScheme === "dark" ? 28 : 38}
+              style={StyleSheet.absoluteFill}
+              {...androidHeaderBlur}
+            />
+            <View style={styles.headerRow}>
+              <Pressable
+                onPress={handleBack}
+                hitSlop={12}
+                style={styles.headerSide}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="chevron-back" size={28} color={c.textPrimary} />
+              </Pressable>
+              <Text style={styles.headerTitle}>Create Event</Text>
+              <Pressable
+                onPress={() => void runSubmit()}
+                hitSlop={12}
+                style={styles.checkBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Save event"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color={c.black} />
+                ) : (
+                  <Ionicons name="checkmark" size={22} color={c.black} />
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
 
         {androidSchedulePicker ? (
           <DateTimePicker
